@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Montserrat } from 'next/font/google';
 import './globals.css';
+import SignInPromptManager from '@/components/SignInPromptManager';
 
 const montserrat = Montserrat({
   subsets: ['latin'],
@@ -21,7 +22,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={montserrat.variable}>
       <body className="font-montserrat antialiased bg-white text-[#1E293B]">
-        {children}
+        <SignInPromptManager>
+          {children}
+        </SignInPromptManager>
       </body>
     </html>
   );

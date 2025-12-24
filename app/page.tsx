@@ -6,9 +6,11 @@ import Navigation from '@/components/Navigation';
 import TabNavigation from '@/components/TabNavigation';
 import IncidentCard from '@/components/IncidentCard';
 import Sidebar from '@/components/Sidebar';
+import WeatherWidget from '@/components/WeatherWidget';
 import { ClusterListItem, loadClusters, FeedType, CategoryType } from '@/lib/api';
+import { getSupabaseClient } from '@/lib/supabaseClient';
 
-const tabs = [
+const baseTabs = [
   { id: 'home', label: 'Home', labelSi: 'මුල් පිටුව', labelTa: 'முகப்பு' },
   { id: 'recent', label: 'Recent', labelSi: 'මෑත', labelTa: 'சமீபத்திய' },
   { id: 'sri-lanka', label: 'Sri Lanka', labelSi: 'ශ්‍රී ලංකාව', labelTa: 'இலங்கை' },
@@ -26,6 +28,43 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [latestUpdates, setLatestUpdates] = useState<any[]>([]);
+  const [userCity, setUserCity] = useState('Colombo');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const supabase = getSupabaseClient();
+
+  // Build tabs with "For You" if authenticated
+  const tabs = isAuthenticated 
+    ? [{ id: 'for-you', label: 'For you', labelSi: 'ඔබ වෙනුවෙන්', labelTa: 'உங்களுக்காக' }, ...baseTabs]
+    : baseTabs;
+
+  useEffect(() => {
+    // Get user city if signed in
+    async function getUserCity() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsAuthenticated(!!user);
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('city')
+          .eq('id', user.id)
+          .single();
+        if (profile?.city) {
+          setUserCity(profile.city);
+        }
+      }
+    }
+    getUserCity();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session?.user);
+      if (session?.user) {
+        getUserCity();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase]);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,7 +133,13 @@ export default function HomePage() {
       <TabNavigation
         tabs={tabs}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={(tabId) => {
+          if (tabId === 'for-you') {
+            window.location.href = '/for-you';
+          } else {
+            setActiveTab(tabId);
+          }
+        }}
         language={currentLanguage}
       />
 
@@ -241,17 +286,8 @@ export default function HomePage() {
               language={currentLanguage}
             />
             
-            {/* Weather Widget Placeholder */}
-            <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] p-4">
-              <div className="flex items-center justify-between mb-2">
-                 <span className="text-xs text-[#5F6368]">Colombo</span>
-                 <span className="text-xs text-[#5F6368]">Precipitation: 10%</span>
-              </div>
-              <div className="flex items-center gap-4">
-                 <div className="text-4xl font-normal text-[#202124]">30°C</div>
-                 <div className="text-sm text-[#202124]">Partly Cloudy</div>
-              </div>
-            </div>
+            {/* Weather Widget */}
+            <WeatherWidget city={userCity} />
 
             {/* Fact Check / Ad Placeholder */}
             <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] p-4 h-48 flex items-center justify-center bg-gray-50">
