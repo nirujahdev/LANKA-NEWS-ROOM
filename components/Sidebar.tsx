@@ -42,8 +42,9 @@ const Sidebar: React.FC<SidebarProps> = ({ latestUpdates = [], language = 'en' }
     <aside className="hidden lg:block w-80 flex-shrink-0">
       {/* Sidebar Section - Personalized Picks */}
       {latestUpdates.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-xl overflow-hidden">
+          {/* Header inside white container */}
+          <div className="px-5 py-4 border-b border-[#E8EAED] flex items-center justify-between">
             <h2 className="text-base font-normal text-[#202124]">
               {getLabel('Picks for you', 'මෑත යාවත්කාලීන කිරීම්', 'சமீபத்திய புதுப்பிப்புகள்')}
             </h2>
@@ -51,8 +52,8 @@ const Sidebar: React.FC<SidebarProps> = ({ latestUpdates = [], language = 'en' }
               <span className="text-xs">?</span>
             </button>
           </div>
-          <div className="bg-white rounded-xl overflow-hidden">
-            {latestUpdates.slice(0, 3).map((update, index) => {
+          
+          {latestUpdates.slice(0, 3).map((update, index) => {
               const sourceLabel = update.sources.length > 0 
                 ? update.sources[0].name 
                 : `${update.sourceCount} source${update.sourceCount !== 1 ? 's' : ''}`;
@@ -78,7 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({ latestUpdates = [], language = 'en' }
                 <Link
                   key={update.id}
                   href={`/incident/${update.id}`}
-                  className="block py-4 border-b border-[#E8EAED] last:border-b-0 cursor-pointer hover:bg-[#FAFAFA] transition-colors duration-150 group"
+                  className="block py-4 px-5 border-b border-[#E8EAED] last:border-b-0 cursor-pointer hover:bg-[#FAFAFA] transition-colors duration-150 group"
                 >
                   <div className="flex gap-3">
                     <div className="flex-1 min-w-0">
@@ -113,7 +114,6 @@ const Sidebar: React.FC<SidebarProps> = ({ latestUpdates = [], language = 'en' }
                 </Link>
               );
             })}
-          </div>
         </div>
       )}
     </aside>

@@ -97,15 +97,15 @@ export default function HomePage() {
         <div className="flex gap-8">
           {/* Main Content Area */}
           <div className="flex-1 min-w-0">
-            {/* Section Header */}
-            <div className="mb-6">
-              <h1 className="text-base font-normal text-[#202124]">
-                {currentLanguage === 'si' ? 'මුල් පිටුව' : currentLanguage === 'ta' ? 'முகப்பு' : 'Latest News'}
-              </h1>
-            </div>
-
             {/* Articles List - Vertical list format with rounded corners */}
             <div className="bg-white rounded-xl overflow-hidden">
+              {/* Section Header inside white container */}
+              <div className="px-5 py-4 border-b border-[#E8EAED]">
+                <h1 className="text-base font-normal text-[#202124]">
+                  {currentLanguage === 'si' ? 'මුල් පිටුව' : currentLanguage === 'ta' ? 'முகப்பு' : 'Latest News'}
+                </h1>
+              </div>
+              
               {mockIncidents.map((incident) => (
                 <IncidentCard
                   key={incident.id}

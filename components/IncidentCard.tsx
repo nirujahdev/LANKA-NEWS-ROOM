@@ -66,7 +66,7 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
 
   return (
     <Link href={`/incident/${id}`}>
-      <article className="bg-white border-b border-[#E8EAED] last:border-b-0 py-4 px-4 md:px-5 hover:bg-[#FAFAFA] transition-colors duration-150 cursor-pointer group flex gap-4">
+      <article className="border-b border-[#E8EAED] last:border-b-0 py-4 px-5 hover:bg-[#FAFAFA] transition-colors duration-150 cursor-pointer group flex gap-4">
         {/* Content */}
         <div className="flex-1 min-w-0">
           {/* Source Name */}
