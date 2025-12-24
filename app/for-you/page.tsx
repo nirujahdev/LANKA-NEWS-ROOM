@@ -180,6 +180,7 @@ export default function ForYouPage() {
                   {featuredIncident && (
                     <IncidentCard
                       id={featuredIncident.id}
+                      slug={featuredIncident.slug}
                       headline={featuredIncident.headline}
                       summary={featuredIncident.summary || ''}
                       sources={featuredIncident.sources}
@@ -197,6 +198,7 @@ export default function ForYouPage() {
                         <IncidentCard
                           key={incident.id}
                           id={incident.id}
+                          slug={incident.slug}
                           headline={incident.headline}
                           summary={incident.summary || ''}
                           sources={incident.sources}
@@ -220,6 +222,7 @@ export default function ForYouPage() {
                         <IncidentCard
                           key={incident.id}
                           id={incident.id}
+                          slug={incident.slug}
                           headline={incident.headline}
                           summary={incident.summary || ''}
                           sources={incident.sources}
@@ -228,7 +231,7 @@ export default function ForYouPage() {
                           language={currentLanguage}
                           variant="default"
                         />
-                     ))}
+                      ))}
                   </div>
                 )}
               </>

@@ -121,6 +121,7 @@ export default function HomePage() {
           // Use recent items for sidebar
           const updates = data.slice(0, 5).map(item => ({
             id: item.id,
+            slug: item.slug,
             headline: item.headline,
             sources: item.sources,
             updatedAt: item.last_updated,
@@ -222,6 +223,7 @@ export default function HomePage() {
                   {featuredIncident && (
                     <IncidentCard
                       id={featuredIncident.id}
+                      slug={featuredIncident.slug}
                       headline={featuredIncident.headline}
                       summary={featuredIncident.summary || ''}
                       sources={featuredIncident.sources}
@@ -239,6 +241,7 @@ export default function HomePage() {
                         <IncidentCard
                           key={incident.id}
                           id={incident.id}
+                          slug={incident.slug}
                           headline={incident.headline}
                           summary={incident.summary || ''}
                           sources={incident.sources}
@@ -267,6 +270,7 @@ export default function HomePage() {
                                <IncidentCard
                                  key={incident.id}
                                  id={incident.id}
+                                 slug={incident.slug}
                                  headline={incident.headline}
                                  summary={incident.summary || ''}
                                  sources={incident.sources}
@@ -290,6 +294,7 @@ export default function HomePage() {
                                <IncidentCard
                                  key={incident.id}
                                  id={incident.id}
+                                 slug={incident.slug}
                                  headline={incident.headline}
                                  summary={incident.summary || ''}
                                  sources={incident.sources}

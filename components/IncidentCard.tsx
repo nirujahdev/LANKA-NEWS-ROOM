@@ -4,6 +4,7 @@ import Image from 'next/image';
 
 interface IncidentCardProps {
   id: string;
+  slug?: string | null; // SEO-friendly URL slug
   headline: string;
   summary?: string | null;
   sources: Array<{ name: string; feed_url: string }>;
@@ -15,6 +16,7 @@ interface IncidentCardProps {
 
 const IncidentCard: React.FC<IncidentCardProps> = ({
   id,
+  slug,
   headline,
   summary,
   sources,
@@ -23,6 +25,8 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
   language = 'en',
   variant = 'default'
 }) => {
+  // Use slug for SEO-friendly URLs, fallback to ID for backward compatibility
+  const href = slug ? `/news/${slug}${language !== 'en' ? `?lang=${language}` : ''}` : `/incident/${id}`;
   const getLabel = (en: string, si?: string, ta?: string) => {
     if (language === 'si' && si) return si;
     if (language === 'ta' && ta) return ta;
@@ -70,7 +74,7 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
 
   if (variant === 'featured') {
     return (
-      <Link href={`/incident/${id}`} className="block group mb-6">
+      <Link href={href} className="block group mb-6">
         <article className="flex flex-col md:flex-row gap-6">
           {/* Image - Left Side for Featured (Desktop) / Top (Mobile) */}
           <div className="relative w-full md:w-2/3 aspect-video md:aspect-[16/9] rounded-xl overflow-hidden mb-1 md:mb-0 order-first">
@@ -121,7 +125,7 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
   // Compact variant for "Your topics" and Sidebars
   if (variant === 'compact') {
      return (
-       <Link href={`/incident/${id}`}>
+       <Link href={href}>
          <article className="group relative py-3 flex gap-4 cursor-pointer hover:bg-[#F8F9FA] rounded-lg -mx-2 px-2 transition-colors">
             <div className="flex-1 min-w-0 flex flex-col">
                <div className="flex items-center gap-2 mb-1">

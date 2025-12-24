@@ -5,6 +5,7 @@ import IncidentCard from './IncidentCard';
 
 type SidebarUpdate = {
   id: string;
+  slug?: string | null; // SEO-friendly URL slug
   headline: string;
   sources: Array<{ name: string; feed_url: string }>;
   updatedAt?: string | null;
@@ -48,6 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({ latestUpdates = [], language = 'en' }
             <IncidentCard
               key={update.id}
               id={update.id}
+              slug={update.slug}
               headline={update.headline}
               summary={update.summary || ''}
               sources={update.sources}

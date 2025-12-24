@@ -56,3 +56,18 @@ export function similarityScore(aTokens: string[], bTokens: string[], aEntities:
   return 0.7 * jac + 0.3 * entityOverlap;
 }
 
+/**
+ * Generate SEO-friendly slug from title
+ * Rules: lowercase, hyphen-separated, max 60 chars, no special chars
+ */
+export function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+    .slice(0, 60); // Max 60 chars
+}
+

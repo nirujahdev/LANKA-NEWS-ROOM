@@ -4,8 +4,8 @@ import { env } from './env';
 import { fetchRssFeed } from './rss';
 import { detectLanguage } from './language';
 import { makeArticleHash } from './hash';
-import { extractEntities, normalizeTitle, similarityScore } from './text';
-import { summarizeEnglish, translateSummary } from './openaiClient';
+import { extractEntities, normalizeTitle, similarityScore, generateSlug } from './text';
+import { summarizeEnglish, translateSummary, generateSEOMetadata } from './openaiClient';
 import { categorizeCluster } from './categorize';
 import { updateLastSuccessfulRun } from './pipelineEarlyExit';
 
@@ -89,6 +89,15 @@ async function logError(runId: string | undefined, sourceId: string | undefined,
   await supabaseAdmin
     .from('pipeline_errors')
     .insert({ run_id: runId, source_id: sourceId, stage, error_message: message });
+}
+
+async function getClusterSlug(clusterId: string): Promise<string | null> {
+  const { data } = await supabaseAdmin
+    .from('clusters')
+    .select('slug')
+    .eq('id', clusterId)
+    .single();
+  return data?.slug || null;
 }
 
 async function loadSources() {
@@ -360,6 +369,68 @@ async function summarizeEligible(
     const summarySi = await translateSummary(summaryEn, 'si');
     const summaryTa = await translateSummary(summaryEn, 'ta');
 
+    // Generate SEO metadata for all languages (with error handling)
+    let seoEn, seoSi, seoTa;
+    try {
+      [seoEn, seoSi, seoTa] = await Promise.all([
+        generateSEOMetadata(summaryEn, cluster.headline, 'en').catch(() => ({
+          title: cluster.headline.slice(0, 60),
+          description: summaryEn.slice(0, 160)
+        })),
+        generateSEOMetadata(summarySi, cluster.headline, 'si').catch(() => ({
+          title: cluster.headline.slice(0, 60),
+          description: summarySi.slice(0, 160)
+        })),
+        generateSEOMetadata(summaryTa, cluster.headline, 'ta').catch(() => ({
+          title: cluster.headline.slice(0, 60),
+          description: summaryTa.slice(0, 160)
+        }))
+      ]);
+    } catch (err) {
+      errors.push({ stage: 'seo', message: `SEO generation failed: ${err instanceof Error ? err.message : 'unknown'}` });
+      // Fallback to simple metadata
+      seoEn = { title: cluster.headline.slice(0, 60), description: summaryEn.slice(0, 160) };
+      seoSi = { title: cluster.headline.slice(0, 60), description: summarySi.slice(0, 160) };
+      seoTa = { title: cluster.headline.slice(0, 60), description: summaryTa.slice(0, 160) };
+    }
+
+    // Generate slug from English meta title (stable, don't regenerate if exists)
+    const existingSlug = cluster.id ? await getClusterSlug(cluster.id) : null;
+    let slug = existingSlug || generateSlug(seoEn.title);
+    
+    // Ensure slug uniqueness (append cluster ID if needed)
+    if (!existingSlug) {
+      const { data: existing } = await supabaseAdmin
+        .from('clusters')
+        .select('id')
+        .eq('slug', slug)
+        .neq('id', cluster.id)
+        .single();
+      
+      if (existing) {
+        // Slug exists, append short cluster ID
+        slug = `${slug}-${cluster.id.slice(0, 8)}`;
+      }
+    }
+
+    // Validate meta titles are not duplicates (check English title)
+    const { data: duplicateTitle } = await supabaseAdmin
+      .from('clusters')
+      .select('id')
+      .eq('meta_title_en', seoEn.title)
+      .neq('id', cluster.id)
+      .single();
+    
+    if (duplicateTitle) {
+      // Append cluster ID to title to ensure uniqueness
+      seoEn.title = `${seoEn.title.slice(0, 50)} | ${cluster.id.slice(0, 8)}`;
+    }
+
+    // Get published_at from earliest article or use current time
+    const earliestArticle = articles?.[articles.length - 1];
+    const publishedAt = earliestArticle?.published_at || new Date().toISOString();
+
+    // Save summaries
     await supabaseAdmin.from('summaries').upsert(
       {
         cluster_id: cluster.id,
@@ -374,7 +445,22 @@ async function summarizeEligible(
       { onConflict: 'cluster_id' }
     );
 
-    await supabaseAdmin.from('clusters').update({ status: 'published' }).eq('id', cluster.id);
+    // Update cluster with SEO metadata and publish
+    const updateResult = await supabaseAdmin.from('clusters').update({
+      status: 'published',
+      meta_title_en: seoEn.title,
+      meta_description_en: seoEn.description,
+      meta_title_si: seoSi.title,
+      meta_description_si: seoSi.description,
+      meta_title_ta: seoTa.title,
+      meta_description_ta: seoTa.description,
+      slug: slug,
+      published_at: publishedAt
+    }).eq('id', cluster.id);
+
+    if (updateResult.error) {
+      errors.push({ stage: 'seo', message: `Failed to update cluster SEO metadata: ${updateResult.error.message}` });
+    }
 
     summarized += 1;
   }

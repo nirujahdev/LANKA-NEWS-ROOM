@@ -89,6 +89,7 @@ export async function GET(req: Request) {
       lang === 'si' ? summary?.summary_si : lang === 'ta' ? summary?.summary_ta : summary?.summary_en;
     return {
       id: cluster.id,
+      slug: cluster.slug, // Add slug for SEO-friendly URLs
       headline: cluster.headline,
       status: cluster.status,
       category: cluster.category,

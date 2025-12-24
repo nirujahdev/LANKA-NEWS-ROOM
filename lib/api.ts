@@ -1,5 +1,6 @@
 export type ClusterListItem = {
   id: string;
+  slug?: string | null; // SEO-friendly URL slug
   headline: string;
   status: 'draft' | 'published';
   category?: string | null;

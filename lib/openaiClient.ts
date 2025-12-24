@@ -92,3 +92,144 @@ Sources:
 ${trimmed}`;
 }
 
+/**
+ * Generate SEO meta title and description from news summary
+ * Follows Google News + Search best practices
+ */
+export async function generateSEOMetadata(
+  summary: string,
+  headline: string,
+  language: 'en' | 'si' | 'ta'
+): Promise<{ title: string; description: string }> {
+  const langLabel = language === 'en' ? 'English' : language === 'si' ? 'Sinhala' : 'Tamil';
+  const siteName = 'Lanka News Room';
+  const countryRef = language === 'en' ? 'Sri Lanka' : language === 'si' ? 'ශ්‍රී ලංකා' : 'இலங்கை';
+
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    {
+      role: 'system',
+      content: `You are an SEO specialist for a Sri Lankan news aggregation website.
+
+Your task: Generate SEO-optimized meta title and description from a news summary.
+
+STRICT RULES FOR META TITLE:
+- Length: EXACTLY 50-60 characters (hard limit)
+- Must describe the real-world event clearly
+- Must include "${countryRef}" or "${language === 'en' ? 'Sri Lankan' : ''}" when relevant
+- Must NOT be clickbait
+- Format: "[Key event] – ${countryRef} | ${siteName}"
+- Use only information present in the summary
+- No assumptions, no opinions
+- If event is uncertain, use neutral phrasing ("reports say")
+
+STRICT RULES FOR META DESCRIPTION:
+- Length: EXACTLY 140-160 characters
+- Neutral, factual tone
+- One concise sentence
+- Must not claim exclusivity or opinion
+- Should imply multi-source verification
+- Use format: "Based on reports from multiple verified sources, [factual statement]"
+- Must be different from the title (not copied text)
+
+Output format (JSON):
+{
+  "title": "[50-60 char meta title]",
+  "description": "[140-160 char meta description]"
+}`
+    },
+    {
+      role: 'user',
+      content: `Headline: ${headline}
+
+Summary: ${summary}
+
+Generate SEO meta title and description in ${langLabel} following the strict rules above.`
+    }
+  ];
+
+  const completion = await client.chat.completions.create({
+    model: env.SUMMARY_MODEL,
+    messages,
+    temperature: 0.3,
+    max_tokens: 200,
+    response_format: { type: 'json_object' }
+  });
+
+  try {
+    const result = JSON.parse(completion.choices[0]?.message?.content?.trim() || '{}');
+    return {
+      title: validateAndCleanTitle(result.title || headline, language),
+      description: validateAndCleanDescription(result.description || summary, language)
+    };
+  } catch (error) {
+    // Fallback to simple generation
+    return {
+      title: validateAndCleanTitle(headline, language),
+      description: validateAndCleanDescription(summary, language)
+    };
+  }
+}
+
+/**
+ * Validate and clean meta title
+ */
+function validateAndCleanTitle(title: string, language: 'en' | 'si' | 'ta'): string {
+  const siteName = 'Lanka News Room';
+  const countryRef = language === 'en' ? 'Sri Lanka' : language === 'si' ? 'ශ්‍රී ලංකා' : 'இலங்கை';
+  
+  // Remove quotes, emojis, special chars
+  let cleaned = title
+    .replace(/["'""]/g, '')
+    .replace(/[\u{1F300}-\u{1F9FF}]/gu, '') // Remove emojis
+    .replace(/[^\w\s\-–—|]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Ensure format includes country and site name if not present
+  if (!cleaned.includes(countryRef) && !cleaned.includes('Sri Lanka') && !cleaned.includes('Sri Lankan')) {
+    cleaned = `${cleaned} – ${countryRef}`;
+  }
+  if (!cleaned.includes(siteName)) {
+    cleaned = `${cleaned} | ${siteName}`;
+  }
+
+  // Enforce length limit
+  if (cleaned.length > 60) {
+    cleaned = cleaned.slice(0, 57) + '...';
+  }
+  if (cleaned.length < 50) {
+    // Pad if too short (unlikely but handle it)
+    cleaned = cleaned + ' | ' + siteName;
+  }
+
+  return cleaned.slice(0, 60);
+}
+
+/**
+ * Validate and clean meta description
+ */
+function validateAndCleanDescription(description: string, language: 'en' | 'si' | 'ta'): string {
+  // Remove quotes, emojis, special chars
+  let cleaned = description
+    .replace(/["'""]/g, '')
+    .replace(/[\u{1F300}-\u{1F9FF}]/gu, '') // Remove emojis
+    .replace(/[^\w\s\-–—.,!?]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Ensure it implies multi-source verification (for English)
+  if (language === 'en' && !cleaned.toLowerCase().includes('source') && !cleaned.toLowerCase().includes('report')) {
+    cleaned = `Based on reports from multiple verified sources, ${cleaned}`;
+  }
+
+  // Enforce length limit
+  if (cleaned.length > 160) {
+    cleaned = cleaned.slice(0, 157) + '...';
+  }
+  if (cleaned.length < 140) {
+    // If too short, it's okay - just return as is
+  }
+
+  return cleaned.slice(0, 160);
+}
+
