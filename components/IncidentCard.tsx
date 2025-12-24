@@ -78,41 +78,27 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
 
   return (
     <Link href={`/incident/${id}`}>
-      <article className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer group flex gap-4">
-        {/* Image */}
-        <div className={`w-32 md:w-40 h-32 md:h-40 flex-shrink-0 ${getImageBgColor()} flex items-center justify-center`}>
-          <span className="text-5xl md:text-6xl">{getImageIcon()}</span>
-        </div>
-
+      <article className="bg-white border-b border-[#E8EAED] last:border-b-0 py-4 px-4 md:px-5 hover:bg-[#FAFAFA] transition-colors duration-150 cursor-pointer group flex gap-4">
         {/* Content */}
-        <div className="flex-1 p-4 md:p-5 flex flex-col justify-between min-w-0">
-          <div>
-            {/* Source Name */}
-            <div className="mb-1.5">
-              <span className="text-xs font-bold text-[#5F6368] uppercase tracking-wide">
-                {sourceLabel}
-              </span>
-            </div>
-
-            {/* Headline */}
-            <h2 className="
-              text-base md:text-lg font-semibold text-[#202124] mb-2
-              leading-tight line-clamp-2
-              group-hover:text-[#1A73E8] transition-colors
-            ">
-              {headline}
-            </h2>
-
-            {/* Summary */}
-            {summary && (
-              <p className="text-sm text-[#5F6368] leading-relaxed line-clamp-2 mb-3">
-                {summary}
-              </p>
-            )}
+        <div className="flex-1 min-w-0">
+          {/* Source Name */}
+          <div className="mb-1.5">
+            <span className="text-xs font-bold text-[#202124] uppercase tracking-wide">
+              {sourceLabel}
+            </span>
           </div>
 
+          {/* Headline */}
+          <h2 className="
+            text-base md:text-lg font-normal text-[#202124] mb-2
+            leading-[1.3] line-clamp-2
+            group-hover:text-[#1A73E8] transition-colors duration-150
+          ">
+            {headline}
+          </h2>
+
           {/* Meta Information - Time */}
-          <div className="flex items-center gap-3 text-xs text-[#9AA0A6]">
+          <div className="flex items-center gap-3 text-xs text-[#5F6368]">
             <span>{formatTimeAgo(updatedAt)}</span>
             {sourceCount > 1 && (
               <>
@@ -121,6 +107,11 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
               </>
             )}
           </div>
+        </div>
+
+        {/* Image - Moved to right side */}
+        <div className={`w-20 h-20 md:w-28 md:h-28 flex-shrink-0 ${getImageBgColor()} rounded flex items-center justify-center`}>
+          <span className="text-3xl md:text-4xl">{getImageIcon()}</span>
         </div>
       </article>
     </Link>

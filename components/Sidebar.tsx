@@ -51,27 +51,65 @@ const Sidebar: React.FC<SidebarProps> = ({ latestUpdates = [], language = 'en' }
                 ? update.sources[0].name 
                 : `${update.sourceCount} source${update.sourceCount !== 1 ? 's' : ''}`;
               
+              // Get icon for sidebar thumbnail
+              const getSidebarIcon = (headline: string) => {
+                const lowerHeadline = headline.toLowerCase();
+                if (lowerHeadline.includes('power') || lowerHeadline.includes('electricity') || lowerHeadline.includes('outage')) {
+                  return '⚡';
+                } else if (lowerHeadline.includes('economic') || lowerHeadline.includes('policy') || lowerHeadline.includes('government')) {
+                  return '📊';
+                } else if (lowerHeadline.includes('dengue') || lowerHeadline.includes('health') || lowerHeadline.includes('outbreak')) {
+                  return '🏥';
+                } else if (lowerHeadline.includes('sports') || lowerHeadline.includes('match')) {
+                  return '⚽';
+                } else if (lowerHeadline.includes('technology') || lowerHeadline.includes('tech')) {
+                  return '💻';
+                }
+                return '📰';
+              };
+
+              const getSidebarBgColor = (headline: string) => {
+                const lowerHeadline = headline.toLowerCase();
+                if (lowerHeadline.includes('power') || lowerHeadline.includes('electricity')) {
+                  return 'bg-gradient-to-br from-yellow-100 to-orange-200';
+                } else if (lowerHeadline.includes('economic') || lowerHeadline.includes('policy')) {
+                  return 'bg-gradient-to-br from-blue-100 to-indigo-200';
+                } else if (lowerHeadline.includes('dengue') || lowerHeadline.includes('health')) {
+                  return 'bg-gradient-to-br from-red-100 to-pink-200';
+                }
+                return 'bg-gradient-to-br from-gray-100 to-gray-200';
+              };
+
               return (
                 <Link
                   key={update.id}
                   href={`/incident/${update.id}`}
-                  className="block py-4 border-b border-[#E8EAED] last:border-b-0 cursor-pointer"
+                  className="block py-4 border-b border-[#E8EAED] last:border-b-0 cursor-pointer hover:bg-[#FAFAFA] transition-colors duration-150 group"
                 >
-                  {/* Source Name */}
-                  <div className="mb-1.5">
-                    <span className="text-xs font-bold text-[#202124] uppercase tracking-wide">
-                      {sourceLabel}
-                    </span>
-                  </div>
+                  <div className="flex gap-3">
+                    <div className="flex-1 min-w-0">
+                      {/* Source Name */}
+                      <div className="mb-1.5">
+                        <span className="text-xs font-bold text-[#202124] uppercase tracking-wide">
+                          {sourceLabel}
+                        </span>
+                      </div>
 
-                  {/* Headline */}
-                  <h3 className="text-sm font-normal text-[#202124] mb-2 leading-snug">
-                    {update.headline}
-                  </h3>
+                      {/* Headline */}
+                      <h3 className="text-sm font-normal text-[#202124] mb-2 leading-snug group-hover:text-[#1A73E8] transition-colors duration-150">
+                        {update.headline}
+                      </h3>
 
-                  {/* Meta Information - Time */}
-                  <div className="text-xs text-[#5F6368]">
-                    <span>{formatTimeAgo(update.updatedAt)}</span>
+                      {/* Meta Information - Time */}
+                      <div className="text-xs text-[#5F6368]">
+                        <span>{formatTimeAgo(update.updatedAt)}</span>
+                      </div>
+                    </div>
+
+                    {/* Small thumbnail */}
+                    <div className={`w-16 h-16 flex-shrink-0 ${getSidebarBgColor(update.headline)} rounded flex items-center justify-center`}>
+                      <span className="text-2xl">{getSidebarIcon(update.headline)}</span>
+                    </div>
                   </div>
                 </Link>
               );

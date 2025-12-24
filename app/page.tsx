@@ -85,8 +85,8 @@ export default function HomePage() {
               </h1>
             </div>
 
-            {/* Articles List - Cards with Images */}
-            <div className="space-y-4">
+            {/* Articles List - Vertical list format */}
+            <div className="bg-white rounded-lg overflow-hidden">
               {mockIncidents.map((incident) => (
                 <IncidentCard
                   key={incident.id}
