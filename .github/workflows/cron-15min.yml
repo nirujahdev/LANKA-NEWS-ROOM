@@ -1,0 +1,79 @@
+name: Trigger Pipeline Cron (15 min)
+
+# ============================================
+# SETUP INSTRUCTIONS
+# ============================================
+# Before this workflow can run, you must:
+# 1. Go to GitHub Repo → Settings → Secrets and variables → Actions
+# 2. Click "New repository secret"
+# 3. Name: CRON_SECRET
+# 4. Value: Same as your Vercel CRON_SECRET environment variable
+# 5. Click "Add secret"
+#
+# Also set:
+# - VERCEL_DOMAIN: Your Vercel deployment domain (e.g., your-app.vercel.app)
+#   Or use the default: ${{ secrets.VERCEL_DOMAIN }} if you set it as a secret
+# ============================================
+
+on:
+  # Schedule: Every 15 minutes
+  schedule:
+    - cron: '*/15 * * * *'
+  
+  # Manual trigger (for testing)
+  workflow_dispatch:
+
+jobs:
+  trigger-pipeline:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger Vercel Pipeline Endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          VERCEL_DOMAIN: ${{ secrets.VERCEL_DOMAIN }}
+        run: |
+          if [ -z "$VERCEL_DOMAIN" ]; then
+            echo "❌ VERCEL_DOMAIN secret is not set"
+            echo "Please set VERCEL_DOMAIN secret in GitHub Settings → Secrets → Actions"
+            exit 1
+          fi
+          
+          echo "Triggering pipeline at https://${VERCEL_DOMAIN}/api/cron/run"
+          
+          # Make request with Bearer token authentication
+          # --fail flag makes curl exit with non-zero status on HTTP errors
+          # --silent --show-error suppresses progress but shows errors
+          # --write-out prints status code and response
+          response=$(curl \
+            --fail \
+            --silent \
+            --show-error \
+            --write-out "\nHTTP_STATUS:%{http_code}\n" \
+            --header "Authorization: Bearer ${CRON_SECRET}" \
+            --header "Content-Type: application/json" \
+            "https://${VERCEL_DOMAIN}/api/cron/run")
+          
+          # Extract HTTP status code
+          http_status=$(echo "$response" | grep "HTTP_STATUS:" | cut -d: -f2)
+          body=$(echo "$response" | grep -v "HTTP_STATUS:")
+          
+          echo "HTTP Status: $http_status"
+          echo "Response: $body"
+          
+          # Check if status is 200 (success) or 401 (auth error)
+          if [ "$http_status" -eq 200 ]; then
+            echo "✅ Pipeline triggered successfully"
+            # Check if pipeline was skipped (early exit)
+            if echo "$body" | grep -q '"skipped":true'; then
+              reason=$(echo "$body" | grep -o '"reason":"[^"]*"' | cut -d'"' -f4)
+              echo "ℹ️  Pipeline skipped: $reason"
+            fi
+          elif [ "$http_status" -eq 401 ]; then
+            echo "❌ Authentication failed - check CRON_SECRET secret"
+            exit 1
+          else
+            echo "❌ Pipeline request failed with status $http_status"
+            exit 1
+          fi
+

@@ -11,7 +11,8 @@ const envSchema = z.object({
   SIMILARITY_THRESHOLD: z.coerce.number().default(0.65),
   WINDOW_HOURS: z.coerce.number().default(24),
   MAX_SUMMARY_ARTICLES: z.coerce.number().default(5),
-  RSS_CONCURRENCY: z.coerce.number().default(4)
+  RSS_CONCURRENCY: z.coerce.number().default(4),
+  LOCK_TTL_MINUTES: z.coerce.number().default(10)
 });
 
 const parsed = envSchema.parse({
@@ -25,7 +26,8 @@ const parsed = envSchema.parse({
   SIMILARITY_THRESHOLD: process.env.SIMILARITY_THRESHOLD,
   WINDOW_HOURS: process.env.WINDOW_HOURS,
   MAX_SUMMARY_ARTICLES: process.env.MAX_SUMMARY_ARTICLES,
-  RSS_CONCURRENCY: process.env.RSS_CONCURRENCY
+  RSS_CONCURRENCY: process.env.RSS_CONCURRENCY,
+  LOCK_TTL_MINUTES: process.env.LOCK_TTL_MINUTES
 });
 
 export const env = parsed;
