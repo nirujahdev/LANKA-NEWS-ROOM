@@ -36,7 +36,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
   };
 
   return (
-    <div className="bg-white border-b border-[#E8EAED] sticky top-14 md:top-16 z-40">
+    <div className="bg-white border-b border-[#E8EAED] sticky top-14 md:top-16 z-40 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex overflow-x-auto scrollbar-hide -mb-px">
           {tabs.map((tab) => (

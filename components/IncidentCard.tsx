@@ -43,48 +43,47 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
     return `${days} day${days !== 1 ? 's' : ''} ago`;
   };
 
-  // Use first source name, or combine if multiple
-  const sourceLabel = sources.length > 0 
-    ? sources.length === 1 
-      ? sources[0].name 
-      : `${sources[0].name} and ${sourceCount - 1} other${sourceCount - 1 > 1 ? 's' : ''}`
-    : `${sourceCount} source${sourceCount !== 1 ? 's' : ''}`;
+  // Use first source name
+  const sourceLabel = sources.length > 0 ? sources[0].name : `${sourceCount} source${sourceCount !== 1 ? 's' : ''}`;
 
   return (
     <Link href={`/incident/${id}`}>
-      <article className="py-4 border-b border-[#E8EAED] last:border-b-0 cursor-pointer">
-        {/* Source Name */}
-        <div className="mb-1.5">
-          <span className="text-xs font-bold text-[#202124] uppercase tracking-wide">
-            {sourceLabel}
-          </span>
+      <article className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer group h-full flex flex-col">
+        {/* Image Placeholder */}
+        <div className="w-full h-48 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
+          <div className="text-4xl text-blue-400 opacity-50">📰</div>
         </div>
 
-        {/* Headline */}
-        <h2 className="
-          text-base md:text-lg font-normal text-[#202124] mb-2
-          leading-snug
-        ">
-          {headline}
-        </h2>
+        {/* Content */}
+        <div className="p-5 flex-1 flex flex-col">
+          {/* Source Name */}
+          <div className="mb-2">
+            <span className="text-xs font-bold text-[#5F6368] uppercase tracking-wide">
+              {sourceLabel}
+            </span>
+          </div>
 
-        {/* Meta Information - Time */}
-        <div className="flex items-center gap-3 text-xs text-[#5F6368] mb-2">
-          <span>{formatTimeAgo(updatedAt)}</span>
-          {sourceCount > 1 && (
-            <>
-              <span>·</span>
-              <span>{sourceCount} sources</span>
-            </>
+          {/* Headline - Dark Blue */}
+          <h2 className="
+            text-lg font-semibold text-[#1A73E8] mb-3
+            leading-tight line-clamp-2
+            group-hover:text-[#1557B0] transition-colors
+          ">
+            {headline}
+          </h2>
+
+          {/* Description */}
+          {summary && (
+            <p className="text-sm text-[#5F6368] leading-relaxed line-clamp-3 mb-4 flex-1">
+              {summary}
+            </p>
           )}
-        </div>
 
-        {/* Summary - optional, can be hidden or shown */}
-        {summary && (
-          <p className="text-sm text-[#5F6368] leading-relaxed line-clamp-2 mt-1">
-            {summary}
-          </p>
-        )}
+          {/* Time */}
+          <div className="text-xs text-[#9AA0A6] pt-3 border-t border-[#F1F3F4]">
+            {formatTimeAgo(updatedAt)}
+          </div>
+        </div>
       </article>
     </Link>
   );

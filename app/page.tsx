@@ -61,7 +61,7 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState('home');
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#F5F5F5]">
       <Navigation 
         currentLanguage={currentLanguage}
         onLanguageChange={setCurrentLanguage}
@@ -74,36 +74,28 @@ export default function HomePage() {
         language={currentLanguage}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-          {/* Main Content */}
-          <div className="flex-1 min-w-0">
-            {/* Page Header - Google News Style */}
-            <div className="mb-6">
-              <h1 className="text-base font-normal text-[#1E293B]">
-                {currentLanguage === 'si' ? 'මුල් පිටුව' : currentLanguage === 'ta' ? 'முகப்பு' : 'Latest News'}
-              </h1>
-            </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-[#202124]">
+            {currentLanguage === 'si' ? 'මුල් පිටුව' : currentLanguage === 'ta' ? 'முகப்பு' : 'Latest News'}
+          </h1>
+        </div>
 
-            {/* News Feed - No spacing wrapper, cards handle spacing */}
-            <div>
-              {mockIncidents.map((incident) => (
-                <IncidentCard
-                  key={incident.id}
-                  {...incident}
-                  language={currentLanguage}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Sidebar (Desktop Only) */}
-          <Sidebar latestUpdates={mockIncidents} language={currentLanguage} />
+        {/* Grid Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {mockIncidents.map((incident) => (
+            <IncidentCard
+              key={incident.id}
+              {...incident}
+              language={currentLanguage}
+            />
+          ))}
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="mt-16 border-t border-[#E8EAED] py-8">
+      <footer className="mt-16 border-t border-[#E8EAED] bg-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center text-sm text-[#5F6368] space-y-2">
             <p>© 2024 Lanka News Room. All summaries are based on content from cited sources.</p>
