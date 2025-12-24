@@ -223,6 +223,34 @@ export interface Database {
           }
         ];
       };
+      pipeline_locks: {
+        Row: {
+          name: string;
+          locked_until: string;
+          updated_at: string;
+        };
+        Insert: {
+          name: string;
+          locked_until: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['pipeline_locks']['Insert']>;
+        Relationships: [];
+      };
+      pipeline_settings: {
+        Row: {
+          name: string;
+          last_successful_run: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          name?: string;
+          last_successful_run?: string | null;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['pipeline_settings']['Insert']>;
+        Relationships: [];
+      };
     };
   };
 }

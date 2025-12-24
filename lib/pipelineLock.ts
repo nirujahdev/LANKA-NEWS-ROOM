@@ -27,7 +27,7 @@ export async function isLocked(name: string = DEFAULT_LOCK_NAME): Promise<boolea
     .from('pipeline_locks')
     .select('locked_until')
     .eq('name', name)
-    .single();
+    .single<{ locked_until: string }>();
 
   if (error || !data) {
     return false; // No lock exists
@@ -107,7 +107,7 @@ async function acquireLockFallback(
     .from('pipeline_locks')
     .select('locked_until')
     .eq('name', name)
-    .single();
+    .single<{ locked_until: string }>();
 
   if (selectError || !existing) {
     console.error('Lock check error:', selectError);
