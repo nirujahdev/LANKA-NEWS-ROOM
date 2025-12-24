@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { Database } from '@/lib/supabaseTypes';
+
+type ClusterRow = Database['public']['Tables']['clusters']['Row'];
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -41,7 +44,7 @@ export async function GET(req: Request) {
   const orderBy = feed === 'home' ? 'last_seen_at' : feed === 'recent' ? 'created_at' : 'updated_at';
   query = query.order(orderBy, { ascending: false }).limit(limit);
 
-  const { data: clusters, error } = await query;
+  const { data: clusters, error } = await query.returns<ClusterRow[]>();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
