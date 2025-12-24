@@ -45,10 +45,12 @@ jobs:
           echo "Triggering pipeline at ${ENDPOINT}"
           
           # Make request with Bearer token authentication
+          # --location flag follows redirects (HTTP 301, 302, 307, 308)
           # --fail flag makes curl exit with non-zero status on HTTP errors
           # --silent --show-error suppresses progress but shows errors
           # --write-out prints status code and response
           response=$(curl \
+            --location \
             --fail \
             --silent \
             --show-error \
