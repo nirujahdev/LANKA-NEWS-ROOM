@@ -152,3 +152,4 @@ export async function GET(req: Request) {
 }
 
 export const runtime = 'nodejs';
+export const maxDuration = 300; // 5 minutes for long-running pipeline
