@@ -58,12 +58,12 @@ export async function GET(req: Request) {
 
     // Update articles to remove cluster_id (or delete articles - depends on policy)
     // For now, we'll just unlink articles from clusters
-    // Type assertion needed because TypeScript can't infer type when chaining .update() with .in()
-    // Using 'as any' to bypass type checking for this specific case
-    await (supabaseAdmin
+    // TypeScript can't infer type when chaining .update() with .in() - this is a known limitation
+    // @ts-ignore - Supabase type inference fails with update().in() chain, but code is correct at runtime
+    await supabaseAdmin
       .from('articles')
-      .update({ cluster_id: null } as any)
-      .in('cluster_id', clusterIds) as any);
+      .update({ cluster_id: null })
+      .in('cluster_id', clusterIds);
 
     // Finally, delete clusters
     const { error: deleteError } = await supabaseAdmin.from('clusters').delete().in('id', clusterIds);
