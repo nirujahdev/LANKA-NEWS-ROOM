@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { env } from '@/lib/env';
+import { Database } from '@/lib/supabaseTypes';
+
+type ClusterRow = Database['public']['Tables']['clusters']['Row'];
 
 /**
  * Monthly cleanup cron job.
