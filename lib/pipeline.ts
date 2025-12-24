@@ -285,7 +285,7 @@ async function clusterArticles(
 
 /**
  * Categorizes clusters that don't have a category yet.
- * Only categorizes published clusters (source_count >= 2).
+ * Only categorizes published clusters (article_count >= 1).
  */
 async function categorizeClusters(
   clusters: Map<string, ClusterCache>,
