@@ -147,7 +147,7 @@ export default function HomePage() {
                     <IncidentCard
                       id={featuredIncident.id}
                       headline={featuredIncident.headline}
-                      summary={featuredIncident.summary}
+                      summary={featuredIncident.summary || ''}
                       sources={featuredIncident.sources}
                       updatedAt={featuredIncident.last_updated}
                       sourceCount={featuredIncident.source_count || 0}
@@ -164,7 +164,7 @@ export default function HomePage() {
                           key={incident.id}
                           id={incident.id}
                           headline={incident.headline}
-                          summary={incident.summary}
+                          summary={incident.summary || ''}
                           sources={incident.sources}
                           updatedAt={incident.last_updated}
                           sourceCount={incident.source_count || 0}
@@ -187,7 +187,7 @@ export default function HomePage() {
                           key={incident.id}
                           id={incident.id}
                           headline={incident.headline}
-                          summary={incident.summary}
+                          summary={incident.summary || ''}
                           sources={incident.sources}
                           updatedAt={incident.last_updated}
                           sourceCount={incident.source_count || 0}

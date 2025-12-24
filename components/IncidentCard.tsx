@@ -5,7 +5,7 @@ import Image from 'next/image';
 interface IncidentCardProps {
   id: string;
   headline: string;
-  summary: string;
+  summary?: string | null;
   sources: Array<{ name: string; feed_url: string }>;
   updatedAt?: string | null;
   sourceCount: number;
