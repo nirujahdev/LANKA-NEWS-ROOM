@@ -71,7 +71,6 @@ export default function IncidentDetailPage({ params }: { params: { id: string } 
                   sourceCount={detail.cluster.source_count || 0}
                   currentLanguage={currentLanguage}
                   onLanguageChange={setCurrentLanguage}
-                  needsReview={detail.summary?.needs_review || false}
                 />
               )}
             </div>
