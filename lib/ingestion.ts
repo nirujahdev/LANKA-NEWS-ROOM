@@ -166,6 +166,8 @@ export async function runIngestionPipeline() {
       // STEP 7: Insert articles into database
       // Only insert if URL doesn't already exist (deduplication)
       if (articlesToInsert.length > 0) {
+        // TypeScript can't infer type for upsert with mapped array - this is a known limitation
+        // @ts-ignore - Supabase type inference fails with upsert() on mapped arrays
         const { data: inserted, error: insertError } = await supabaseAdmin
           .from('articles')
           .upsert(
