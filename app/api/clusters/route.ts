@@ -3,6 +3,12 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { Database } from '@/lib/supabaseTypes';
 
 type ClusterRow = Database['public']['Tables']['clusters']['Row'];
+type SummaryRow = Database['public']['Tables']['summaries']['Row'];
+type ArticleRow = Database['public']['Tables']['articles']['Row'];
+
+type ArticleWithSource = ArticleRow & {
+  sources: { name: string; feed_url: string } | null;
+};
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -56,11 +62,12 @@ export async function GET(req: Request) {
   }
 
   const [{ data: summaries }, { data: articles }] = await Promise.all([
-    supabaseAdmin.from('summaries').select('*').in('cluster_id', ids),
+    supabaseAdmin.from('summaries').select('*').in('cluster_id', ids).returns<SummaryRow[]>(),
     supabaseAdmin
       .from('articles')
       .select('cluster_id, source_id, sources(name, feed_url)')
       .in('cluster_id', ids)
+      .returns<ArticleWithSource[]>()
   ]);
 
   const summariesByCluster = new Map((summaries || []).map((s) => [s.cluster_id, s]));
