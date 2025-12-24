@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { Database } from '@/lib/supabaseTypes';
 
 type Params = { params: { id: string } };
+type ClusterRow = Database['public']['Tables']['clusters']['Row'];
 
 export async function GET(_req: Request, { params }: Params) {
   const { id } = params;
@@ -11,7 +13,7 @@ export async function GET(_req: Request, { params }: Params) {
     .select('*')
     .eq('id', id)
     .gte('expires_at', new Date().toISOString()) // Only show non-expired clusters
-    .single();
+    .single<ClusterRow>();
 
   if (error || !cluster) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
