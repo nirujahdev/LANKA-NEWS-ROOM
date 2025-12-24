@@ -7,6 +7,7 @@ type SummaryRow = Database['public']['Tables']['summaries']['Row'];
 type ArticleRow = Database['public']['Tables']['articles']['Row'];
 
 type ArticleWithSource = ArticleRow & {
+  image_url?: string | null;
   sources: { name: string; feed_url: string } | null;
 };
 
