@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface Source {
   id: string;
@@ -46,34 +47,21 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
   // Use first source name
   const sourceLabel = sources.length > 0 ? sources[0].name : `${sourceCount} source${sourceCount !== 1 ? 's' : ''}`;
 
-  // Get image based on headline keywords
-  const getImageIcon = () => {
+  // Get image URL based on headline keywords
+  const getImageUrl = () => {
     const lowerHeadline = headline.toLowerCase();
     if (lowerHeadline.includes('power') || lowerHeadline.includes('electricity') || lowerHeadline.includes('outage')) {
-      return '⚡';
+      return 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=150&h=150&fit=crop';
     } else if (lowerHeadline.includes('economic') || lowerHeadline.includes('policy') || lowerHeadline.includes('government')) {
-      return '📊';
+      return 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=150&h=150&fit=crop';
     } else if (lowerHeadline.includes('dengue') || lowerHeadline.includes('health') || lowerHeadline.includes('outbreak')) {
-      return '🏥';
+      return 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=150&h=150&fit=crop';
     } else if (lowerHeadline.includes('sports') || lowerHeadline.includes('match')) {
-      return '⚽';
+      return 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=150&h=150&fit=crop';
     } else if (lowerHeadline.includes('technology') || lowerHeadline.includes('tech')) {
-      return '💻';
+      return 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=150&h=150&fit=crop';
     }
-    return '📰';
-  };
-
-  // Get image background color based on category
-  const getImageBgColor = () => {
-    const lowerHeadline = headline.toLowerCase();
-    if (lowerHeadline.includes('power') || lowerHeadline.includes('electricity')) {
-      return 'bg-gradient-to-br from-yellow-100 to-orange-200';
-    } else if (lowerHeadline.includes('economic') || lowerHeadline.includes('policy')) {
-      return 'bg-gradient-to-br from-blue-100 to-indigo-200';
-    } else if (lowerHeadline.includes('dengue') || lowerHeadline.includes('health')) {
-      return 'bg-gradient-to-br from-red-100 to-pink-200';
-    }
-    return 'bg-gradient-to-br from-gray-100 to-gray-200';
+    return 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=150&h=150&fit=crop';
   };
 
   return (
@@ -110,8 +98,13 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
         </div>
 
         {/* Image - Moved to right side */}
-        <div className={`w-20 h-20 md:w-28 md:h-28 flex-shrink-0 ${getImageBgColor()} rounded flex items-center justify-center`}>
-          <span className="text-3xl md:text-4xl">{getImageIcon()}</span>
+        <div className="w-20 h-20 md:w-28 md:h-28 flex-shrink-0 rounded overflow-hidden relative">
+          <Image 
+            src={getImageUrl()} 
+            alt={headline}
+            fill
+            className="object-cover"
+          />
         </div>
       </article>
     </Link>

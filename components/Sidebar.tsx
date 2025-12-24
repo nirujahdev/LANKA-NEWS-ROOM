@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface SidebarProps {
   latestUpdates?: Array<{
@@ -39,45 +40,38 @@ const Sidebar: React.FC<SidebarProps> = ({ latestUpdates = [], language = 'en' }
 
   return (
     <aside className="hidden lg:block w-80 flex-shrink-0">
-      {/* Sidebar Section */}
+      {/* Sidebar Section - Personalized Picks */}
       {latestUpdates.length > 0 && (
         <div>
-          <h2 className="text-base font-normal text-[#202124] mb-4">
-            {getLabel('Picks for you', 'මෑත යාවත්කාලීන කිරීම්', 'சமீபத்திய புதுப்பிப்புகள்')}
-          </h2>
-          <div className="space-y-0">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-normal text-[#202124]">
+              {getLabel('Picks for you', 'මෑත යාවත්කාලීන කිරීම්', 'சமீபத்திய புதுப்பிப்புகள்')}
+            </h2>
+            <button className="w-5 h-5 rounded-full bg-[#F1F3F4] flex items-center justify-center text-[#5F6368] hover:bg-[#E8EAED] transition-colors">
+              <span className="text-xs">?</span>
+            </button>
+          </div>
+          <div className="bg-white rounded-xl overflow-hidden">
             {latestUpdates.slice(0, 3).map((update, index) => {
               const sourceLabel = update.sources.length > 0 
                 ? update.sources[0].name 
                 : `${update.sourceCount} source${update.sourceCount !== 1 ? 's' : ''}`;
               
-              // Get icon for sidebar thumbnail
-              const getSidebarIcon = (headline: string) => {
+              // Get image URL for sidebar thumbnail
+              const getSidebarImageUrl = (headline: string) => {
                 const lowerHeadline = headline.toLowerCase();
                 if (lowerHeadline.includes('power') || lowerHeadline.includes('electricity') || lowerHeadline.includes('outage')) {
-                  return '⚡';
+                  return 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=100&h=100&fit=crop';
                 } else if (lowerHeadline.includes('economic') || lowerHeadline.includes('policy') || lowerHeadline.includes('government')) {
-                  return '📊';
+                  return 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=100&h=100&fit=crop';
                 } else if (lowerHeadline.includes('dengue') || lowerHeadline.includes('health') || lowerHeadline.includes('outbreak')) {
-                  return '🏥';
+                  return 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=100&h=100&fit=crop';
                 } else if (lowerHeadline.includes('sports') || lowerHeadline.includes('match')) {
-                  return '⚽';
+                  return 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=100&h=100&fit=crop';
                 } else if (lowerHeadline.includes('technology') || lowerHeadline.includes('tech')) {
-                  return '💻';
+                  return 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=100&h=100&fit=crop';
                 }
-                return '📰';
-              };
-
-              const getSidebarBgColor = (headline: string) => {
-                const lowerHeadline = headline.toLowerCase();
-                if (lowerHeadline.includes('power') || lowerHeadline.includes('electricity')) {
-                  return 'bg-gradient-to-br from-yellow-100 to-orange-200';
-                } else if (lowerHeadline.includes('economic') || lowerHeadline.includes('policy')) {
-                  return 'bg-gradient-to-br from-blue-100 to-indigo-200';
-                } else if (lowerHeadline.includes('dengue') || lowerHeadline.includes('health')) {
-                  return 'bg-gradient-to-br from-red-100 to-pink-200';
-                }
-                return 'bg-gradient-to-br from-gray-100 to-gray-200';
+                return 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=100&h=100&fit=crop';
               };
 
               return (
@@ -107,8 +101,13 @@ const Sidebar: React.FC<SidebarProps> = ({ latestUpdates = [], language = 'en' }
                     </div>
 
                     {/* Small thumbnail */}
-                    <div className={`w-16 h-16 flex-shrink-0 ${getSidebarBgColor(update.headline)} rounded flex items-center justify-center`}>
-                      <span className="text-2xl">{getSidebarIcon(update.headline)}</span>
+                    <div className="w-16 h-16 flex-shrink-0 rounded overflow-hidden relative">
+                      <Image 
+                        src={getSidebarImageUrl(update.headline)} 
+                        alt={update.headline}
+                        fill
+                        className="object-cover"
+                      />
                     </div>
                   </div>
                 </Link>

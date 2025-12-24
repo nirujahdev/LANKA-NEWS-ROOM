@@ -5,6 +5,8 @@ import Navigation from '@/components/Navigation';
 import TabNavigation from '@/components/TabNavigation';
 import IncidentCard from '@/components/IncidentCard';
 import Sidebar from '@/components/Sidebar';
+import Link from 'next/link';
+import Image from 'next/image';
 
 // Mock data - replace with actual data fetching
 const mockIncidents = [
@@ -60,6 +62,23 @@ export default function HomePage() {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'si' | 'ta'>('en');
   const [activeTab, setActiveTab] = useState('home');
 
+  const formatTimeAgo = (date: Date): string => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+    }
+    if (diffInSeconds < 86400) {
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    }
+    const days = Math.floor(diffInSeconds / 86400);
+    return `${days} day${days !== 1 ? 's' : ''} ago`;
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
       <Navigation 
@@ -85,8 +104,8 @@ export default function HomePage() {
               </h1>
             </div>
 
-            {/* Articles List - Vertical list format */}
-            <div className="bg-white rounded-lg overflow-hidden">
+            {/* Articles List - Vertical list format with rounded corners */}
+            <div className="bg-white rounded-xl overflow-hidden">
               {mockIncidents.map((incident) => (
                 <IncidentCard
                   key={incident.id}
@@ -99,6 +118,173 @@ export default function HomePage() {
 
           {/* Sidebar */}
           <Sidebar latestUpdates={mockIncidents} language={currentLanguage} />
+        </div>
+
+        {/* Your Topics Section - Multi-column layout */}
+        <div className="mt-12">
+          <div className="flex flex-col items-center mb-6">
+            <h2 className="text-xl font-normal text-[#202124] mb-1">Your topics</h2>
+            <p className="text-sm text-[#5F6368] flex items-center gap-1">
+              Recommended based on your interests
+              <button className="w-4 h-4 rounded-full bg-[#F1F3F4] flex items-center justify-center text-[#5F6368] hover:bg-[#E8EAED] transition-colors">
+                <span className="text-xs">?</span>
+              </button>
+            </p>
+          </div>
+
+          {/* Topics Grid - Multiple columns */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* U.S. Category */}
+            <div className="bg-white rounded-xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-[#E8EAED] flex items-center justify-between">
+                <h3 className="text-base font-normal text-[#202124] flex items-center gap-2">
+                  U.S.
+                  <span className="text-[#5F6368]">›</span>
+                </h3>
+                <span className="text-xs text-[#5F6368]">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+              </div>
+              <div>
+                {mockIncidents.slice(0, 3).map((incident, index) => {
+                  const sourceLabel = incident.sources.length > 0 
+                    ? incident.sources[0].name 
+                    : `${incident.sourceCount} source${incident.sourceCount !== 1 ? 's' : ''}`;
+                  
+                  return (
+                    <Link
+                      key={incident.id}
+                      href={`/incident/${incident.id}`}
+                      className="block py-4 px-5 border-b border-[#E8EAED] last:border-b-0 hover:bg-[#FAFAFA] transition-colors group"
+                    >
+                      <div className="flex gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="mb-1.5">
+                            <span className="text-xs font-bold text-[#202124] uppercase tracking-wide">
+                              {sourceLabel}
+                            </span>
+                          </div>
+                          <h3 className="text-sm font-normal text-[#202124] mb-2 leading-snug line-clamp-2 group-hover:text-[#1A73E8] transition-colors">
+                            {incident.headline}
+                          </h3>
+                          <div className="text-xs text-[#5F6368]">
+                            <span>{formatTimeAgo(incident.updatedAt)}</span>
+                          </div>
+                        </div>
+                        {/* Thumbnail */}
+                        <div className="w-16 h-16 flex-shrink-0 rounded overflow-hidden relative">
+                          <Image 
+                            src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=100&h=100&fit=crop" 
+                            alt={incident.headline}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Technology Category */}
+            <div className="bg-white rounded-xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-[#E8EAED] flex items-center justify-between">
+                <h3 className="text-base font-normal text-[#202124] flex items-center gap-2">
+                  Technology
+                  <span className="text-[#5F6368]">›</span>
+                </h3>
+                <span className="text-xs text-[#5F6368]">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+              </div>
+              <div>
+                {mockIncidents.slice(0, 2).map((incident, index) => {
+                  const sourceLabel = incident.sources.length > 0 
+                    ? incident.sources[0].name 
+                    : `${incident.sourceCount} source${incident.sourceCount !== 1 ? 's' : ''}`;
+                  
+                  return (
+                    <Link
+                      key={`tech-${incident.id}`}
+                      href={`/incident/${incident.id}`}
+                      className="block py-4 px-5 border-b border-[#E8EAED] last:border-b-0 hover:bg-[#FAFAFA] transition-colors group"
+                    >
+                      <div className="flex gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="mb-1.5">
+                            <span className="text-xs font-bold text-[#202124] uppercase tracking-wide">
+                              {sourceLabel}
+                            </span>
+                          </div>
+                          <h3 className="text-sm font-normal text-[#202124] mb-2 leading-snug line-clamp-2 group-hover:text-[#1A73E8] transition-colors">
+                            {incident.headline}
+                          </h3>
+                          <div className="text-xs text-[#5F6368]">
+                            <span>{formatTimeAgo(incident.updatedAt)}</span>
+                          </div>
+                        </div>
+                        <div className="w-16 h-16 flex-shrink-0 rounded overflow-hidden relative">
+                          <Image 
+                            src="https://images.unsplash.com/photo-1518770660439-4636190af475?w=100&h=100&fit=crop" 
+                            alt={incident.headline}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Business Category */}
+            <div className="bg-white rounded-xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-[#E8EAED] flex items-center justify-between">
+                <h3 className="text-base font-normal text-[#202124] flex items-center gap-2">
+                  Business
+                  <span className="text-[#5F6368]">›</span>
+                </h3>
+                <span className="text-xs text-[#5F6368]">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+              </div>
+              <div>
+                {mockIncidents.slice(1, 3).map((incident, index) => {
+                  const sourceLabel = incident.sources.length > 0 
+                    ? incident.sources[0].name 
+                    : `${incident.sourceCount} source${incident.sourceCount !== 1 ? 's' : ''}`;
+                  
+                  return (
+                    <Link
+                      key={`biz-${incident.id}`}
+                      href={`/incident/${incident.id}`}
+                      className="block py-4 px-5 border-b border-[#E8EAED] last:border-b-0 hover:bg-[#FAFAFA] transition-colors group"
+                    >
+                      <div className="flex gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="mb-1.5">
+                            <span className="text-xs font-bold text-[#202124] uppercase tracking-wide">
+                              {sourceLabel}
+                            </span>
+                          </div>
+                          <h3 className="text-sm font-normal text-[#202124] mb-2 leading-snug line-clamp-2 group-hover:text-[#1A73E8] transition-colors">
+                            {incident.headline}
+                          </h3>
+                          <div className="text-xs text-[#5F6368]">
+                            <span>{formatTimeAgo(incident.updatedAt)}</span>
+                          </div>
+                        </div>
+                        <div className="w-16 h-16 flex-shrink-0 rounded overflow-hidden relative">
+                          <Image 
+                            src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=100&h=100&fit=crop" 
+                            alt={incident.headline}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
       </main>
 
