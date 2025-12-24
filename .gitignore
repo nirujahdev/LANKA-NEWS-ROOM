@@ -29,6 +29,9 @@ yarn-error.log*
 .env
 .env.local
 
+# local secret reference (never commit)
+VERCEL_ENV_VALUES_LOCAL.txt
+
 # environment template files (may contain example values)
 # Note: env.local.example and env.local.template are kept for documentation
 # but should never contain real secrets
