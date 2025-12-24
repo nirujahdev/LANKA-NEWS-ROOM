@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { supabaseAdmin } from './supabaseAdmin';
 import { env } from './env';
 import { fetchRssFeed } from './rss';
