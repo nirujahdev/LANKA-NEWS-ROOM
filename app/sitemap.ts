@@ -18,7 +18,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .not('slug', 'is', null)
     .gte('published_at', thirtyDaysAgo.toISOString())
     .order('published_at', { ascending: false })
-    .limit(1000); // Limit to prevent sitemap from being too large
+    .limit(1000)
+    .returns<Array<{
+      slug: string;
+      published_at: string | null;
+      updated_at: string | null;
+    }>>(); // Limit to prevent sitemap from being too large
 
   if (error || !clusters) {
     return [
