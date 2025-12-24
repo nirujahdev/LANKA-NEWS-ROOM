@@ -4,7 +4,8 @@ export function needsReview(summary: string, sources: string[]): boolean {
   const summaryNumbers = new Set(extractNumbers(summary));
   const sourceNumbers = new Set(sources.flatMap(extractNumbers));
 
-  for (const num of summaryNumbers) {
+  // Use Array.from() for ES5 compatibility
+  for (const num of Array.from(summaryNumbers)) {
     if (!sourceNumbers.has(num)) {
       return true;
     }
