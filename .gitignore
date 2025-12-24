@@ -45,10 +45,7 @@ docs/vercel-env-values-local.md
 *.tsbuildinfo
 next-env.d.ts
 
-# markdown files (except documentation)
+# markdown files (except README)
 *.md
-!PRODUCTION_CHECKLIST.md
-!VERCEL_ENV_VARIABLES.md
 !README*.md
-!docs/**/*.md
 
