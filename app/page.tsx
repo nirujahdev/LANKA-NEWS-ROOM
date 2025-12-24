@@ -6,7 +6,6 @@ import Navigation from '@/components/Navigation';
 import TabNavigation from '@/components/TabNavigation';
 import IncidentCard from '@/components/IncidentCard';
 import Sidebar from '@/components/Sidebar';
-import WeatherWidget from '@/components/WeatherWidget';
 import { ClusterListItem, loadClusters, FeedType, CategoryType } from '@/lib/api';
 import { getSupabaseClient } from '@/lib/supabaseClient';
 
@@ -322,8 +321,6 @@ export default function HomePage() {
               language={currentLanguage}
             />
             
-            {/* Weather Widget */}
-            <WeatherWidget city={userCity} />
 
             {/* Fact Check / Ad Placeholder */}
             <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] p-4 h-48 flex items-center justify-center bg-gray-50">
