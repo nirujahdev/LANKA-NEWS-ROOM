@@ -63,18 +63,24 @@ curl -i \
 - ✅ Uses `/api/cron/run` endpoint
 - ✅ Includes proper error handling
 
-## 4. Vercel Environment Variables
+## 4. Vercel Environment Variables (CRITICAL)
 
 ### Required Variables (Production):
 1. Go to **Vercel → Project → Settings → Environment Variables**
 2. Verify these are set for **Production**:
-   - `CRON_SECRET` - Must match GitHub secret exactly
+   - `NEXT_PUBLIC_SUPABASE_URL` ⚠️ **REQUIRED** (fixes "Missing Supabase environment variables" error)
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` ⚠️ **REQUIRED** (fixes "Missing Supabase environment variables" error)
    - `SUPABASE_URL`
    - `SUPABASE_SERVICE_ROLE_KEY`
+   - `SUPABASE_ANON_KEY`
    - `OPENAI_API_KEY`
+   - `CRON_SECRET` - Must match GitHub secret exactly
+   - `NEXT_PUBLIC_GOOGLE_API_KEY` (optional)
    - All other required env vars
 
 3. **Redeploy** after adding/updating environment variables
+
+**See**: `docs/environment-variables-setup.md` for complete list
 
 ## 5. Common Mistakes Checklist
 
