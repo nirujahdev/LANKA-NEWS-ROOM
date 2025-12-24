@@ -2,9 +2,20 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { Database } from '@/lib/supabaseTypes';
 
-type ClusterRow = Database['public']['Tables']['clusters']['Row'];
+type ClusterRow = Database['public']['Tables']['clusters']['Row'] & {
+  slug?: string | null;
+  meta_title_en?: string | null;
+  meta_description_en?: string | null;
+  meta_title_si?: string | null;
+  meta_description_si?: string | null;
+  meta_title_ta?: string | null;
+  meta_description_ta?: string | null;
+  published_at?: string | null;
+};
 type SummaryRow = Database['public']['Tables']['summaries']['Row'];
-type ArticleRow = Database['public']['Tables']['articles']['Row'];
+type ArticleRow = Database['public']['Tables']['articles']['Row'] & {
+  image_url?: string | null;
+};
 
 type ArticleWithSource = ArticleRow & {
   image_url?: string | null;
