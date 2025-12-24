@@ -21,7 +21,29 @@ async function getClusterBySlug(slug: string) {
     `)
     .eq('slug', slug)
     .eq('status', 'published')
-    .single();
+    .single<{
+      id: string;
+      headline: string;
+      status: string;
+      meta_title_en?: string | null;
+      meta_description_en?: string | null;
+      meta_title_si?: string | null;
+      meta_description_si?: string | null;
+      meta_title_ta?: string | null;
+      meta_description_ta?: string | null;
+      slug?: string | null;
+      published_at?: string | null;
+      updated_at?: string | null;
+      created_at?: string | null;
+      first_seen_at?: string | null;
+      source_count?: number | null;
+      category?: string | null;
+      summaries?: Array<{
+        summary_en?: string | null;
+        summary_si?: string | null;
+        summary_ta?: string | null;
+      }>;
+    }>();
 
   if (error || !cluster) return null;
 
