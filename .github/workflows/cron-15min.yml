@@ -7,12 +7,12 @@ name: Trigger Pipeline Cron (15 min)
 # 1. Go to GitHub Repo → Settings → Secrets and variables → Actions
 # 2. Click "New repository secret"
 # 3. Name: CRON_SECRET
-# 4. Value: Same as your Vercel CRON_SECRET environment variable
+# 4. Value: Same as your Vercel CRON_SECRET environment variable (Production)
 # 5. Click "Add secret"
 #
-# Also set:
-# - VERCEL_DOMAIN: Your Vercel deployment domain (e.g., your-app.vercel.app)
-#   Or use the default: ${{ secrets.VERCEL_DOMAIN }} if you set it as a secret
+# IMPORTANT: CRON_SECRET must match exactly in both places:
+# - GitHub Secrets → Actions → CRON_SECRET
+# - Vercel → Project Settings → Environment Variables → CRON_SECRET (Production)
 # ============================================
 
 on:
@@ -28,18 +28,21 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Trigger Vercel Pipeline Endpoint
+      - name: Call pipeline endpoint
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          VERCEL_DOMAIN: ${{ secrets.VERCEL_DOMAIN }}
         run: |
-          if [ -z "$VERCEL_DOMAIN" ]; then
-            echo "❌ VERCEL_DOMAIN secret is not set"
-            echo "Please set VERCEL_DOMAIN secret in GitHub Settings → Secrets → Actions"
+          if [ -z "$CRON_SECRET" ]; then
+            echo "❌ CRON_SECRET secret is not set"
+            echo "Please set CRON_SECRET secret in GitHub Settings → Secrets → Actions"
             exit 1
           fi
           
-          echo "Triggering pipeline at https://${VERCEL_DOMAIN}/api/cron/run"
+          # Using custom domain: lankanewsroom.xyz
+          DOMAIN="lankanewsroom.xyz"
+          ENDPOINT="https://${DOMAIN}/api/cron/run"
+          
+          echo "Triggering pipeline at ${ENDPOINT}"
           
           # Make request with Bearer token authentication
           # --fail flag makes curl exit with non-zero status on HTTP errors
@@ -52,25 +55,34 @@ jobs:
             --write-out "\nHTTP_STATUS:%{http_code}\n" \
             --header "Authorization: Bearer ${CRON_SECRET}" \
             --header "Content-Type: application/json" \
-            "https://${VERCEL_DOMAIN}/api/cron/run")
+            "${ENDPOINT}" 2>&1)
           
           # Extract HTTP status code
-          http_status=$(echo "$response" | grep "HTTP_STATUS:" | cut -d: -f2)
+          http_status=$(echo "$response" | grep "HTTP_STATUS:" | cut -d: -f2 || echo "000")
           body=$(echo "$response" | grep -v "HTTP_STATUS:")
           
           echo "HTTP Status: $http_status"
           echo "Response: $body"
           
-          # Check if status is 200 (success) or 401 (auth error)
+          # Check if status is 200 (success)
           if [ "$http_status" -eq 200 ]; then
             echo "✅ Pipeline triggered successfully"
             # Check if pipeline was skipped (early exit)
             if echo "$body" | grep -q '"skipped":true'; then
-              reason=$(echo "$body" | grep -o '"reason":"[^"]*"' | cut -d'"' -f4)
+              reason=$(echo "$body" | grep -o '"reason":"[^"]*"' | cut -d'"' -f4 || echo "unknown")
               echo "ℹ️  Pipeline skipped: $reason"
             fi
           elif [ "$http_status" -eq 401 ]; then
-            echo "❌ Authentication failed - check CRON_SECRET secret"
+            echo "❌ Authentication failed (401)"
+            echo "Check that CRON_SECRET matches in both GitHub and Vercel (Production)"
+            exit 1
+          elif [ "$http_status" -eq 404 ]; then
+            echo "❌ Endpoint not found (404)"
+            echo "Check that /api/cron/run exists and domain is correctly configured"
+            exit 1
+          elif [ "$http_status" -eq 000 ]; then
+            echo "❌ Connection failed"
+            echo "Check DNS configuration for lankanewsroom.xyz"
             exit 1
           else
             echo "❌ Pipeline request failed with status $http_status"
