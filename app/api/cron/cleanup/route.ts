@@ -30,7 +30,8 @@ export async function GET(req: Request) {
     const { data: clustersToDelete, error: findError } = await supabaseAdmin
       .from('clusters')
       .select('id')
-      .lt('created_at', cutoffISO);
+      .lt('created_at', cutoffISO)
+      .returns<Pick<ClusterRow, 'id'>[]>();
 
     if (findError) {
       return NextResponse.json({ error: findError.message }, { status: 500 });
