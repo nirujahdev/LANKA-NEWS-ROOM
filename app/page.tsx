@@ -61,7 +61,7 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState('home');
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#F5F5F5]">
       <Navigation 
         currentLanguage={currentLanguage}
         onLanguageChange={setCurrentLanguage}
@@ -85,8 +85,8 @@ export default function HomePage() {
               </h1>
             </div>
 
-            {/* Articles List - Google News Style */}
-            <div className="space-y-0">
+            {/* Articles List - Cards with Images */}
+            <div className="space-y-4">
               {mockIncidents.map((incident) => (
                 <IncidentCard
                   key={incident.id}
