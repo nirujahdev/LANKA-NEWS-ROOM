@@ -166,9 +166,17 @@ async function insertArticles(
 
     // Use hash as the conflict target since it's unique per article
     // Hash is computed from url, guid, and title combination
+    // Note: The unique index is partial (WHERE hash IS NOT NULL), so we need to ensure hash is never null
+    // Filter out rows with null hash before upsert
+    const validRows = rows.filter(r => r.hash && r.hash.trim().length > 0);
+    
+    if (validRows.length === 0) {
+      continue; // Skip if no valid rows
+    }
+    
     const { data, error } = await supabaseAdmin
       .from('articles')
-      .upsert(rows, { onConflict: 'hash', ignoreDuplicates: true })
+      .upsert(validRows, { onConflict: 'hash', ignoreDuplicates: true })
       .select('id, source_id, title, hash');
 
     if (error) {
