@@ -1,51 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Navigation from '@/components/Navigation';
 import TabNavigation from '@/components/TabNavigation';
 import IncidentCard from '@/components/IncidentCard';
 import Sidebar from '@/components/Sidebar';
 import Link from 'next/link';
 import Image from 'next/image';
-
-// Mock data - replace with actual data fetching
-const mockIncidents = [
-  {
-    id: '1',
-    headline: 'Major Power Outage Affects Colombo Suburbs',
-    summary: 'A widespread power outage affected several areas in Colombo suburbs yesterday evening, causing disruptions to businesses and households. The Ceylon Electricity Board reported that the issue was caused by a technical fault at a main substation. Power was restored within three hours.',
-    sources: [
-      { id: '1', name: 'Daily Mirror', url: '#' },
-      { id: '2', name: 'Ada Derana', url: '#' },
-      { id: '3', name: 'BBC Sinhala', url: '#' }
-    ],
-    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-    sourceCount: 3
-  },
-  {
-    id: '2',
-    headline: 'New Economic Policy Announced by Government',
-    summary: 'The government announced a new economic policy framework aimed at boosting foreign investment and stabilizing the currency. The policy includes tax incentives for technology companies and infrastructure development projects. Economic analysts have welcomed the move.',
-    sources: [
-      { id: '4', name: 'The Island', url: '#' },
-      { id: '5', name: 'Sunday Times', url: '#' }
-    ],
-    updatedAt: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
-    sourceCount: 2
-  },
-  {
-    id: '3',
-    headline: 'Dengue Outbreak Reported in Western Province',
-    summary: 'Health authorities have reported a significant increase in dengue cases in the Western Province, with over 500 cases recorded this month. The Ministry of Health has launched a public awareness campaign and intensified mosquito control measures.',
-    sources: [
-      { id: '6', name: 'NewsFirst', url: '#' },
-      { id: '7', name: 'Hiru News', url: '#' },
-      { id: '8', name: 'Colombo Page', url: '#' }
-    ],
-    updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
-    sourceCount: 3
-  }
-];
+import { ClusterListItem, loadClusters } from '@/lib/api';
 
 const tabs = [
   { id: 'home', label: 'Home', labelSi: 'මුල් පිටුව', labelTa: 'முகப்பு' },
@@ -61,8 +23,32 @@ const tabs = [
 export default function HomePage() {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'si' | 'ta'>('en');
   const [activeTab, setActiveTab] = useState('home');
+  const [incidents, setIncidents] = useState<ClusterListItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const formatTimeAgo = (date: Date): string => {
+  useEffect(() => {
+    let cancelled = false;
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await loadClusters(currentLanguage);
+        if (!cancelled) setIncidents(data);
+      } catch (err) {
+        if (!cancelled) setError('Failed to load incidents');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchData();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentLanguage]);
+
+  const formatTimeAgo = (iso?: string | null): string => {
+    const date = iso ? new Date(iso) : new Date();
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
     
@@ -106,18 +92,40 @@ export default function HomePage() {
                 </h1>
               </div>
               
-              {mockIncidents.map((incident) => (
-                <IncidentCard
-                  key={incident.id}
-                  {...incident}
-                  language={currentLanguage}
-                />
-              ))}
+              {loading && (
+                <div className="px-5 py-6 text-sm text-[#5F6368]">Loading incidents…</div>
+              )}
+              {error && (
+                <div className="px-5 py-6 text-sm text-[#D93025]">Failed to load incidents.</div>
+              )}
+              {!loading &&
+                !error &&
+                incidents.map((incident) => (
+                  <IncidentCard
+                    key={incident.id}
+                    id={incident.id}
+                    headline={incident.headline}
+                    summary={incident.summary}
+                    sources={incident.sources}
+                    updatedAt={incident.last_updated}
+                    sourceCount={incident.source_count || 0}
+                    language={currentLanguage}
+                  />
+                ))}
             </div>
           </div>
 
           {/* Sidebar */}
-          <Sidebar latestUpdates={mockIncidents} language={currentLanguage} />
+          <Sidebar
+            latestUpdates={incidents.map((incident) => ({
+              id: incident.id,
+              headline: incident.headline,
+              sources: incident.sources,
+              updatedAt: incident.last_updated,
+              sourceCount: incident.source_count || 0
+            }))}
+            language={currentLanguage}
+          />
         </div>
 
         {/* Your Topics Section - Multi-column layout */}
@@ -144,10 +152,10 @@ export default function HomePage() {
                 <span className="text-xs text-[#5F6368]">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
               </div>
               <div>
-                {mockIncidents.slice(0, 3).map((incident, index) => {
+                {incidents.slice(0, 3).map((incident) => {
                   const sourceLabel = incident.sources.length > 0 
                     ? incident.sources[0].name 
-                    : `${incident.sourceCount} source${incident.sourceCount !== 1 ? 's' : ''}`;
+                    : `${incident.source_count || 0} source${(incident.source_count || 0) !== 1 ? 's' : ''}`;
                   
                   return (
                     <Link
@@ -166,7 +174,7 @@ export default function HomePage() {
                             {incident.headline}
                           </h3>
                           <div className="text-xs text-[#5F6368]">
-                            <span>{formatTimeAgo(incident.updatedAt)}</span>
+                            <span>{formatTimeAgo(incident.last_updated)}</span>
                           </div>
                         </div>
                         {/* Thumbnail */}
@@ -195,10 +203,10 @@ export default function HomePage() {
                 <span className="text-xs text-[#5F6368]">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
               </div>
               <div>
-                {mockIncidents.slice(0, 2).map((incident, index) => {
+                {incidents.slice(0, 2).map((incident) => {
                   const sourceLabel = incident.sources.length > 0 
                     ? incident.sources[0].name 
-                    : `${incident.sourceCount} source${incident.sourceCount !== 1 ? 's' : ''}`;
+                    : `${incident.source_count || 0} source${(incident.source_count || 0) !== 1 ? 's' : ''}`;
                   
                   return (
                     <Link
@@ -217,7 +225,7 @@ export default function HomePage() {
                             {incident.headline}
                           </h3>
                           <div className="text-xs text-[#5F6368]">
-                            <span>{formatTimeAgo(incident.updatedAt)}</span>
+                            <span>{formatTimeAgo(incident.last_updated)}</span>
                           </div>
                         </div>
                         <div className="w-16 h-16 flex-shrink-0 rounded overflow-hidden relative">
@@ -245,10 +253,10 @@ export default function HomePage() {
                 <span className="text-xs text-[#5F6368]">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
               </div>
               <div>
-                {mockIncidents.slice(1, 3).map((incident, index) => {
+                {incidents.slice(1, 3).map((incident) => {
                   const sourceLabel = incident.sources.length > 0 
                     ? incident.sources[0].name 
-                    : `${incident.sourceCount} source${incident.sourceCount !== 1 ? 's' : ''}`;
+                    : `${incident.source_count || 0} source${(incident.source_count || 0) !== 1 ? 's' : ''}`;
                   
                   return (
                     <Link
@@ -267,7 +275,7 @@ export default function HomePage() {
                             {incident.headline}
                           </h3>
                           <div className="text-xs text-[#5F6368]">
-                            <span>{formatTimeAgo(incident.updatedAt)}</span>
+                            <span>{formatTimeAgo(incident.last_updated)}</span>
                           </div>
                         </div>
                         <div className="w-16 h-16 flex-shrink-0 rounded overflow-hidden relative">

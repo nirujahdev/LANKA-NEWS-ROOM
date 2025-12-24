@@ -27,6 +27,11 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.env.local
+
+# environment template files (may contain example values)
+# Note: env.local.example and env.local.template are kept for documentation
+# but should never contain real secrets
 
 # vercel
 .vercel

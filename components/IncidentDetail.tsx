@@ -4,25 +4,25 @@ import React from 'react';
 import { Clock, ExternalLink, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
-interface Source {
-  id: string;
+type Source = {
   name: string;
-  url: string;
-}
+  feed_url: string;
+};
 
-interface IncidentDetailProps {
+type IncidentDetailProps = {
   id: string;
   headline: string;
   summary: string;
-  summarySi?: string;
-  summaryTa?: string;
+  summarySi?: string | null;
+  summaryTa?: string | null;
   sources: Source[];
-  updatedAt: Date;
-  firstSeen: Date;
+  updatedAt?: string | null;
+  firstSeen?: string | null;
   sourceCount: number;
   currentLanguage?: 'en' | 'si' | 'ta';
   onLanguageChange?: (lang: 'en' | 'si' | 'ta') => void;
-}
+  needsReview?: boolean;
+};
 
 const IncidentDetail: React.FC<IncidentDetailProps> = ({
   headline,
@@ -34,7 +34,8 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({
   firstSeen,
   sourceCount,
   currentLanguage = 'en',
-  onLanguageChange
+  onLanguageChange,
+  needsReview = false
 }) => {
   const getSummary = () => {
     if (currentLanguage === 'si' && summarySi) return summarySi;
@@ -42,7 +43,9 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({
     return summary;
   };
 
-  const formatTimeAgo = (date: Date): string => {
+  const formatTimeAgo = (iso?: string | null): string => {
+    if (!iso) return 'Just now';
+    const date = new Date(iso);
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
     
@@ -59,7 +62,8 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({
     return `${days} day${days !== 1 ? 's' : ''} ago`;
   };
 
-  const isUpdated = updatedAt.getTime() !== firstSeen.getTime();
+  const isUpdated =
+    updatedAt && firstSeen ? new Date(updatedAt).getTime() !== new Date(firstSeen).getTime() : false;
 
   return (
     <div className="py-6 md:py-8">
@@ -124,10 +128,15 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({
 
       {/* Summary - Easy to read, optimal line length */}
       <div className="mb-10">
-        <div className="prose prose-lg max-w-none">
+          <div className="prose prose-lg max-w-none">
           <p className="text-base md:text-lg text-[#202124] leading-[1.75] font-normal">
             {getSummary()}
           </p>
+          {needsReview && (
+            <p className="mt-2 text-sm text-[#D93025]">
+              Quality check flagged this summary. Please verify numbers and entities.
+            </p>
+          )}
         </div>
       </div>
 
@@ -140,8 +149,8 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({
         <div className="space-y-3">
           {sources.map((source, index) => (
             <a
-              key={source.id}
-              href={source.url}
+              key={`${source.name}-${index}`}
+              href={source.feed_url || '#'}
               target="_blank"
               rel="noopener noreferrer"
               className="

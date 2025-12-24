@@ -2,15 +2,16 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 
+type SidebarUpdate = {
+  id: string;
+  headline: string;
+  sources: Array<{ name: string; feed_url: string }>;
+  updatedAt?: string | null;
+  sourceCount: number;
+};
+
 interface SidebarProps {
-  latestUpdates?: Array<{
-    id: string;
-    headline: string;
-    summary: string;
-    sources: Array<{ id: string; name: string; url: string }>;
-    updatedAt: Date;
-    sourceCount: number;
-  }>;
+  latestUpdates?: SidebarUpdate[];
   language?: 'en' | 'si' | 'ta';
 }
 
@@ -21,7 +22,9 @@ const Sidebar: React.FC<SidebarProps> = ({ latestUpdates = [], language = 'en' }
     return en;
   };
 
-  const formatTimeAgo = (date: Date): string => {
+  const formatTimeAgo = (iso?: string | null): string => {
+    if (!iso) return 'Just now';
+    const date = new Date(iso);
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
     

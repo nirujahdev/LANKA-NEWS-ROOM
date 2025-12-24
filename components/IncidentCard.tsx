@@ -2,21 +2,20 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 
-interface Source {
-  id: string;
+type Source = {
   name: string;
-  url: string;
-}
+  feed_url: string;
+};
 
-interface IncidentCardProps {
+type IncidentCardProps = {
   id: string;
   headline: string;
-  summary: string;
+  summary?: string | null;
   sources: Source[];
-  updatedAt: Date;
+  updatedAt?: string | null;
   sourceCount: number;
   language?: 'en' | 'si' | 'ta';
-}
+};
 
 const IncidentCard: React.FC<IncidentCardProps> = ({
   id,
@@ -27,7 +26,9 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
   sourceCount,
   language = 'en'
 }) => {
-  const formatTimeAgo = (date: Date): string => {
+  const formatTimeAgo = (iso?: string | null): string => {
+    if (!iso) return 'Just now';
+    const date = new Date(iso);
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
     
@@ -45,7 +46,8 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
   };
 
   // Use first source name
-  const sourceLabel = sources.length > 0 ? sources[0].name : `${sourceCount} source${sourceCount !== 1 ? 's' : ''}`;
+  const sourceLabel =
+    sources.length > 0 ? sources[0].name : `${sourceCount} source${sourceCount !== 1 ? 's' : ''}`;
 
   // Get image URL based on headline keywords
   const getImageUrl = () => {

@@ -1,28 +1,35 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Navigation from '@/components/Navigation';
 import IncidentDetail from '@/components/IncidentDetail';
-
-// Mock data - replace with actual data fetching based on ID
-const mockIncident = {
-  id: '1',
-  headline: 'Major Power Outage Affects Colombo Suburbs',
-  summary: 'A widespread power outage affected several areas in Colombo suburbs yesterday evening, causing disruptions to businesses and households. The Ceylon Electricity Board reported that the issue was caused by a technical fault at a main substation. Power was restored within three hours.',
-  summarySi: 'කොළඹ උපනගරවල කිහිපයක ප්‍රදේශවලට ඊයේ සවස විශාල විදුලි බිඳවැටීමක් බලපෑවේය. ව්‍යාපාර සහ ගෘහවලට බාධා ඇති විය. ශ්‍රී ලංකා විදුලිබල මණ්ඩලය වාර්තා කළේ ප්‍රධාන උපස්ථානයක තාක්ෂණික දෝෂයක් නිසා ගැටළුව ඇති වූ බවය. විදුලිය පැය තුනක් ඇතුළත නැවත ස්ථාපිත කරන ලදී.',
-  summaryTa: 'நேற்று மாலை கொழும்பு புறநகர்ப் பகுதிகளில் பல பகுதிகளை பரவலான மின்சார இடைநிறுத்தம் பாதித்தது, வணிகங்கள் மற்றும் வீடுகளுக்கு இடையூறுகளை ஏற்படுத்தியது. இலங்கை மின்சார வாரியம், முக்கிய துணை நிலையத்தில் தொழில்நுட்ப கோளாறு காரணமாக சிக்கல் ஏற்பட்டதாக தெரிவித்தது. மின்சாரம் மூன்று மணி நேரத்திற்குள் மீட்டெடுக்கப்பட்டது.',
-  sources: [
-    { id: '1', name: 'Daily Mirror', url: 'https://www.dailymirror.lk/article/12345' },
-    { id: '2', name: 'Ada Derana', url: 'https://www.adaderana.lk/news/67890' },
-    { id: '3', name: 'BBC Sinhala', url: 'https://www.bbc.com/sinhala/articles/abc123' }
-  ],
-  updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-  firstSeen: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
-  sourceCount: 3
-};
+import { ClusterDetail, loadClusterDetail } from '@/lib/api';
 
 export default function IncidentDetailPage({ params }: { params: { id: string } }) {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'si' | 'ta'>('en');
+  const [detail, setDetail] = useState<ClusterDetail | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchDetail = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await loadClusterDetail(params.id);
+        if (!cancelled) setDetail(data);
+      } catch (err) {
+        if (!cancelled) setError('Not found');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchDetail();
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id]);
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
@@ -36,7 +43,6 @@ export default function IncidentDetailPage({ params }: { params: { id: string } 
           {/* Left Ad Space */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="sticky top-24">
-              {/* Ad placeholder - empty */}
               <div className="min-h-[600px]"></div>
             </div>
           </aside>
@@ -44,18 +50,36 @@ export default function IncidentDetailPage({ params }: { params: { id: string } 
           {/* Center Content with White Background */}
           <main className="flex-1 min-w-0 max-w-3xl mx-auto">
             <div className="bg-white rounded-xl p-6 md:p-8 lg:p-10">
-              <IncidentDetail
-                {...mockIncident}
-                currentLanguage={currentLanguage}
-                onLanguageChange={setCurrentLanguage}
-              />
+              {loading && <p className="text-sm text-[#5F6368]">Loading incident…</p>}
+              {error && <p className="text-sm text-[#D93025]">Incident not found.</p>}
+              {!loading && !error && detail && (
+                <IncidentDetail
+                  id={detail.cluster.id}
+                  headline={detail.cluster.headline}
+                  summary={
+                    currentLanguage === 'si'
+                      ? detail.summary?.summary_si || detail.summary?.summary_en || ''
+                      : currentLanguage === 'ta'
+                      ? detail.summary?.summary_ta || detail.summary?.summary_en || ''
+                      : detail.summary?.summary_en || ''
+                  }
+                  summarySi={detail.summary?.summary_si}
+                  summaryTa={detail.summary?.summary_ta}
+                  sources={detail.articles.map((article) => article.source || { name: 'Unknown', feed_url: '#' })}
+                  updatedAt={detail.cluster.last_updated}
+                  firstSeen={detail.cluster.first_seen}
+                  sourceCount={detail.cluster.source_count || 0}
+                  currentLanguage={currentLanguage}
+                  onLanguageChange={setCurrentLanguage}
+                  needsReview={detail.summary?.needs_review || false}
+                />
+              )}
             </div>
           </main>
 
           {/* Right Ad Space */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="sticky top-24">
-              {/* Ad placeholder - empty */}
               <div className="min-h-[600px]"></div>
             </div>
           </aside>
