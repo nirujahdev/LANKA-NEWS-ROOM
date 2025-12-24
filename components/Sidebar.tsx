@@ -1,6 +1,6 @@
 import React from 'react';
 import { Clock, Shield } from 'lucide-react';
-import IncidentCard from './IncidentCard';
+import Link from 'next/link';
 
 interface SidebarProps {
   latestUpdates?: Array<{
@@ -22,32 +22,35 @@ const Sidebar: React.FC<SidebarProps> = ({ latestUpdates = [], language = 'en' }
   };
 
   return (
-    <aside className="hidden lg:block w-80 space-y-6">
+    <aside className="hidden lg:block w-80 flex-shrink-0 space-y-8">
       {/* Latest Updates Section */}
       {latestUpdates.length > 0 && (
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <Clock className="w-5 h-5 text-[#64748B]" />
-            <h2 className="text-lg font-bold text-[#0F172A]">
+          <div className="flex items-center gap-2.5 mb-5">
+            <Clock className="w-4 h-4 text-[#64748B] flex-shrink-0" />
+            <h2 className="text-lg font-bold text-[#1E293B] tracking-tight">
               {getLabel('Latest Updates', 'මෑත යාවත්කාලීන කිරීම්', 'சமீபத்திய புதுப்பிப்புகள்')}
             </h2>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {latestUpdates.slice(0, 3).map((update) => (
-              <div
+              <Link
                 key={update.id}
-                className="bg-[#F1F5F9] border border-[#E5E7EB] rounded-lg p-4 hover:bg-[#E2E8F0] transition-colors cursor-pointer"
+                href={`/incident/${update.id}`}
+                className="block bg-white border border-[#E2E8F0] rounded-lg p-4 
+                         hover:border-[#CBD5E1] hover:shadow-sm transition-all duration-200 cursor-pointer group"
               >
-                <h3 className="text-sm font-bold text-[#0F172A] mb-2 line-clamp-2">
+                <h3 className="text-sm font-semibold text-[#1E293B] mb-2 line-clamp-2 leading-snug
+                              transition-colors duration-200">
                   {update.headline}
                 </h3>
-                <p className="text-xs text-[#64748B] line-clamp-2 mb-2">
+                <p className="text-xs text-[#64748B] line-clamp-2 mb-3 leading-relaxed">
                   {update.summary}
                 </p>
-                <span className="text-xs text-[#64748B]">
+                <span className="text-xs text-[#64748B] font-medium">
                   {update.sourceCount} {update.sourceCount === 1 ? 'source' : 'sources'}
                 </span>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -55,13 +58,13 @@ const Sidebar: React.FC<SidebarProps> = ({ latestUpdates = [], language = 'en' }
 
       {/* Trusted Sources Section */}
       <div>
-        <div className="flex items-center gap-2 mb-4">
-          <Shield className="w-5 h-5 text-[#64748B]" />
-          <h2 className="text-lg font-bold text-[#0F172A]">
+        <div className="flex items-center gap-2.5 mb-5">
+          <Shield className="w-4 h-4 text-[#64748B] flex-shrink-0" />
+          <h2 className="text-lg font-bold text-[#1E293B] tracking-tight">
             {getLabel('From Trusted Sources', 'විශ්වාසදායක මූලාශ්‍රවලින්', 'நம்பகமான ஆதாரங்களிலிருந்து')}
           </h2>
         </div>
-        <div className="bg-[#F1F5F9] border border-[#E5E7EB] rounded-lg p-4">
+        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-5">
           <p className="text-sm text-[#64748B] leading-relaxed">
             {getLabel(
               'All summaries are generated from verified news sources and cross-checked for accuracy.',

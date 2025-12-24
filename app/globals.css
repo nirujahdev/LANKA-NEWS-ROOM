@@ -20,12 +20,13 @@ body {
 
 body {
   font-family: var(--font-montserrat);
-  font-weight: 500;
-  line-height: 1.6;
-  color: #0F172A;
+  font-weight: 400;
+  line-height: 1.7;
+  color: #1E293B;
   background-color: #FFFFFF;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
 }
 
 /* Custom scrollbar */
@@ -53,18 +54,40 @@ body {
   overflow: hidden;
 }
 
-/* Focus styles for accessibility */
+/* Focus styles for accessibility - more refined */
 *:focus-visible {
   outline: 2px solid #2563EB;
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* Smooth transitions */
+button:focus-visible,
+a:focus-visible {
+  outline-offset: 3px;
+}
+
+/* Better tap targets on mobile */
+@media (max-width: 768px) {
+  button,
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Smooth transitions - refined for better UX */
 * {
-  transition-property: color, background-color, border-color, opacity, transform;
+  transition-property: color, background-color, border-color, opacity, transform, box-shadow;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 200ms;
+  transition-duration: 150ms;
+}
+
+/* Remove transitions for prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }
 
 /* Multilingual text rendering */
@@ -76,13 +99,22 @@ body {
 
 /* Glassmorphism button base */
 .glass-button {
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(229, 231, 235, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .glass-button:hover {
-  background: rgba(241, 245, 249, 0.9);
-  border-color: rgba(229, 231, 235, 0.8);
+  background: rgba(248, 250, 252, 0.95);
+  border-color: rgba(203, 213, 225, 0.8);
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.glass-button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 

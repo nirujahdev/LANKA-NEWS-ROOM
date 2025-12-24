@@ -74,16 +74,16 @@ export default function HomePage() {
         language={currentLanguage}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {/* Page Header */}
-            <div className="mb-8">
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#0F172A] mb-2">
+            <div className="mb-8 md:mb-10">
+              <h1 className="text-2xl md:text-3xl lg:text-[32px] font-bold text-[#1E293B] mb-2 md:mb-3 tracking-tight leading-tight">
                 {currentLanguage === 'si' ? 'මුල් පිටුව' : currentLanguage === 'ta' ? 'முகப்பு' : 'Latest News'}
               </h1>
-              <p className="text-[#64748B]">
+              <p className="text-[#64748B] text-sm md:text-base">
                 {currentLanguage === 'si' 
                   ? 'විශ්වාසදායක, උදාසීන ප්‍රවෘත්ති සාරාංශ' 
                   : currentLanguage === 'ta' 
@@ -93,7 +93,7 @@ export default function HomePage() {
             </div>
 
             {/* News Feed */}
-            <div className="grid gap-6 md:gap-8">
+            <div className="space-y-6 md:space-y-8">
               {mockIncidents.map((incident) => (
                 <IncidentCard
                   key={incident.id}
@@ -109,12 +109,11 @@ export default function HomePage() {
         </div>
 
         {/* Load More Button */}
-        <div className="mt-8 text-center">
+        <div className="mt-10 md:mt-12 text-center">
           <button className="
-            glass-button px-6 py-3 rounded-lg
-            text-[#0F172A] font-medium
-            hover:bg-[#F1F5F9]
-            transition-all
+            glass-button px-6 md:px-8 py-3 md:py-3.5 rounded-lg
+            text-[#1E293B] font-medium text-sm md:text-base
+            transition-all duration-200
           ">
             Load More Stories
           </button>
@@ -122,11 +121,11 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="mt-16 border-t border-[#E5E7EB] py-8">
+      <footer className="mt-16 md:mt-20 border-t border-[#E2E8F0] py-8 md:py-12 bg-[#F8FAFC]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center text-sm text-[#64748B]">
+          <div className="text-center text-sm text-[#64748B] space-y-2">
             <p>© 2024 Lanka News Room. All summaries are based on content from cited sources.</p>
-            <p className="mt-2">
+            <p>
               Original articles are copyright their respective owners; summaries are provided for informational purposes.
             </p>
           </div>
