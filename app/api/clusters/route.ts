@@ -74,7 +74,7 @@ export async function GET(req: Request) {
   const sourcesByCluster = new Map<string, { name: string; feed_url: string }[]>();
 
   for (const art of articles || []) {
-    const src = (art as any).sources as { name: string; feed_url: string } | null;
+    const src = art.sources;
     if (!src) continue;
     const list = sourcesByCluster.get(art.cluster_id) || [];
     if (!list.find((s) => s.feed_url === src.feed_url)) {
