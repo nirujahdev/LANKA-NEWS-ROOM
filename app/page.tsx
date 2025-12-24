@@ -10,6 +10,8 @@ import WeatherWidget from '@/components/WeatherWidget';
 import { ClusterListItem, loadClusters, FeedType, CategoryType } from '@/lib/api';
 import { getSupabaseClient } from '@/lib/supabaseClient';
 
+export const dynamic = 'force-dynamic';
+
 const baseTabs = [
   { id: 'home', label: 'Home', labelSi: 'මුල් පිටුව', labelTa: 'முகப்பு' },
   { id: 'recent', label: 'Recent', labelSi: 'මෑත', labelTa: 'சமீபத்திய' },
@@ -30,7 +32,6 @@ export default function HomePage() {
   const [latestUpdates, setLatestUpdates] = useState<any[]>([]);
   const [userCity, setUserCity] = useState('Colombo');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const supabase = getSupabaseClient();
 
   // Build tabs with "For You" if authenticated
   const tabs = isAuthenticated 
@@ -38,19 +39,29 @@ export default function HomePage() {
     : baseTabs;
 
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+
+    const supabase = getSupabaseClient();
+
     // Get user city if signed in
     async function getUserCity() {
-      const { data: { user } } = await supabase.auth.getUser();
-      setIsAuthenticated(!!user);
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('city')
-          .eq('id', user.id)
-          .single();
-        if (profile?.city) {
-          setUserCity(profile.city);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setIsAuthenticated(!!user);
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('city')
+            .eq('id', user.id)
+            .single();
+          if (profile?.city) {
+            setUserCity(profile.city);
+          }
         }
+      } catch (error) {
+        // Silently fail during build or if Supabase is not configured
+        console.error('Error getting user city:', error);
       }
     }
     getUserCity();
@@ -64,7 +75,7 @@ export default function HomePage() {
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

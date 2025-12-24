@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabaseClient';
 import Navigation from '@/components/Navigation';
 
+export const dynamic = 'force-dynamic';
+
 const SRI_LANKA_CITIES = [
   'Colombo',
   'Kandy',
@@ -46,16 +48,26 @@ export default function OnboardingPage() {
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const supabase = getSupabaseClient();
 
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+
+    let supabase;
+    try {
+      supabase = getSupabaseClient();
+    } catch (error) {
+      router.push('/');
+      return;
+    }
+
     // Check if user is signed in
     supabase.auth.getUser().then(({ data: { user }, error }) => {
       if (error || !user) {
         router.push('/');
       }
     });
-  }, [router, supabase]);
+  }, [router]);
 
   const handleTopicToggle = (topicId: string) => {
     if (selectedTopics.includes(topicId)) {
@@ -79,6 +91,7 @@ export default function OnboardingPage() {
     }
 
     try {
+      const supabase = getSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push('/');

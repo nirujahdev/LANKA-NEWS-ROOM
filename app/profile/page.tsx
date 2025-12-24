@@ -5,6 +5,8 @@ import Navigation from '@/components/Navigation';
 import { User, Mail, Calendar, Globe, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export default function ProfilePage() {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'si' | 'ta'>('en');
 

@@ -13,14 +13,24 @@ const SignInPromptManager: React.FC<SignInPromptManagerProps> = ({ children }) =
   const [showPrompt, setShowPrompt] = useState(false);
   const [user, setUser] = useState<any>(null);
   const pathname = usePathname();
-  const supabase = getSupabaseClient();
 
   // Public pages where prompt can show
   const publicPages = ['/', '/recent', '/sri-lanka', '/politics', '/economy', '/sports', '/technology', '/health'];
 
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+
     // Only show on public pages
     if (!publicPages.includes(pathname)) {
+      return;
+    }
+
+    let supabase;
+    try {
+      supabase = getSupabaseClient();
+    } catch (error) {
+      // Silently fail during build or if Supabase is not configured
       return;
     }
 
@@ -30,6 +40,8 @@ const SignInPromptManager: React.FC<SignInPromptManagerProps> = ({ children }) =
         setUser(user);
         return;
       }
+    }).catch(() => {
+      // Silently fail during build or if Supabase is not configured
     });
 
     // Listen for auth changes
@@ -64,7 +76,7 @@ const SignInPromptManager: React.FC<SignInPromptManagerProps> = ({ children }) =
       clearTimeout(timer);
       subscription.unsubscribe();
     };
-  }, [user, supabase, pathname]);
+  }, [user, pathname]);
 
   const handleClose = () => {
     setShowPrompt(false);

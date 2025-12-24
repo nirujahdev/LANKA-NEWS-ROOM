@@ -6,7 +6,19 @@ export function createSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+  // During build time, env vars might not be available
+  // Return a mock client that won't work but won't crash
   if (!supabaseUrl || !supabaseAnonKey) {
+    if (typeof window === 'undefined') {
+      // Server-side: return a minimal client that won't crash
+      return createClient<Database>('https://placeholder.supabase.co', 'placeholder-key', {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+          detectSessionInUrl: false
+        }
+      });
+    }
     throw new Error('Missing Supabase environment variables');
   }
 
@@ -23,9 +35,15 @@ export function createSupabaseClient() {
 let supabaseClient: ReturnType<typeof createSupabaseClient> | null = null;
 
 export function getSupabaseClient() {
-  if (!supabaseClient) {
-    supabaseClient = createSupabaseClient();
+  // Only create client on client-side or if env vars are available
+  if (typeof window !== 'undefined' || process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    if (!supabaseClient) {
+      supabaseClient = createSupabaseClient();
+    }
+    return supabaseClient;
   }
-  return supabaseClient;
+  
+  // Fallback for server-side build
+  return createSupabaseClient();
 }
 

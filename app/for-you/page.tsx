@@ -9,6 +9,8 @@ import Sidebar from '@/components/Sidebar';
 import { getSupabaseClient } from '@/lib/supabaseClient';
 import { ClusterListItem, loadClusters } from '@/lib/api';
 
+export const dynamic = 'force-dynamic';
+
 export default function ForYouPage() {
   const router = useRouter();
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'si' | 'ta'>('en');
@@ -17,9 +19,19 @@ export default function ForYouPage() {
   const [error, setError] = useState(false);
   const [latestUpdates, setLatestUpdates] = useState<any[]>([]);
   const [favouriteTopics, setFavouriteTopics] = useState<string[]>([]);
-  const supabase = getSupabaseClient();
 
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+
+    let supabase;
+    try {
+      supabase = getSupabaseClient();
+    } catch (error) {
+      router.push('/');
+      return;
+    }
+
     async function fetchUserData() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -110,7 +122,7 @@ export default function ForYouPage() {
     }
 
     fetchUserData();
-  }, [router, supabase]);
+  }, [router]);
 
   const featuredIncident = incidents[0];
   const topStories = incidents.slice(1, 4);
