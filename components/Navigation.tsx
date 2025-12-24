@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Logo from './Logo';
-import { Search, Menu, X } from 'lucide-react';
+import { Search, Menu, X, HelpCircle, Settings, User } from 'lucide-react';
+import Link from 'next/link';
 
 interface NavigationProps {
   currentLanguage?: 'en' | 'si' | 'ta';
@@ -23,42 +24,49 @@ const Navigation: React.FC<NavigationProps> = ({
   ];
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-[#E8EAED] shadow-sm">
+    <nav className="sticky top-0 z-50 bg-white border-b border-[#E8EAED]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Navigation Bar */}
         <div className="flex items-center justify-between h-14 md:h-16">
-          {/* Left: Logo */}
-          <div className="flex-shrink-0">
-            <Logo size="sm" className="md:hidden" />
-            <Logo size="md" className="hidden md:block" />
+          {/* Left: Logo and Name */}
+          <div className="flex-shrink-0 flex items-center">
+            <Link href="/" className="flex items-center">
+              <Logo size="md" className="hidden sm:flex" />
+              <Logo size="sm" className="sm:hidden" />
+            </Link>
           </div>
 
           {/* Center: Search Bar (Desktop) */}
           <div className="hidden md:flex flex-1 max-w-2xl mx-6 lg:mx-12">
             <div className="relative w-full">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#94A3B8] w-4 h-4 pointer-events-none" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#9AA0A6] w-4 h-4 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search for topics, locations & sources"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-4 py-2.5 border border-[#DFE1E5] rounded-full 
-                         focus:outline-none focus:shadow-md focus:border-transparent
-                         text-sm placeholder-[#9AA0A6] bg-white
-                         text-[#202124] transition-all duration-200"
+                className="w-full pl-11 pr-10 py-2.5 bg-[#F1F3F4] rounded-full 
+                         focus:outline-none focus:bg-white focus:shadow-md
+                         text-sm placeholder-[#80868B] 
+                         text-[#202124] transition-all duration-200 border border-transparent focus:border-[#E8EAED]"
               />
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <svg className="w-4 h-4 text-[#9AA0A6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
             </div>
           </div>
 
-          {/* Right: Language Switcher & Mobile Menu */}
-          <div className="flex items-center gap-3 md:gap-4">
-            {/* Language Switcher */}
-            <div className="hidden sm:flex items-center gap-0.5 bg-[#F1F3F4] rounded-lg p-0.5">
+          {/* Right: Utility Icons & Profile */}
+          <div className="flex items-center gap-2 md:gap-3">
+            {/* Language Switcher (Desktop) */}
+            <div className="hidden lg:flex items-center gap-0.5 bg-[#F1F3F4] rounded-lg p-0.5">
               {languages.map((lang) => (
                 <button
                   key={lang.code}
                   onClick={() => onLanguageChange?.(lang.code)}
-                  className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium transition-all duration-200
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200
                     ${
                       currentLanguage === lang.code
                         ? 'bg-white text-[#1A73E8] shadow-sm'
@@ -70,10 +78,35 @@ const Navigation: React.FC<NavigationProps> = ({
               ))}
             </div>
 
+            {/* Help Icon */}
+            <button
+              className="hidden md:flex p-2 text-[#5F6368] hover:bg-[#F1F3F4] rounded-full transition-colors duration-200"
+              aria-label="Help"
+            >
+              <HelpCircle className="w-5 h-5" />
+            </button>
+
+            {/* Settings Icon */}
+            <button
+              className="hidden md:flex p-2 text-[#5F6368] hover:bg-[#F1F3F4] rounded-full transition-colors duration-200"
+              aria-label="Settings"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+
+            {/* Profile Icon */}
+            <Link
+              href="/profile"
+              className="flex items-center justify-center w-8 h-8 md:w-9 md:h-9 bg-[#FF9800] text-white rounded-full font-semibold text-sm md:text-base hover:shadow-md transition-shadow duration-200"
+              aria-label="Profile"
+            >
+              <User className="w-4 h-4 md:w-5 md:h-5" />
+            </Link>
+
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 -mr-2 text-[#64748B] hover:text-[#1E293B] hover:bg-[#F8FAFC] rounded-lg transition-colors duration-200"
+              className="md:hidden p-2 -mr-2 text-[#5F6368] hover:bg-[#F1F3F4] rounded-full transition-colors duration-200"
               aria-label="Toggle menu"
             >
               {isMobileMenuOpen ? (
@@ -95,15 +128,15 @@ const Navigation: React.FC<NavigationProps> = ({
                 placeholder="Search for topics, locations & sources"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 border border-[#DFE1E5] rounded-full 
-                         focus:outline-none focus:shadow-md focus:border-transparent
-                         text-sm placeholder-[#9AA0A6] bg-white text-[#202124]
-                         transition-all duration-200"
+                className="w-full pl-11 pr-4 py-3 bg-[#F1F3F4] rounded-full 
+                         focus:outline-none focus:bg-white focus:shadow-md
+                         text-sm placeholder-[#80868B] text-[#202124]
+                         transition-all duration-200 border border-transparent focus:border-[#E8EAED]"
               />
             </div>
             
             {/* Mobile Language Switcher */}
-            <div className="flex items-center gap-0.5 bg-[#F1F3F4] rounded-lg p-0.5">
+            <div className="flex items-center gap-0.5 bg-[#F1F3F4] rounded-lg p-0.5 mb-4">
               {languages.map((lang) => (
                 <button
                   key={lang.code}
@@ -121,6 +154,26 @@ const Navigation: React.FC<NavigationProps> = ({
                   {lang.label}
                 </button>
               ))}
+            </div>
+
+            {/* Mobile Menu Items */}
+            <div className="flex flex-col gap-2">
+              <Link
+                href="/profile"
+                className="flex items-center gap-3 px-3 py-2 text-[#202124] hover:bg-[#F1F3F4] rounded-lg transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <User className="w-5 h-5" />
+                <span className="text-sm font-medium">Profile</span>
+              </Link>
+              <button className="flex items-center gap-3 px-3 py-2 text-[#202124] hover:bg-[#F1F3F4] rounded-lg transition-colors text-left">
+                <HelpCircle className="w-5 h-5" />
+                <span className="text-sm font-medium">Help</span>
+              </button>
+              <button className="flex items-center gap-3 px-3 py-2 text-[#202124] hover:bg-[#F1F3F4] rounded-lg transition-colors text-left">
+                <Settings className="w-5 h-5" />
+                <span className="text-sm font-medium">Settings</span>
+              </button>
             </div>
           </div>
         )}
