@@ -252,6 +252,16 @@ export interface Database {
         Relationships: [];
       };
     };
+    Functions: {
+      acquire_pipeline_lock: {
+        Args: {
+          lock_name: string;
+          lock_until: string;
+          current_ts: string;
+        };
+        Returns: boolean;
+      };
+    };
   };
 }
 
