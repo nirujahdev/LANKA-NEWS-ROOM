@@ -1,4 +1,4 @@
-name: Trigger Pipeline Cron (15 min)
+name: Trigger Pipeline Cron (5 min)
 
 # ============================================
 # SETUP INSTRUCTIONS
@@ -16,9 +16,9 @@ name: Trigger Pipeline Cron (15 min)
 # ============================================
 
 on:
-  # Schedule: Every 15 minutes
+  # Schedule: Every 5 minutes
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/5 * * * *'
   
   # Manual trigger (for testing)
   workflow_dispatch:
