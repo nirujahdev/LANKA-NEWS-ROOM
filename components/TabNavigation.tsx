@@ -28,8 +28,15 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
     return tab.label;
   };
 
+  const formatDate = () => {
+    const now = new Date();
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+  };
+
   return (
-    <div className="bg-white/95 backdrop-blur-sm border-b border-[#E2E8F0] sticky top-14 md:top-16 z-40">
+    <div className="bg-white border-b border-[#E8EAED] sticky top-14 md:top-16 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex overflow-x-auto scrollbar-hide -mb-px">
           {tabs.map((tab) => (
@@ -37,18 +44,22 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={`
-                relative px-4 py-3.5 md:py-4 text-sm font-medium whitespace-nowrap
-                border-b-2 transition-all duration-200
+                relative px-4 py-3 text-sm font-normal whitespace-nowrap
+                border-b-2 transition-colors duration-150
                 ${
                   activeTab === tab.id
-                    ? 'border-[#2563EB] text-[#2563EB]'
-                    : 'border-transparent text-[#64748B] hover:text-[#1E293B] hover:border-[#CBD5E1]'
+                    ? 'border-[#1A73E8] text-[#1A73E8]'
+                    : 'border-transparent text-[#5F6368] hover:text-[#202124]'
                 }
               `}
             >
               {getLabel(tab)}
             </button>
           ))}
+        </div>
+        {/* Date Display - Google News Style */}
+        <div className="py-2 text-sm text-[#5F6368]">
+          {formatDate()}
         </div>
       </div>
     </div>

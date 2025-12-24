@@ -1,5 +1,4 @@
 import React from 'react';
-import { Clock, FileText } from 'lucide-react';
 import Link from 'next/link';
 
 interface Source {
@@ -44,54 +43,48 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
     return `${days} day${days !== 1 ? 's' : ''} ago`;
   };
 
+  // Use first source name, or combine if multiple
+  const sourceLabel = sources.length > 0 
+    ? sources.length === 1 
+      ? sources[0].name 
+      : `${sources[0].name} and ${sourceCount - 1} other${sourceCount - 1 > 1 ? 's' : ''}`
+    : `${sourceCount} source${sourceCount !== 1 ? 's' : ''}`;
+
   return (
     <Link href={`/incident/${id}`}>
-      <article className="
-        bg-white border border-[#E2E8F0] rounded-lg p-6 md:p-8
-        hover:border-[#CBD5E1] hover:shadow-sm
-        transition-all duration-200 cursor-pointer group
-      ">
+      <article className="py-4 border-b border-[#E8EAED] last:border-b-0 cursor-pointer">
+        {/* Source Name */}
+        <div className="mb-1.5">
+          <span className="text-xs font-bold text-[#202124] uppercase tracking-wide">
+            {sourceLabel}
+          </span>
+        </div>
+
         {/* Headline */}
         <h2 className="
-          text-xl md:text-2xl font-bold text-[#1E293B] mb-3 md:mb-4
-          transition-colors duration-200
-          leading-[1.3] tracking-tight
+          text-base md:text-lg font-normal text-[#202124] mb-2
+          leading-snug
         ">
           {headline}
         </h2>
 
-        {/* Summary */}
-        <p className="
-          text-[#475569] text-[15px] md:text-base leading-relaxed mb-5 md:mb-6
-          line-clamp-3 font-normal
-        ">
-          {summary}
-        </p>
-
-        {/* Meta Information */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-[#F1F5F9]">
-          <div className="flex flex-wrap items-center gap-4 md:gap-6 text-sm text-[#64748B]">
-            {/* Source Count */}
-            <div className="flex items-center gap-2">
-              <FileText className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="font-medium">
-                Reported by {sourceCount} {sourceCount === 1 ? 'source' : 'sources'}
-              </span>
-            </div>
-
-            {/* Updated Time */}
-            <div className="flex items-center gap-2">
-              <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-              <span>Updated {formatTimeAgo(updatedAt)}</span>
-            </div>
-          </div>
-
-          {/* Read More Indicator */}
-          <span className="text-[#1E293B] font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 inline-flex items-center gap-1">
-            Read more
-            <span className="inline-block group-hover:translate-x-0.5 transition-transform duration-200">→</span>
-          </span>
+        {/* Meta Information - Time */}
+        <div className="flex items-center gap-3 text-xs text-[#5F6368] mb-2">
+          <span>{formatTimeAgo(updatedAt)}</span>
+          {sourceCount > 1 && (
+            <>
+              <span>·</span>
+              <span>{sourceCount} sources</span>
+            </>
+          )}
         </div>
+
+        {/* Summary - optional, can be hidden or shown */}
+        {summary && (
+          <p className="text-sm text-[#5F6368] leading-relaxed line-clamp-2 mt-1">
+            {summary}
+          </p>
+        )}
       </article>
     </Link>
   );
