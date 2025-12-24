@@ -66,9 +66,10 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
 
   return (
     <Link href={`/incident/${id}`}>
-      <article className="border-b border-[#E8EAED] last:border-b-0 py-4 px-5 hover:bg-[#FAFAFA] transition-colors duration-150 cursor-pointer group flex gap-4">
-        {/* Content */}
-        <div className="flex-1 min-w-0">
+      <article className="border-b border-[#E8EAED] last:border-b-0 hover:bg-[#FAFAFA] transition-colors duration-150 cursor-pointer">
+        <div className="px-5 py-4 flex gap-4">
+          {/* Content */}
+          <div className="flex-1 min-w-0">
           {/* Source Name */}
           <div className="mb-1.5">
             <span className="text-xs font-bold text-[#202124] uppercase tracking-wide">
@@ -85,26 +86,27 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
             {headline}
           </h2>
 
-          {/* Meta Information - Time */}
-          <div className="flex items-center gap-3 text-xs text-[#5F6368]">
-            <span>{formatTimeAgo(updatedAt)}</span>
-            {sourceCount > 1 && (
-              <>
-                <span>·</span>
-                <span>{sourceCount} sources</span>
-              </>
-            )}
+            {/* Meta Information - Time */}
+            <div className="flex items-center gap-3 text-xs text-[#5F6368]">
+              <span>{formatTimeAgo(updatedAt)}</span>
+              {sourceCount > 1 && (
+                <>
+                  <span>·</span>
+                  <span>{sourceCount} sources</span>
+                </>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Image - Moved to right side */}
-        <div className="w-20 h-20 md:w-28 md:h-28 flex-shrink-0 rounded overflow-hidden relative">
-          <Image 
-            src={getImageUrl()} 
-            alt={headline}
-            fill
-            className="object-cover"
-          />
+          {/* Image - Moved to right side */}
+          <div className="w-20 h-20 md:w-28 md:h-28 flex-shrink-0 rounded overflow-hidden relative">
+            <Image 
+              src={getImageUrl()} 
+              alt={headline}
+              fill
+              className="object-cover"
+            />
+          </div>
         </div>
       </article>
     </Link>

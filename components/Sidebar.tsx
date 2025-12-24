@@ -79,9 +79,9 @@ const Sidebar: React.FC<SidebarProps> = ({ latestUpdates = [], language = 'en' }
                 <Link
                   key={update.id}
                   href={`/incident/${update.id}`}
-                  className="block py-4 px-5 border-b border-[#E8EAED] last:border-b-0 cursor-pointer hover:bg-[#FAFAFA] transition-colors duration-150 group"
+                  className="block border-b border-[#E8EAED] last:border-b-0 cursor-pointer hover:bg-[#FAFAFA] transition-colors duration-150 group"
                 >
-                  <div className="flex gap-3">
+                  <div className="px-5 py-4 flex gap-3">
                     <div className="flex-1 min-w-0">
                       {/* Source Name */}
                       <div className="mb-1.5">
