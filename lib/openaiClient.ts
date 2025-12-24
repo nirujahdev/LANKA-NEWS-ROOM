@@ -4,7 +4,7 @@ import { env } from './env';
 const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
 export async function summarizeEnglish(sources: { title: string; content: string }[], previous?: string | null) {
-  const messages = [
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     {
       role: 'system',
       content:
@@ -27,12 +27,13 @@ export async function summarizeEnglish(sources: { title: string; content: string
 
 export async function translateSummary(summaryEn: string, target: 'si' | 'ta') {
   const langLabel = target === 'si' ? 'Sinhala' : 'Tamil';
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    { role: 'system', content: `Translate to ${langLabel}. Do not add new facts.` },
+    { role: 'user', content: summaryEn }
+  ];
   const completion = await client.chat.completions.create({
     model: env.SUMMARY_TRANSLATE_MODEL,
-    messages: [
-      { role: 'system', content: `Translate to ${langLabel}. Do not add new facts.` },
-      { role: 'user', content: summaryEn }
-    ],
+    messages,
     temperature: 0.2,
     max_tokens: 400
   });
