@@ -42,7 +42,7 @@ export default function HomePage() {
     // Only run on client side
     if (typeof window === 'undefined') return;
 
-    let supabase;
+    let supabase: ReturnType<typeof getSupabaseClient>;
     try {
       supabase = getSupabaseClient();
     } catch (error) {
