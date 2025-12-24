@@ -75,7 +75,7 @@ export async function GET(req: Request) {
 
   for (const art of articles || []) {
     const src = art.sources;
-    if (!src) continue;
+    if (!src || !art.cluster_id) continue; // Skip if no source or no cluster_id
     const list = sourcesByCluster.get(art.cluster_id) || [];
     if (!list.find((s) => s.feed_url === src.feed_url)) {
       list.push(src);
