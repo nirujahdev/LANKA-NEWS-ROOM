@@ -24,6 +24,18 @@ export async function GET(_req: Request, { params }: Params) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
+  type ArticleWithSource = {
+    id: string;
+    title: string;
+    url: string;
+    published_at: string | null;
+    content_text: string | null;
+    content_excerpt: string | null;
+    lang: 'en' | 'si' | 'ta' | 'unk';
+    source_id: string;
+    sources: { name: string; feed_url: string } | null;
+  };
+
   const [{ data: summary }, { data: articles }] = await Promise.all([
     supabaseAdmin.from('summaries').select('*').eq('cluster_id', id).maybeSingle(),
     supabaseAdmin
@@ -31,11 +43,12 @@ export async function GET(_req: Request, { params }: Params) {
       .select('id, title, url, published_at, content_text, content_excerpt, lang, source_id, sources(name, feed_url)')
       .eq('cluster_id', id)
       .order('published_at', { ascending: false })
+      .returns<ArticleWithSource[]>()
   ]);
 
   const sourcesMap = new Map<string, { name: string; feed_url: string }>();
   for (const a of articles || []) {
-    const s = (a as any).sources as { name: string; feed_url: string } | null;
+    const s = a.sources;
     if (s) sourcesMap.set(s.feed_url, s);
   }
 
@@ -52,7 +65,7 @@ export async function GET(_req: Request, { params }: Params) {
       published_at: a.published_at,
       content: a.content_excerpt || a.content_text,
       lang: a.lang,
-      source: (a as any).sources
+      source: a.sources
     }))
   });
 }
