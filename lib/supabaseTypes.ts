@@ -340,6 +340,67 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          id: string
+          email: string | null
+          name: string
+          language: string
+          city: string
+          created_at: string | null
+        }
+        Insert: {
+          id: string
+          email?: string | null
+          name: string
+          language: string
+          city: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          email?: string | null
+          name?: string
+          language?: string
+          city?: string
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_preferences: {
+        Row: {
+          user_id: string
+          favourite_topics: string[]
+          updated_at: string | null
+        }
+        Insert: {
+          user_id: string
+          favourite_topics: string[]
+          updated_at?: string | null
+        }
+        Update: {
+          user_id?: string
+          favourite_topics?: string[]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
