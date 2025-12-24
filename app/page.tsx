@@ -61,7 +61,7 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState('home');
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5]">
+    <div className="min-h-screen bg-white">
       <Navigation 
         currentLanguage={currentLanguage}
         onLanguageChange={setCurrentLanguage}
@@ -74,23 +74,31 @@ export default function HomePage() {
         language={currentLanguage}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#202124]">
-            {currentLanguage === 'si' ? 'මුල් පිටුව' : currentLanguage === 'ta' ? 'முகப்பு' : 'Latest News'}
-          </h1>
-        </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex gap-8">
+          {/* Main Content Area */}
+          <div className="flex-1 min-w-0">
+            {/* Section Header */}
+            <div className="mb-6">
+              <h1 className="text-base font-normal text-[#202124]">
+                {currentLanguage === 'si' ? 'මුල් පිටුව' : currentLanguage === 'ta' ? 'முகப்பு' : 'Latest News'}
+              </h1>
+            </div>
 
-        {/* Grid Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockIncidents.map((incident) => (
-            <IncidentCard
-              key={incident.id}
-              {...incident}
-              language={currentLanguage}
-            />
-          ))}
+            {/* Articles List - Google News Style */}
+            <div className="space-y-0">
+              {mockIncidents.map((incident) => (
+                <IncidentCard
+                  key={incident.id}
+                  {...incident}
+                  language={currentLanguage}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <Sidebar latestUpdates={mockIncidents} language={currentLanguage} />
         </div>
       </main>
 

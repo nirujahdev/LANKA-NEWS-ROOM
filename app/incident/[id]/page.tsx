@@ -36,29 +36,27 @@ export default function IncidentDetailPage({ params }: { params: { id: string } 
           {/* Left Ad Space */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="sticky top-24">
-              {/* Ad placeholder */}
-              <div className="bg-white rounded-lg p-8 text-center text-sm text-[#9AA0A6] border border-[#E8EAED] min-h-[600px] flex items-center justify-center">
-                Advertisement
-              </div>
+              {/* Ad placeholder - empty */}
+              <div className="min-h-[600px]"></div>
             </div>
           </aside>
 
-          {/* Center Content */}
+          {/* Center Content with White Background */}
           <main className="flex-1 min-w-0 max-w-3xl mx-auto">
-            <IncidentDetail
-              {...mockIncident}
-              currentLanguage={currentLanguage}
-              onLanguageChange={setCurrentLanguage}
-            />
+            <div className="bg-white rounded-xl p-6 md:p-8 lg:p-10">
+              <IncidentDetail
+                {...mockIncident}
+                currentLanguage={currentLanguage}
+                onLanguageChange={setCurrentLanguage}
+              />
+            </div>
           </main>
 
           {/* Right Ad Space */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="sticky top-24">
-              {/* Ad placeholder */}
-              <div className="bg-white rounded-lg p-8 text-center text-sm text-[#9AA0A6] border border-[#E8EAED] min-h-[600px] flex items-center justify-center">
-                Advertisement
-              </div>
+              {/* Ad placeholder - empty */}
+              <div className="min-h-[600px]"></div>
             </div>
           </aside>
         </div>

@@ -48,41 +48,31 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
 
   return (
     <Link href={`/incident/${id}`}>
-      <article className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer group h-full flex flex-col">
-        {/* Image Placeholder */}
-        <div className="w-full h-48 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-          <div className="text-4xl text-blue-400 opacity-50">📰</div>
+      <article className="py-4 border-b border-[#E8EAED] last:border-b-0 cursor-pointer group">
+        {/* Source Name */}
+        <div className="mb-1.5">
+          <span className="text-xs font-bold text-[#202124] uppercase tracking-wide">
+            {sourceLabel}
+          </span>
         </div>
 
-        {/* Content */}
-        <div className="p-5 flex-1 flex flex-col">
-          {/* Source Name */}
-          <div className="mb-2">
-            <span className="text-xs font-bold text-[#5F6368] uppercase tracking-wide">
-              {sourceLabel}
-            </span>
-          </div>
+        {/* Headline */}
+        <h2 className="
+          text-base md:text-lg font-normal text-[#202124] mb-2
+          leading-snug line-clamp-2
+        ">
+          {headline}
+        </h2>
 
-          {/* Headline - Dark Blue */}
-          <h2 className="
-            text-lg font-semibold text-[#1A73E8] mb-3
-            leading-tight line-clamp-2
-            group-hover:text-[#1557B0] transition-colors
-          ">
-            {headline}
-          </h2>
-
-          {/* Description */}
-          {summary && (
-            <p className="text-sm text-[#5F6368] leading-relaxed line-clamp-3 mb-4 flex-1">
-              {summary}
-            </p>
+        {/* Meta Information - Time */}
+        <div className="flex items-center gap-3 text-xs text-[#5F6368]">
+          <span>{formatTimeAgo(updatedAt)}</span>
+          {sourceCount > 1 && (
+            <>
+              <span>·</span>
+              <span>{sourceCount} sources</span>
+            </>
           )}
-
-          {/* Time */}
-          <div className="text-xs text-[#9AA0A6] pt-3 border-t border-[#F1F3F4]">
-            {formatTimeAgo(updatedAt)}
-          </div>
         </div>
       </article>
     </Link>
