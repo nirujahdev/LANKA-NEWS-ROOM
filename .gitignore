@@ -33,6 +33,7 @@ yarn-error.log*
 VERCEL_ENV_VALUES_LOCAL.txt
 vercel-env-vars.txt
 docs/vercel-env-values-local.md
+VERCEL_ENV_SETUP.txt
 
 # environment template files (may contain example values)
 # Note: env.local.example and env.local.template are kept for documentation
