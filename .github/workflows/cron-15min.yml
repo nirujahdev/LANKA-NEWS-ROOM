@@ -45,25 +45,43 @@ jobs:
           echo "Triggering pipeline at ${ENDPOINT}"
           echo "Using CRON_SECRET: ${CRON_SECRET:0:8}..." # Show first 8 chars for debugging
           
+          # Verify CRON_SECRET is not empty
+          if [ -z "$CRON_SECRET" ]; then
+            echo "❌ CRON_SECRET is empty!"
+            exit 1
+          fi
+          
+          # Build Authorization header
+          AUTH_HEADER="Bearer ${CRON_SECRET}"
+          echo "Authorization header length: ${#AUTH_HEADER} characters"
+          
+          # Test: Verify the header doesn't contain newlines or special characters
+          if echo "$AUTH_HEADER" | grep -q $'\n'; then
+            echo "❌ WARNING: Authorization header contains newlines!"
+          fi
+          
           # Make request with Bearer token authentication
-          # --location flag follows redirects (HTTP 301, 302, 307, 308)
+          # --location-trusted preserves Authorization header on redirects (important!)
           # --max-time sets timeout to 300 seconds (5 minutes) for long-running pipelines
           # --connect-timeout sets connection timeout to 30 seconds
           # --write-out prints status code and response
           # Use set +e to continue on curl errors (we'll check HTTP status instead)
           set +e
           response=$(curl \
-            --location \
+            --location-trusted \
             --max-time 300 \
             --connect-timeout 30 \
             --silent \
             --show-error \
             --write-out "\nHTTP_STATUS:%{http_code}\nHTTP_TIME:%{time_total}\n" \
-            --header "Authorization: Bearer ${CRON_SECRET}" \
-            --header "Content-Type: application/json" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
             "${ENDPOINT}" 2>&1)
           curl_exit_code=$?
           set -e
+          
+          # Debug: Show what curl actually sent (without exposing secret)
+          echo "Curl command executed with Authorization header"
           
           # Debug: Show raw response (first 500 chars)
           echo "=== Raw Response (first 500 chars) ==="
