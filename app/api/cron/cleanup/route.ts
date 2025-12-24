@@ -4,6 +4,7 @@ import { env } from '@/lib/env';
 import { Database } from '@/lib/supabaseTypes';
 
 type ClusterRow = Database['public']['Tables']['clusters']['Row'];
+type ArticleUpdate = Database['public']['Tables']['articles']['Update'];
 
 /**
  * Monthly cleanup cron job.
@@ -57,7 +58,8 @@ export async function GET(req: Request) {
 
     // Update articles to remove cluster_id (or delete articles - depends on policy)
     // For now, we'll just unlink articles from clusters
-    await supabaseAdmin.from('articles').update({ cluster_id: null }).in('cluster_id', clusterIds);
+    const articleUpdate: ArticleUpdate = { cluster_id: null };
+    await supabaseAdmin.from('articles').update(articleUpdate).in('cluster_id', clusterIds);
 
     // Finally, delete clusters
     const { error: deleteError } = await supabaseAdmin.from('clusters').delete().in('id', clusterIds);
