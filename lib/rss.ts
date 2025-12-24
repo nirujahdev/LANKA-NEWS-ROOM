@@ -8,6 +8,7 @@ export type NormalizedItem = {
   publishedAt: string | null;
   content: string | null;
   contentSnippet: string | null;
+  imageUrl: string | null;
 };
 
 const parser = new Parser();
@@ -22,14 +23,39 @@ export async function fetchRssFeed(feedUrl: string): Promise<NormalizedItem[]> {
   try {
     const feed = await parser.parseURL(feedUrl);
     return (feed.items || [])
-      .map((item) => ({
-        title: item.title?.trim() || 'Untitled',
-        url: (item.link || '').trim(),
-        guid: item.guid || item.id || null,
-        publishedAt: item.isoDate || item.pubDate || null,
-        content: item.content || null,
-        contentSnippet: item.contentSnippet || null
-      }))
+      .map((item) => {
+        // Extract image URL from various RSS feed formats
+        let imageUrl: string | null = null;
+        
+        // Check for media:content or media:thumbnail (common RSS image formats)
+        if ((item as any).media?.content?.[0]?.$?.url) {
+          imageUrl = (item as any).media.content[0].$.url;
+        } else if ((item as any).media?.thumbnail?.[0]?.$?.url) {
+          imageUrl = (item as any).media.thumbnail[0].$.url;
+        } else if ((item as any)['media:content']?.[0]?.['$']?.url) {
+          imageUrl = (item as any)['media:content'][0]['$'].url;
+        } else if ((item as any)['media:thumbnail']?.[0]?.['$']?.url) {
+          imageUrl = (item as any)['media:thumbnail'][0]['$'].url;
+        } else if ((item as any).enclosure?.type?.startsWith('image/')) {
+          imageUrl = (item as any).enclosure.url;
+        } else if (item.content) {
+          // Try to extract image from HTML content
+          const imgMatch = item.content.match(/<img[^>]+src=["']([^"']+)["']/i);
+          if (imgMatch && imgMatch[1]) {
+            imageUrl = imgMatch[1];
+          }
+        }
+        
+        return {
+          title: item.title?.trim() || 'Untitled',
+          url: (item.link || '').trim(),
+          guid: item.guid || item.id || null,
+          publishedAt: item.isoDate || item.pubDate || null,
+          content: item.content || null,
+          contentSnippet: item.contentSnippet || null,
+          imageUrl: imageUrl?.trim() || null
+        };
+      })
       .filter((item) => item.url && item.url.startsWith('http')); // Only valid HTTP(S) URLs
   } catch (error) {
     // Re-throw with context for error handling upstream

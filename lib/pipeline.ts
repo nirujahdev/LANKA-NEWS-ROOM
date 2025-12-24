@@ -159,7 +159,8 @@ async function insertArticles(
         content_text: item.content,
         content_excerpt: item.contentSnippet || item.content?.slice(0, 400) || null,
         lang: detectLanguage(item.title ?? item.content),
-        hash
+        hash,
+        image_url: item.imageUrl || null
       };
     });
 
@@ -293,7 +294,7 @@ async function categorizeClusters(
   let categorized = 0;
   for (const cluster of clusters.values()) {
     // Skip if already categorized or not eligible for publishing
-    if ((cluster.source_count || 0) < 2) continue;
+    if ((cluster.article_count || 0) < 1) continue;
 
     // Check if cluster already has a category
     const { data: existing } = await supabaseAdmin
@@ -336,7 +337,8 @@ async function summarizeEligible(
 ) {
   let summarized = 0;
   for (const cluster of clusters.values()) {
-    if ((cluster.source_count || 0) < 2) continue;
+    // Generate summaries for clusters with 1+ articles
+    if ((cluster.article_count || 0) < 1) continue;
 
     const { data: summary } = await supabaseAdmin
       .from('summaries')
@@ -349,7 +351,7 @@ async function summarizeEligible(
 
     const { data: articles, error } = await supabaseAdmin
       .from('articles')
-      .select('title, content_excerpt, content_text, published_at')
+      .select('title, content_excerpt, content_text, published_at, image_url')
       .eq('cluster_id', cluster.id)
       .order('published_at', { ascending: false })
       .limit(env.MAX_SUMMARY_ARTICLES);

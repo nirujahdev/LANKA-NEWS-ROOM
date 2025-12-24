@@ -12,6 +12,7 @@ interface IncidentCardProps {
   sourceCount: number;
   language?: 'en' | 'si' | 'ta';
   variant?: 'default' | 'featured' | 'compact';
+  imageUrl?: string | null; // Article image URL from RSS feed
 }
 
 const IncidentCard: React.FC<IncidentCardProps> = ({
@@ -23,7 +24,8 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
   updatedAt,
   sourceCount,
   language = 'en',
-  variant = 'default'
+  variant = 'default',
+  imageUrl
 }) => {
   // Use slug for SEO-friendly URLs, fallback to ID for backward compatibility
   const href = slug ? `/news/${slug}${language !== 'en' ? `?lang=${language}` : ''}` : `/incident/${id}`;
@@ -57,6 +59,8 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
     : `${sourceCount} source${sourceCount !== 1 ? 's' : ''}`;
 
   const getImageUrl = () => {
+    // Use article image if available, otherwise fallback to category-based images
+    if (imageUrl) return imageUrl;
     const lowerHeadline = headline.toLowerCase();
     if (lowerHeadline.includes('power') || lowerHeadline.includes('electricity') || lowerHeadline.includes('outage')) {
       return 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=800&q=80';

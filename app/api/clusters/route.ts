@@ -65,22 +65,32 @@ export async function GET(req: Request) {
     supabaseAdmin.from('summaries').select('*').in('cluster_id', ids).returns<SummaryRow[]>(),
     supabaseAdmin
       .from('articles')
-      .select('cluster_id, source_id, sources(name, feed_url)')
+      .select('cluster_id, source_id, image_url, sources(name, feed_url)')
       .in('cluster_id', ids)
       .returns<ArticleWithSource[]>()
   ]);
 
   const summariesByCluster = new Map((summaries || []).map((s) => [s.cluster_id, s]));
   const sourcesByCluster = new Map<string, { name: string; feed_url: string }[]>();
+  const imagesByCluster = new Map<string, string | null>();
 
   for (const art of articles || []) {
     const src = art.sources;
-    if (!src || !art.cluster_id) continue; // Skip if no source or no cluster_id
-    const list = sourcesByCluster.get(art.cluster_id) || [];
-    if (!list.find((s) => s.feed_url === src.feed_url)) {
-      list.push(src);
+    if (!art.cluster_id) continue; // Skip if no cluster_id
+    
+    // Collect sources
+    if (src) {
+      const list = sourcesByCluster.get(art.cluster_id) || [];
+      if (!list.find((s) => s.feed_url === src.feed_url)) {
+        list.push(src);
+      }
+      sourcesByCluster.set(art.cluster_id, list);
     }
-    sourcesByCluster.set(art.cluster_id, list);
+    
+    // Collect first available image
+    if (art.image_url && !imagesByCluster.has(art.cluster_id)) {
+      imagesByCluster.set(art.cluster_id, art.image_url);
+    }
   }
 
   const payload = (clusters || []).map((cluster) => {
@@ -99,7 +109,8 @@ export async function GET(req: Request) {
       source_count: cluster.source_count,
       summary: summaryText,
       summary_version: summary?.version,
-      sources: sourcesByCluster.get(cluster.id) || []
+      sources: sourcesByCluster.get(cluster.id) || [],
+      image_url: imagesByCluster.get(cluster.id) || null
     };
   });
 

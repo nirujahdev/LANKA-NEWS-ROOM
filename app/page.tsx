@@ -231,6 +231,7 @@ export default function HomePage() {
                       sourceCount={featuredIncident.source_count || 0}
                       language={currentLanguage}
                       variant="featured"
+                      imageUrl={featuredIncident.image_url || undefined}
                     />
                   )}
 
@@ -249,6 +250,7 @@ export default function HomePage() {
                           sourceCount={incident.source_count || 0}
                           language={currentLanguage}
                           variant="default"
+                          imageUrl={incident.image_url || undefined}
                         />
                       ))}
                     </div>

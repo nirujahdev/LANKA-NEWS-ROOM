@@ -11,6 +11,7 @@ export type ClusterListItem = {
   summary?: string | null;
   summary_version?: number | null;
   sources: { name: string; feed_url: string }[];
+  image_url?: string | null;
 };
 
 export type FeedType = 'home' | 'recent' | null;
