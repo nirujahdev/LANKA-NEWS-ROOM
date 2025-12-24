@@ -13,7 +13,12 @@ export async function GET(_req: Request, { params }: Params) {
     .gte('expires_at', new Date().toISOString()) // Only show non-expired clusters
     .single();
 
-  if (error || !cluster || cluster.status !== 'published') {
+  if (error || !cluster) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  // Type guard: check status after confirming cluster exists
+  if (cluster.status !== 'published') {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
