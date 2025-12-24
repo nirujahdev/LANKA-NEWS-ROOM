@@ -21,7 +21,7 @@
 ### Required Secret:
 ```
 Name: CRON_SECRET
-Value: [Same value as Vercel CRON_SECRET]
+Value: [Same value as Vercel CRON_SECRET - see values you provided]
 ```
 
 **Important**: 
@@ -45,11 +45,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=[Your Supabase anon key]
 #### Required for Backend:
 ```
 SUPABASE_URL=https://qisxzgzutfspwqmiqbvn.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=[Your service role key]
-SUPABASE_ANON_KEY=[Your anon key]
+SUPABASE_ANON_KEY=[Your Supabase anon key]
+SUPABASE_SERVICE_ROLE_KEY=[Your Supabase service role key]
 OPENAI_API_KEY=[Your OpenAI API key]
 CRON_SECRET=[Your cron secret - same as GitHub]
 ```
+
+**⚠️ Note**: Actual values are provided separately. See the values you provided and add them manually to Vercel.
 
 #### Optional but Recommended:
 ```

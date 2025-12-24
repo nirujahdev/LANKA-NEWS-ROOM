@@ -1,23 +1,26 @@
 # Vercel Environment Variables - Quick Reference
 
-**⚠️ IMPORTANT**: Replace the placeholders below with your actual values from:
-- Supabase Dashboard: https://supabase.com/dashboard/project/YOUR_PROJECT/settings/api
-- OpenAI: https://platform.openai.com/api-keys
-- Generate CRON_SECRET: `openssl rand -hex 32`
+**⚠️ IMPORTANT**: Replace the placeholders below with your actual values.
 
 Copy and paste these into Vercel Dashboard → Settings → Environment Variables
 
 ## Required Variables
 
 ```
-SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
-NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=YOUR_PUBLISHABLE_KEY_HERE
-SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY_HERE
-SUPABASE_ANON_KEY=YOUR_ANON_KEY_HERE
-OPENAI_API_KEY=YOUR_OPENAI_API_KEY_HERE
-CRON_SECRET=YOUR_CRON_SECRET_HERE
+NEXT_PUBLIC_SUPABASE_URL=https://qisxzgzutfspwqmiqbvn.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=[Your Supabase anon key - see values below]
+SUPABASE_URL=https://qisxzgzutfspwqmiqbvn.supabase.co
+SUPABASE_ANON_KEY=[Your Supabase anon key - see values below]
+SUPABASE_SERVICE_ROLE_KEY=[Your Supabase service role key - see values below]
+OPENAI_API_KEY=[Your OpenAI API key - see values below]
+CRON_SECRET=[Your cron secret - see values below]
 ```
+
+## Actual Values (Add to Vercel manually)
+
+**⚠️ SECURITY**: These values are stored locally only. Add them to Vercel Dashboard → Settings → Environment Variables.
+
+See `docs/environment-variables-setup.md` for step-by-step instructions with actual values.
 
 ## Optional Variables (with defaults)
 
