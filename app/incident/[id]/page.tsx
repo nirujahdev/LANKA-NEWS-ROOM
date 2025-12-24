@@ -25,17 +25,44 @@ export default function IncidentDetailPage({ params }: { params: { id: string } 
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'si' | 'ta'>('en');
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#F5F5F5]">
       <Navigation 
         currentLanguage={currentLanguage}
         onLanguageChange={setCurrentLanguage}
       />
       
-      <IncidentDetail
-        {...mockIncident}
-        currentLanguage={currentLanguage}
-        onLanguageChange={setCurrentLanguage}
-      />
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex gap-6 lg:gap-8 pt-6">
+          {/* Left Ad Space */}
+          <aside className="hidden lg:block w-64 flex-shrink-0">
+            <div className="sticky top-24">
+              {/* Ad placeholder */}
+              <div className="bg-white rounded-lg p-8 text-center text-sm text-[#9AA0A6] border border-[#E8EAED] min-h-[600px] flex items-center justify-center">
+                Advertisement
+              </div>
+            </div>
+          </aside>
+
+          {/* Center Content */}
+          <main className="flex-1 min-w-0 max-w-3xl mx-auto">
+            <IncidentDetail
+              {...mockIncident}
+              currentLanguage={currentLanguage}
+              onLanguageChange={setCurrentLanguage}
+            />
+          </main>
+
+          {/* Right Ad Space */}
+          <aside className="hidden lg:block w-64 flex-shrink-0">
+            <div className="sticky top-24">
+              {/* Ad placeholder */}
+              <div className="bg-white rounded-lg p-8 text-center text-sm text-[#9AA0A6] border border-[#E8EAED] min-h-[600px] flex items-center justify-center">
+                Advertisement
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
     </div>
   );
 }
