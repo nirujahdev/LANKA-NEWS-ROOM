@@ -71,9 +71,9 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
   if (variant === 'featured') {
     return (
       <Link href={`/incident/${id}`} className="block group mb-6">
-        <article className="flex flex-col gap-3">
-          {/* Large Image */}
-          <div className="relative w-full aspect-video rounded-xl overflow-hidden mb-1">
+        <article className="flex flex-col md:flex-row gap-6">
+          {/* Image - Left Side for Featured (Desktop) / Top (Mobile) */}
+          <div className="relative w-full md:w-2/3 aspect-video md:aspect-[16/9] rounded-xl overflow-hidden mb-1 md:mb-0 order-first">
             <Image 
               src={getImageUrl()} 
               alt={headline}
@@ -82,48 +82,103 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
             />
           </div>
           
-          <div className="flex flex-col gap-1">
-             {/* Source & Time */}
+          <div className="flex flex-col gap-2 w-full md:w-1/3 py-1">
+             {/* Source */}
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-bold text-[#202124]">
+               <Image 
+                  src={`https://www.google.com/s2/favicons?domain=${sources[0]?.feed_url || 'google.com'}&sz=128`}
+                  alt=""
+                  width={16}
+                  height={16}
+                  className="rounded-sm"
+               />
+              <span className="text-xs font-bold text-[#202124] uppercase">
                 {sourceLabel}
               </span>
-              <span className="text-[10px] text-[#5F6368]">•</span>
-              <span className="text-xs text-[#5F6368]">{formatTimeAgo(updatedAt)}</span>
             </div>
 
             {/* Headline */}
-            <h2 className="text-2xl font-normal text-[#202124] leading-snug group-hover:text-[#1A73E8] transition-colors duration-150 group-hover:underline decoration-1 underline-offset-2">
+            <h2 className="text-xl md:text-2xl font-normal text-[#1F1F1F] leading-tight group-hover:text-[#1A73E8] group-hover:underline decoration-1 underline-offset-2 mb-1">
               {headline}
             </h2>
+
+             {/* Time */}
+             <div className="text-xs text-[#5F6368] mt-auto">
+               {formatTimeAgo(updatedAt)}
+             </div>
+             
+             {/* Related Coverage Link (Mock) */}
+             <div className="hidden md:flex mt-4 items-center text-sm font-medium text-[#1A73E8] hover:underline cursor-pointer">
+                <span className="mr-1">Full Coverage</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+             </div>
           </div>
         </article>
       </Link>
     );
   }
 
+  // Compact variant for "Your topics" and Sidebars
+  if (variant === 'compact') {
+     return (
+       <Link href={`/incident/${id}`}>
+         <article className="group relative py-3 flex gap-4 cursor-pointer hover:bg-[#F8F9FA] rounded-lg -mx-2 px-2 transition-colors">
+            <div className="flex-1 min-w-0 flex flex-col">
+               <div className="flex items-center gap-2 mb-1">
+                  <Image 
+                     src={`https://www.google.com/s2/favicons?domain=${sources[0]?.feed_url || 'google.com'}&sz=128`}
+                     alt=""
+                     width={12}
+                     height={12}
+                     className="rounded-sm opacity-80"
+                  />
+                  <span className="text-[11px] font-bold text-[#5F6368] uppercase truncate max-w-[120px]">
+                     {sourceLabel}
+                  </span>
+               </div>
+               <h3 className="text-sm font-medium text-[#202124] leading-snug line-clamp-2 group-hover:text-[#1A73E8] group-hover:underline decoration-1 underline-offset-2">
+                  {headline}
+               </h3>
+               <div className="text-[11px] text-[#5F6368] mt-1">
+                  {formatTimeAgo(updatedAt)}
+               </div>
+            </div>
+            
+            <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden relative bg-[#F1F3F4]">
+               <Image 
+                  src={getImageUrl()} 
+                  alt={headline}
+                  fill
+                  className="object-cover"
+               />
+            </div>
+         </article>
+       </Link>
+     );
+  }
+
+  // Default List Variant (Top Stories list below featured)
   return (
     <Link href={`/incident/${id}`}>
-      <article className={`
-        group relative py-4 flex gap-4 cursor-pointer
-        ${variant !== 'compact' ? 'border-b border-[#E8EAED] last:border-b-0' : ''}
-      `}>
+      <article className="group relative py-4 flex gap-4 cursor-pointer border-b border-[#E8EAED] last:border-b-0 hover:bg-[#F8F9FA] -mx-4 px-4 transition-colors">
         <div className="flex-1 min-w-0 flex flex-col justify-between">
           <div>
             {/* Source */}
-            <div className="mb-2 flex items-center gap-2">
-              {/* Optional: Add favicon logic here if available */}
-              <span className="text-xs font-bold text-[#202124] group-hover:text-[#202124]">
+            <div className="mb-1.5 flex items-center gap-2">
+               <Image 
+                  src={`https://www.google.com/s2/favicons?domain=${sources[0]?.feed_url || 'google.com'}&sz=128`}
+                  alt=""
+                  width={14}
+                  height={14}
+                  className="rounded-sm"
+               />
+              <span className="text-xs font-bold text-[#202124] uppercase">
                 {sourceLabel}
               </span>
             </div>
 
             {/* Headline */}
-            <h2 className={`
-              font-medium text-[#202124] mb-1.5 leading-[1.4]
-              ${variant === 'compact' ? 'text-sm line-clamp-2' : 'text-base md:text-lg line-clamp-3'}
-              group-hover:text-[#1A73E8] transition-colors duration-150 group-hover:underline decoration-1 underline-offset-2
-            `}>
+            <h2 className="text-base font-medium text-[#202124] mb-1 leading-snug group-hover:text-[#1A73E8] group-hover:underline decoration-1 underline-offset-2">
               {headline}
             </h2>
           </div>
@@ -131,20 +186,11 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
           {/* Meta Information - Time */}
           <div className="flex items-center gap-2 text-xs text-[#5F6368] mt-1">
             <span>{formatTimeAgo(updatedAt)}</span>
-            {sourceCount > 1 && (
-              <>
-                <span>·</span>
-                <span>{sourceCount} sources</span>
-              </>
-            )}
           </div>
         </div>
 
         {/* Image - Right side */}
-        <div className={`
-          flex-shrink-0 rounded-lg overflow-hidden relative bg-[#F1F3F4]
-          ${variant === 'compact' ? 'w-20 h-20' : 'w-24 h-24 md:w-32 md:h-32'}
-        `}>
+        <div className="w-24 h-24 flex-shrink-0 rounded-xl overflow-hidden relative bg-[#F1F3F4]">
           <Image 
             src={getImageUrl()} 
             alt={headline}

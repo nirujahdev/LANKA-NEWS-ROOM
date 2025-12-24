@@ -5,7 +5,6 @@ import Navigation from '@/components/Navigation';
 import TabNavigation from '@/components/TabNavigation';
 import IncidentCard from '@/components/IncidentCard';
 import Sidebar from '@/components/Sidebar';
-import LeftSidebar from '@/components/LeftSidebar';
 import { ClusterListItem, loadClusters, FeedType, CategoryType } from '@/lib/api';
 
 const tabs = [
@@ -90,40 +89,36 @@ export default function HomePage() {
         onLanguageChange={setCurrentLanguage}
       />
       
-      {/* Mobile Tab Navigation */}
-      <div className="md:hidden">
-        <TabNavigation
-          tabs={tabs}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          language={currentLanguage}
-        />
-      </div>
+      {/* Top Tab Navigation (Sticky) */}
+      <TabNavigation
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        language={currentLanguage}
+      />
 
       <main className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 justify-center">
           
-          {/* Left Sidebar (Desktop Navigation) */}
-          <div className="hidden md:block md:col-span-3 lg:col-span-2">
-            <LeftSidebar 
-              currentLanguage={currentLanguage}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-            />
+          {/* Left Ad Space / Placeholder */}
+          <div className="hidden xl:block w-48 flex-shrink-0">
+             {/* Ad Space Content */}
           </div>
 
-          {/* Main Content Area */}
-          <div className="md:col-span-9 lg:col-span-7 flex flex-col gap-6">
+          {/* Main Content Area (Centered) */}
+          <div className="flex-1 min-w-0 max-w-3xl">
             
             {/* Header */}
-            <div className="flex items-center justify-between">
-               <h1 className="text-2xl font-normal text-[#202124]">
+            <div className="flex items-center justify-between mb-4">
+               <h1 className="text-xl font-normal text-[#202124]">
                  {activeTab === 'home' 
-                    ? (currentLanguage === 'si' ? 'ඔබගේ කෙටි සටහන' : currentLanguage === 'ta' ? 'உங்கள் சுருக்கம்' : 'Your briefing')
+                    ? (currentLanguage === 'si' ? 'ඔබගේ කෙටි සටහන' : currentLanguage === 'ta' ? 'உங்கள் சுருக்கம்' : 'Top stories')
                     : tabs.find(t => t.id === activeTab)?.label || 'News'
                  }
                </h1>
-               <span className="text-sm text-[#5F6368] hidden sm:block">{formatDate()}</span>
+                <Link href="/recent" className="text-sm font-medium text-[#1A73E8] hover:underline hidden sm:block">
+                  More top stories
+                </Link>
             </div>
 
             {loading && (
@@ -140,8 +135,8 @@ export default function HomePage() {
 
             {!loading && !error && incidents.length > 0 && (
               <>
-                {/* Briefing Card (Featured + Top 3) */}
-                <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] p-4 sm:p-6">
+                {/* Main News Section */}
+                <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] p-4 sm:p-6 mb-6">
                   {/* Featured Story */}
                   {featuredIncident && (
                     <IncidentCard
@@ -176,27 +171,58 @@ export default function HomePage() {
                   )}
                 </div>
 
-                {/* More News Section */}
-                {otherStories.length > 0 && (
-                  <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] p-4 sm:p-6">
-                     <h2 className="text-lg font-normal text-[#202124] mb-4">
-                       More news
-                     </h2>
-                     {otherStories.map((incident) => (
-                        <IncidentCard
-                          key={incident.id}
-                          id={incident.id}
-                          headline={incident.headline}
-                          summary={incident.summary || ''}
-                          sources={incident.sources}
-                          updatedAt={incident.last_updated}
-                          sourceCount={incident.source_count || 0}
-                          language={currentLanguage}
-                          variant="default"
-                        />
-                     ))}
-                  </div>
-                )}
+                {/* "Your topics" Section */}
+                <div className="mb-6">
+                   <h2 className="text-xl font-normal text-[#202124] mb-4">Your topics</h2>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Example Topic: Sri Lanka */}
+                      <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] p-4">
+                         <div className="flex items-center justify-between mb-3">
+                            <h3 className="font-medium text-[#202124]">Sri Lanka</h3>
+                            <span className="text-xs text-[#1A73E8] font-medium cursor-pointer hover:underline">More</span>
+                         </div>
+                         <div className="space-y-4">
+                            {incidents.slice(4, 7).map(incident => (
+                               <IncidentCard
+                                 key={incident.id}
+                                 id={incident.id}
+                                 headline={incident.headline}
+                                 summary={incident.summary || ''}
+                                 sources={incident.sources}
+                                 updatedAt={incident.last_updated}
+                                 sourceCount={incident.source_count || 0}
+                                 language={currentLanguage}
+                                 variant="compact"
+                               />
+                            ))}
+                         </div>
+                      </div>
+
+                       {/* Example Topic: Technology */}
+                       <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] p-4">
+                         <div className="flex items-center justify-between mb-3">
+                            <h3 className="font-medium text-[#202124]">Technology</h3>
+                            <span className="text-xs text-[#1A73E8] font-medium cursor-pointer hover:underline">More</span>
+                         </div>
+                         <div className="space-y-4">
+                            {incidents.slice(7, 10).map(incident => (
+                               <IncidentCard
+                                 key={incident.id}
+                                 id={incident.id}
+                                 headline={incident.headline}
+                                 summary={incident.summary || ''}
+                                 sources={incident.sources}
+                                 updatedAt={incident.last_updated}
+                                 sourceCount={incident.source_count || 0}
+                                 language={currentLanguage}
+                                 variant="compact"
+                               />
+                            ))}
+                         </div>
+                      </div>
+                   </div>
+                </div>
+
               </>
             )}
             
@@ -208,7 +234,7 @@ export default function HomePage() {
           </div>
 
           {/* Right Sidebar (Widgets/Picks) */}
-          <div className="hidden lg:block lg:col-span-3 space-y-6">
+          <div className="hidden lg:block w-80 flex-shrink-0 space-y-6">
             <Sidebar 
               latestUpdates={latestUpdates}
               language={currentLanguage}
