@@ -16,6 +16,13 @@ module.exports = {
           'accent-blue': '#3B82F6',
           'blue-glow': 'rgba(37, 99, 235, 0.3)',
         },
+        google: {
+          blue: '#1A73E8',
+          gray: '#5F6368',
+          dark: '#202124',
+          bg: '#F5F5F5',
+          border: '#E8EAED',
+        },
         text: {
           dark: '#0F172A',
           gray: '#64748B',
