@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import TabNavigation from '@/components/TabNavigation';
 import IncidentCard from '@/components/IncidentCard';
