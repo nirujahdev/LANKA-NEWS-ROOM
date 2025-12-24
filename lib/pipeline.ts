@@ -154,9 +154,11 @@ async function insertArticles(
       };
     });
 
+    // Use hash as the conflict target since it's unique per article
+    // Hash is computed from url, guid, and title combination
     const { data, error } = await supabaseAdmin
       .from('articles')
-      .upsert(rows, { onConflict: 'url,guid,hash', ignoreDuplicates: true })
+      .upsert(rows, { onConflict: 'hash', ignoreDuplicates: true })
       .select('id, source_id, title, hash');
 
     if (error) {
