@@ -6,7 +6,7 @@ import TabNavigation from '@/components/TabNavigation';
 import IncidentCard from '@/components/IncidentCard';
 import Sidebar from '@/components/Sidebar';
 import LeftSidebar from '@/components/LeftSidebar';
-import { ClusterListItem, loadClusters } from '@/lib/api';
+import { ClusterListItem, loadClusters, FeedType, CategoryType } from '@/lib/api';
 
 const tabs = [
   { id: 'home', label: 'Home', labelSi: 'මුල් පිටුව', labelTa: 'முகப்பு' },
@@ -34,7 +34,13 @@ export default function HomePage() {
       setLoading(true);
       setError(false);
       try {
-        const data = await loadClusters(activeTab === 'home' ? undefined : activeTab);
+        // Map activeTab to feed or category
+        const feed: FeedType = activeTab === 'home' ? 'home' : activeTab === 'recent' ? 'recent' : null;
+        const category: CategoryType = ['politics', 'economy', 'sports', 'technology', 'health'].includes(activeTab)
+          ? (activeTab as 'politics' | 'economy' | 'sports' | 'technology' | 'health')
+          : null;
+        
+        const data = await loadClusters(currentLanguage, feed, category);
         if (!cancelled) {
           setIncidents(data);
           
@@ -65,7 +71,7 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, [activeTab]);
+  }, [activeTab, currentLanguage]);
 
   const formatDate = () => {
     const now = new Date();
