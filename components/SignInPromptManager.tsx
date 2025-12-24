@@ -26,6 +26,14 @@ const SignInPromptManager: React.FC<SignInPromptManagerProps> = ({ children }) =
       return;
     }
 
+    // Check if we have valid Supabase credentials
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseAnonKey) {
+      // Skip Supabase operations if env vars are missing
+      return;
+    }
+
     let supabase;
     try {
       supabase = getSupabaseClient();
@@ -33,6 +41,8 @@ const SignInPromptManager: React.FC<SignInPromptManagerProps> = ({ children }) =
       // Silently fail during build or if Supabase is not configured
       return;
     }
+
+    let subscription: { unsubscribe: () => void } | null = null;
 
     // Check if user is already signed in
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -45,21 +55,31 @@ const SignInPromptManager: React.FC<SignInPromptManagerProps> = ({ children }) =
     });
 
     // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        setShowPrompt(false);
-      }
-    });
+    try {
+      const {
+        data: { subscription: sub },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          setShowPrompt(false);
+        }
+      });
+      subscription = sub;
+    } catch (error) {
+      // Silently fail if auth state change listener fails
+      console.error('Error setting up auth listener:', error);
+    }
 
     // Check if prompt was dismissed
     const dismissedUntil = localStorage.getItem('signin_prompt_dismissed_until');
     if (dismissedUntil) {
       const dismissedDate = new Date(dismissedUntil);
       if (dismissedDate > new Date()) {
-        return () => subscription.unsubscribe();
+        return () => {
+          if (subscription) {
+            subscription.unsubscribe();
+          }
+        };
       } else {
         localStorage.removeItem('signin_prompt_dismissed_until');
       }
@@ -74,7 +94,9 @@ const SignInPromptManager: React.FC<SignInPromptManagerProps> = ({ children }) =
 
     return () => {
       clearTimeout(timer);
-      subscription.unsubscribe();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, [user, pathname]);
 

@@ -6,20 +6,17 @@ export function createSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // During build time, env vars might not be available
-  // Return a mock client that won't work but won't crash
+  // During build time or if env vars are missing, return a mock client that won't crash
+  // This prevents React errors during hydration when env vars aren't set
   if (!supabaseUrl || !supabaseAnonKey) {
-    if (typeof window === 'undefined') {
-      // Server-side: return a minimal client that won't crash
-      return createClient<Database>('https://placeholder.supabase.co', 'placeholder-key', {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-          detectSessionInUrl: false
-        }
-      });
-    }
-    throw new Error('Missing Supabase environment variables');
+    // Return a minimal client that won't crash but will fail gracefully on API calls
+    return createClient<Database>('https://placeholder.supabase.co', 'placeholder-key', {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false
+      }
+    });
   }
 
   return createClient<Database>(supabaseUrl, supabaseAnonKey, {

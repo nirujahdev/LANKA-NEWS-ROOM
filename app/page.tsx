@@ -42,7 +42,21 @@ export default function HomePage() {
     // Only run on client side
     if (typeof window === 'undefined') return;
 
-    const supabase = getSupabaseClient();
+    let supabase;
+    try {
+      supabase = getSupabaseClient();
+    } catch (error) {
+      // Silently fail if Supabase is not configured
+      return;
+    }
+
+    // Check if we have valid Supabase credentials
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseAnonKey) {
+      // Skip Supabase operations if env vars are missing
+      return;
+    }
 
     // Get user city if signed in
     async function getUserCity() {
@@ -67,14 +81,25 @@ export default function HomePage() {
     getUserCity();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session?.user);
-      if (session?.user) {
-        getUserCity();
-      }
-    });
+    let subscription: { unsubscribe: () => void } | null = null;
+    try {
+      const { data: { subscription: sub } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setIsAuthenticated(!!session?.user);
+        if (session?.user) {
+          getUserCity();
+        }
+      });
+      subscription = sub;
+    } catch (error) {
+      // Silently fail if auth state change listener fails
+      console.error('Error setting up auth listener:', error);
+    }
 
-    return () => subscription.unsubscribe();
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   }, []);
 
   useEffect(() => {
