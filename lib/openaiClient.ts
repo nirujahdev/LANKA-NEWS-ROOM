@@ -320,12 +320,12 @@ Rules:
     },
     {
       maxRetries: 3,
-      retryDelay: 1000,
-      onRetry: (attempt, error) => {
+      delayMs: 1000,
+      onRetry: (error, attempt) => {
         console.warn(`[OpenAI] Retry ${attempt}/3 for translateFromTo (${from}→${to}): ${error.message}`);
       }
     }
-  )();
+  );
 }
 
 // Export translateFromTo for use in pipeline
