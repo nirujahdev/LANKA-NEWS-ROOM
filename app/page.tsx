@@ -213,24 +213,6 @@ export default function HomePage() {
       cancelled = true;
     };
   }, [currentLanguage]);
-      } catch (err) {
-        if (!cancelled) {
-          console.error('Error loading clusters:', err);
-          setError(true);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    fetchData();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentLanguage]);
 
   const formatDate = () => {
     const now = new Date();
