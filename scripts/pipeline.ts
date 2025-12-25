@@ -334,27 +334,36 @@ async function insertArticles(
   let deduped = 0;
 
   for (const row of validRows) {
+    // First check if article already exists by hash
+    const { data: existing } = await supabase
+      .from('articles')
+      .select('id')
+      .eq('hash', row.hash)
+      .maybeSingle();
+
+    if (existing) {
+      // Article already exists - count as deduped
+      deduped++;
+      continue;
+    }
+
+    // Article doesn't exist - insert it
     const { data, error } = await supabase
       .from('articles')
-      .upsert(row, { 
-        onConflict: 'hash',
-        ignoreDuplicates: true
-      })
+      .insert(row)
       .select('id')
       .maybeSingle();
 
     if (error) {
-      // If it's a duplicate, that's expected - count as deduped
+      // If it's a duplicate error, count as deduped
       if (error.message.includes('duplicate') || error.message.includes('unique')) {
         deduped++;
       } else {
-        console.error(`  ⚠️  Insert error for article: ${error.message}`);
-        deduped++; // Count as deduped to avoid inflating stats
+        console.error(`  ⚠️  Insert error for article "${row.title.slice(0, 50)}...": ${error.message}`);
+        // Don't count errors as deduped - they're failures
       }
     } else if (data) {
       inserted++;
-    } else {
-      deduped++; // No data returned = duplicate
     }
   }
   
