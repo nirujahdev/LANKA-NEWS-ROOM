@@ -16,7 +16,8 @@ export async function POST(req: Request) {
     }
     
     // Insert feedback (userId can be null for anonymous)
-    const { data: feedback, error: insertError } = await supabaseAdmin
+    // Note: user_feedback table exists but types need regeneration
+    const { data: feedback, error: insertError } = await (supabaseAdmin as any)
       .from('user_feedback')
       .upsert({
         cluster_id: clusterId,
@@ -55,7 +56,8 @@ export async function GET(req: Request) {
     }
     
     // Get user feedback for this cluster
-    const { data: userFeedback } = await supabaseAdmin
+    // Note: user_feedback table exists but types need regeneration
+    const { data: userFeedback } = await (supabaseAdmin as any)
       .from('user_feedback')
       .select('feedback_type')
       .eq('cluster_id', clusterId)
