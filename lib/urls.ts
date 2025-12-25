@@ -8,8 +8,11 @@ export function getStoryUrl(lang: 'en' | 'si' | 'ta', slug: string | null | unde
   return `/${lang}/story/${slug}`;
 }
 
+import { normalizeTopicSlug } from './topics';
+
 export function getTopicUrl(lang: 'en' | 'si' | 'ta', topic: string): string {
-  return `/${lang}/topic/${topic}`;
+  const normalizedTopic = normalizeTopicSlug(topic) || topic.toLowerCase().replace(/\s+/g, '-');
+  return `/${lang}/topic/${normalizedTopic}`;
 }
 
 export function getHomeUrl(lang: 'en' | 'si' | 'ta'): string {

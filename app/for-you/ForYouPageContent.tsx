@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import TabNavigation from '@/components/TabNavigation';
-import IncidentCard from '@/components/IncidentCard';
+import MixedLayoutGrid from '@/components/MixedLayoutGrid';
 import Sidebar from '@/components/Sidebar';
 import { getSupabaseClient } from '@/lib/supabaseClient';
 import { ClusterListItem, loadClusters } from '@/lib/api';
+import { assignLayout, LayoutAssignment } from '@/lib/layoutAssigner';
+import { NewsCardData } from '@/lib/newsCardUtils';
 
 export default function ForYouPageContent() {
   const router = useRouter();
@@ -130,9 +132,6 @@ export default function ForYouPageContent() {
     fetchUserData();
   }, [router]);
 
-  const featuredIncident = incidents[0];
-  const topStories = incidents.slice(1, 4);
-  const otherStories = incidents.slice(4);
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
@@ -170,73 +169,43 @@ export default function ForYouPageContent() {
                </div>
             )}
 
-            {!loading && !error && incidents.length > 0 && (
-              <>
-                {/* Main News Section */}
-                <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] p-4 sm:p-6 mb-6">
-                  {/* Featured Story */}
-                  {featuredIncident && (
-                    <IncidentCard
-                      id={featuredIncident.id}
-                      slug={featuredIncident.slug}
-                      headline={featuredIncident.headline}
-                      summary={featuredIncident.summary || ''}
-                      sources={featuredIncident.sources}
-                      updatedAt={featuredIncident.last_updated}
-                      sourceCount={featuredIncident.source_count || 0}
-                      language={currentLanguage}
-                      variant="featured"
-                      imageUrl={featuredIncident.image_url || undefined}
-                    />
-                  )}
+            {!loading && !error && incidents.length > 0 && useMemo(() => {
+              const newsCards: NewsCardData[] = incidents.map(incident => ({
+                id: incident.id,
+                slug: incident.slug,
+                headline: incident.headline,
+                summary: incident.summary || null,
+                sources: incident.sources,
+                updatedAt: incident.last_updated,
+                sourceCount: incident.source_count || 0,
+                language: currentLanguage,
+                imageUrl: incident.image_url || null,
+                category: incident.topic || incident.category || null,
+                topics: incident.topic ? [incident.topic] : []
+              }));
 
-                  {/* Top Stories List */}
-                  {topStories.length > 0 && (
-                    <div className="border-t border-[#E8EAED] pt-2">
-                      {topStories.map((incident) => (
-                        <IncidentCard
-                          key={incident.id}
-                          id={incident.id}
-                          slug={incident.slug}
-                          headline={incident.headline}
-                          summary={incident.summary || ''}
-                          sources={incident.sources}
-                          updatedAt={incident.last_updated}
-                          sourceCount={incident.source_count || 0}
-                          language={currentLanguage}
-                          variant="default"
-                          imageUrl={incident.image_url || undefined}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
+              const assignments: LayoutAssignment[] = newsCards.map((card, index) => {
+                // First article gets featured
+                if (index === 0) {
+                  return { layout: 'featured' };
+                }
+                // Next 2-3 get grid
+                if (index >= 1 && index <= 3) {
+                  return { layout: 'grid', span: 1 };
+                }
+                // Rest use dynamic assignment
+                const isRecent = card.updatedAt ? 
+                  (Date.now() - new Date(card.updatedAt).getTime()) < 24 * 60 * 60 * 1000 : false;
+                return assignLayout(index, card.sourceCount, isRecent);
+              });
 
-                {/* More News */}
-                {otherStories.length > 0 && (
-                  <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] p-4 sm:p-6">
-                     <h2 className="text-lg font-normal text-[#202124] mb-4">
-                       More for you
-                     </h2>
-                     {otherStories.map((incident) => (
-                        <IncidentCard
-                          key={incident.id}
-                          id={incident.id}
-                          slug={incident.slug}
-                          headline={incident.headline}
-                          summary={incident.summary || ''}
-                          sources={incident.sources}
-                          updatedAt={incident.last_updated}
-                          sourceCount={incident.source_count || 0}
-                          language={currentLanguage}
-                          variant="default"
-                          imageUrl={incident.image_url || undefined}
-                        />
-                      ))}
-                  </div>
-                )}
-              </>
-            )}
+              return (
+                <MixedLayoutGrid 
+                  articles={newsCards}
+                  assignments={assignments}
+                />
+              );
+            }, [incidents, currentLanguage, loading, error])}
             
             {!loading && !error && incidents.length === 0 && (
                <div className="bg-white rounded-xl p-12 text-center text-[#5F6368] shadow-sm border border-[#E8EAED]">

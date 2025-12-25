@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { normalizeTopicSlug } from '@/lib/topics';
+import { getTopicUrl } from '@/lib/urls';
 
 interface RelatedTopicsProps {
   currentTopic?: string;
@@ -88,15 +90,18 @@ export default function RelatedTopics({
       </div>
       <div className="p-4">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {topics.map((item) => (
-            <Link
-              key={item.topic}
-              href={`/${language}/topic/${item.topic}`}
-              className="px-3 py-2 rounded-lg bg-[#F1F3F4] text-[#5F6368] hover:bg-[#E8EAED] hover:text-[#202124] transition-colors text-sm font-medium text-center capitalize"
-            >
-              {item.topic}
-            </Link>
-          ))}
+          {topics.map((item) => {
+            const normalizedTopic = normalizeTopicSlug(item.topic) || item.topic;
+            return (
+              <Link
+                key={item.topic}
+                href={getTopicUrl(language, normalizedTopic)}
+                className="px-3 py-2 rounded-lg bg-[#F1F3F4] text-[#5F6368] hover:bg-[#E8EAED] hover:text-[#202124] transition-colors text-sm font-medium text-center capitalize"
+              >
+                {item.topic}
+              </Link>
+            );
+          })}
         </div>
       </div>
     </div>

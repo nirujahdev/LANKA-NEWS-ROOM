@@ -1,13 +1,17 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Navigation from '@/components/Navigation';
 import TopicNavigation from '@/components/TopicNavigation';
-import IncidentCard from '@/components/IncidentCard';
 import Sidebar from '@/components/Sidebar';
+import MixedLayoutGrid from '@/components/MixedLayoutGrid';
+import TopicNewsCard from '@/components/TopicNewsCard';
 import { ClusterListItem, loadClusters, FeedType, CategoryType } from '@/lib/api';
 import { getSupabaseClient } from '@/lib/supabaseClient';
 import { useLanguage } from '@/lib/useLanguage';
+import { assignLayout, LayoutAssignment } from '@/lib/layoutAssigner';
+import { NewsCardData } from '@/lib/newsCardUtils';
+import { normalizeTopicSlug } from '@/lib/topics';
 
 export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 'ta' }) {
   // Use language hook for persistence
@@ -136,27 +140,60 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
 
             {/* Main Feed - Centered */}
             <div className="flex-1 min-w-0 max-w-3xl mx-auto">
-              <div className="space-y-0">
-                {incidents.map((incident, index) => (
-                  <div key={incident.id} className="relative pb-4">
-                    <IncidentCard
-                      id={incident.id}
-                      slug={incident.slug}
-                      headline={incident.headline}
-                      summary={incident.summary || ''}
-                      sources={incident.sources}
-                      updatedAt={incident.last_updated}
-                      sourceCount={incident.source_count || 0}
-                      language={currentLanguage}
-                      category={incident.topic || incident.category}
-                    />
-                    {/* Divider line - 3/4 width, centered, only if not last item */}
-                    {index < incidents.length - 1 && (
-                      <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-3/4 h-px bg-[#E8EAED]"></div>
-                    )}
+              {useMemo(() => {
+                // Convert incidents to NewsCardData format
+                const newsCards: NewsCardData[] = incidents.map(incident => ({
+                  id: incident.id,
+                  slug: incident.slug,
+                  headline: incident.headline,
+                  summary: incident.summary || null,
+                  sources: incident.sources,
+                  updatedAt: incident.last_updated,
+                  sourceCount: incident.source_count || 0,
+                  language: currentLanguage,
+                  imageUrl: incident.image_url || null,
+                  category: incident.topic || incident.category || null,
+                  topics: incident.topic ? [incident.topic] : []
+                }));
+
+                // Assign layouts dynamically
+                const assignments: LayoutAssignment[] = newsCards.map((card, index) => {
+                  const isRecent = card.updatedAt ? 
+                    (Date.now() - new Date(card.updatedAt).getTime()) < 24 * 60 * 60 * 1000 : false;
+                  return assignLayout(index, card.sourceCount, isRecent);
+                });
+
+                return (
+                  <MixedLayoutGrid 
+                    articles={newsCards}
+                    assignments={assignments}
+                  />
+                );
+              }, [incidents, currentLanguage])}
+
+              {/* Topic Cards Section - Show top topics with top 3 news */}
+              {!topicLoading && Object.keys(topicData).length > 0 && (
+                <div className="mt-12 mb-8">
+                  <h2 className="text-2xl font-semibold text-[#202124] mb-6">
+                    {currentLanguage === 'si' ? 'ඉහළ මාතෘකා' : currentLanguage === 'ta' ? 'முதன்மை தலைப்புகள்' : 'Top Topics'}
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Object.entries(topicData).slice(0, 6).map(([topic, articles]) => {
+                      const normalizedTopic = normalizeTopicSlug(topic) || topic;
+                      const topicLabel = normalizedTopic.charAt(0).toUpperCase() + normalizedTopic.slice(1).replace(/-/g, ' ');
+                      return (
+                        <TopicNewsCard
+                          key={topic}
+                          topic={topicLabel}
+                          topicSlug={normalizedTopic}
+                          topArticles={articles.slice(0, 3)}
+                          language={currentLanguage}
+                        />
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Right Sidebar + Ad Space */}

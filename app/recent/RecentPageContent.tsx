@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import TopicNavigation from '@/components/TopicNavigation';
-import IncidentCard from '@/components/IncidentCard';
+import MixedLayoutGrid from '@/components/MixedLayoutGrid';
 import { ClusterListItem, loadClusters, FeedType } from '@/lib/api';
 import { useLanguage } from '@/lib/useLanguage';
+import { assignLayout, LayoutAssignment } from '@/lib/layoutAssigner';
+import { NewsCardData } from '@/lib/newsCardUtils';
 
 export default function RecentPageContent() {
   const { language: currentLanguage, setLanguage } = useLanguage();
@@ -81,28 +83,33 @@ export default function RecentPageContent() {
               </div>
             )}
 
-            {!loading && !error && incidents.length > 0 && (
-              <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] p-4 sm:p-6">
-                <div className="space-y-4">
-                  {incidents.map((incident) => (
-                    <IncidentCard
-                      key={incident.id}
-                      id={incident.id}
-                      slug={incident.slug}
-                      headline={incident.headline}
-                      summary={incident.summary || ''}
-                      sources={incident.sources}
-                      updatedAt={incident.last_updated}
-                      sourceCount={incident.source_count || 0}
-                      language={currentLanguage}
-                      variant="default"
-                      imageUrl={incident.image_url || undefined}
-                      category={incident.topic || incident.category || undefined}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+            {!loading && !error && incidents.length > 0 && useMemo(() => {
+              const newsCards: NewsCardData[] = incidents.map(incident => ({
+                id: incident.id,
+                slug: incident.slug,
+                headline: incident.headline,
+                summary: incident.summary || null,
+                sources: incident.sources,
+                updatedAt: incident.last_updated,
+                sourceCount: incident.source_count || 0,
+                language: currentLanguage,
+                imageUrl: incident.image_url || null,
+                category: incident.topic || incident.category || null,
+                topics: incident.topic ? [incident.topic] : []
+              }));
+
+              const assignments: LayoutAssignment[] = newsCards.map((card, index) => {
+                const isRecent = true; // All items on recent page are recent
+                return assignLayout(index, card.sourceCount, isRecent);
+              });
+
+              return (
+                <MixedLayoutGrid 
+                  articles={newsCards}
+                  assignments={assignments}
+                />
+              );
+            }, [incidents, currentLanguage, loading, error])}
             
             {!loading && !error && incidents.length === 0 && (
               <div className="bg-white rounded-xl p-12 text-center text-[#5F6368] shadow-sm border border-[#E8EAED]">

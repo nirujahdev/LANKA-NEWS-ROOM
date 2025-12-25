@@ -62,8 +62,9 @@ const TopicNavigationContent: React.FC<TopicNavigationProps> = ({
     if (topicHref === 'for-you') {
       return '/for-you'; // For-you doesn't use language prefix
     }
-    // For topic pages, use /lang/topic/topicname
-    return `/${currentLang}/topic/${topicHref}`;
+    // For topic pages, normalize and use /lang/topic/topicname
+    const normalized = normalizeTopicSlug(topicHref) || topicHref.toLowerCase().replace(/\s+/g, '-');
+    return `/${currentLang}/topic/${normalized}`;
   };
 
   const isActive = (topicHref: string) => {
@@ -73,9 +74,10 @@ const TopicNavigationContent: React.FC<TopicNavigationProps> = ({
     if (topicHref === 'for-you') {
       return pathname.startsWith('/for-you');
     }
-    // Check if path matches /lang/topic/topicname
-    return pathname === `/${currentLang}/topic/${topicHref}` || 
-           pathname.startsWith(`/${currentLang}/topic/${topicHref}/`);
+    // Check if path matches /lang/topic/topicname (normalize for comparison)
+    const normalized = normalizeTopicSlug(topicHref) || topicHref.toLowerCase().replace(/\s+/g, '-');
+    return pathname === `/${currentLang}/topic/${normalized}` || 
+           pathname.startsWith(`/${currentLang}/topic/${normalized}/`);
   };
 
   return (

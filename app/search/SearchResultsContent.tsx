@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import NavigationWrapper from '@/components/NavigationWrapper';
@@ -8,8 +8,10 @@ import SearchBar from '@/components/SearchBar';
 import TopicCard from '@/components/TopicCard';
 import RelatedTopics from '@/components/RelatedTopics';
 import Sidebar from '@/components/Sidebar';
-import IncidentCard from '@/components/IncidentCard';
+import MixedLayoutGrid from '@/components/MixedLayoutGrid';
 import { loadClusters, ClusterListItem } from '@/lib/api';
+import { assignLayout, LayoutAssignment } from '@/lib/layoutAssigner';
+import { NewsCardData } from '@/lib/newsCardUtils';
 
 export default function SearchResultsContent() {
   const searchParams = useSearchParams();
@@ -139,25 +141,43 @@ export default function SearchResultsContent() {
             )}
 
             {/* Results */}
-            {!loading && !error && results.length > 0 && (
-              <div className="space-y-4">
-                {results.map((result) => (
-                  <div key={result.id} className="bg-white rounded-xl shadow-sm border border-[#E8EAED] overflow-hidden">
-                    <IncidentCard
-                      id={result.id}
-                      slug={result.slug}
-                      headline={result.headline}
-                      summary={result.summary || ''}
-                      sources={result.sources}
-                      updatedAt={result.last_updated}
-                      sourceCount={result.source_count || 0}
-                      language={currentLanguage}
-                      category={result.topic || result.category}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+            {!loading && !error && results.length > 0 && (() => {
+              // Convert results to NewsCardData format
+              const newsCards: NewsCardData[] = results.map(result => ({
+                id: result.id,
+                slug: result.slug,
+                headline: result.headline,
+                summary: result.summary || null,
+                sources: result.sources,
+                updatedAt: result.last_updated,
+                sourceCount: result.source_count || 0,
+                language: currentLanguage,
+                imageUrl: result.image_url || null,
+                category: result.topic || result.category || null,
+                topics: result.topic ? [result.topic] : []
+              }));
+
+              // Assign layouts dynamically - first result gets featured if high relevance
+              const assignments: LayoutAssignment[] = newsCards.map((card, index) => {
+                // First result with high source count gets featured
+                if (index === 0 && card.sourceCount >= 3) {
+                  return { layout: 'featured' };
+                }
+                // Next 2-3 get grid
+                if (index >= 1 && index <= 3) {
+                  return { layout: 'grid', span: 1 };
+                }
+                // Rest get list
+                return assignLayout(index, card.sourceCount, false);
+              });
+
+              return (
+                <MixedLayoutGrid 
+                  articles={newsCards}
+                  assignments={assignments}
+                />
+              );
+            })()}
 
             {/* No Results */}
             {!loading && !error && results.length === 0 && query && (

@@ -637,10 +637,11 @@ function cleanSlug(text: string): string {
  * Validate topic against allowed list
  */
 function validateTopic(topic: string | null | undefined): string {
-  const validTopics = ['politics', 'economy', 'sports', 'crime', 'education', 'health', 'environment', 'technology', 'culture', 'other'];
-  if (!topic) return 'other';
-  const normalized = topic.toLowerCase().trim();
-  return validTopics.includes(normalized) ? normalized : 'other';
+  const { normalizeTopicSlug, VALID_TOPICS } = require('@/lib/topics');
+  if (!topic) return 'politics'; // Default to politics instead of 'other'
+  const normalized = normalizeTopicSlug(topic);
+  // If normalized topic is valid, return it; otherwise default to 'politics'
+  return normalized || 'politics';
 }
 
 /**

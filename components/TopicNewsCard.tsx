@@ -2,30 +2,32 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Star, Share2 } from 'lucide-react';
 import Image from 'next/image';
+import { Star, Share2 } from 'lucide-react';
+import { ClusterListItem } from '@/lib/api';
+import { formatTimeAgo, getImageUrl, getStoryUrl } from '@/lib/newsCardUtils';
 import { normalizeTopicSlug } from '@/lib/topics';
 import { getTopicUrl } from '@/lib/urls';
 
-interface TopicCardProps {
+interface TopicNewsCardProps {
   topic: string;
   topicSlug: string;
+  topArticles: ClusterListItem[]; // Top 3 articles for this topic
+  language?: 'en' | 'si' | 'ta';
   imageUrl?: string | null;
   isFollowing?: boolean;
-  language?: 'en' | 'si' | 'ta';
   onFollow?: (topic: string, follow: boolean) => void;
-  articleCount?: number;
 }
 
-export default function TopicCard({
+export default function TopicNewsCard({
   topic,
   topicSlug,
+  topArticles,
+  language = 'en',
   imageUrl,
   isFollowing = false,
-  language = 'en',
-  onFollow,
-  articleCount
-}: TopicCardProps) {
+  onFollow
+}: TopicNewsCardProps) {
   const [following, setFollowing] = useState(isFollowing);
   const [sharing, setSharing] = useState(false);
 
@@ -33,7 +35,6 @@ export default function TopicCard({
     const newState = !following;
     setFollowing(newState);
     
-    // Call API if user is authenticated
     try {
       const { createClient } = await import('@supabase/supabase-js');
       const supabase = createClient(
@@ -60,7 +61,6 @@ export default function TopicCard({
       }
     } catch (error) {
       console.error('Error following topic:', error);
-      // Revert state on error
       setFollowing(!newState);
     }
     
@@ -90,13 +90,12 @@ export default function TopicCard({
     return en;
   };
 
-  // Get topic image placeholder or use provided image
   const displayImage = imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(topic)}&background=1A73E8&color=fff&size=128`;
 
   return (
     <div className="bg-white rounded-[40%] shadow-sm border border-[#E8EAED] overflow-hidden">
       <div className="p-4">
-        {/* Topic Image/Icon */}
+        {/* Topic Header */}
         <div className="flex items-center gap-4 mb-4">
           <div className="w-16 h-16 rounded-[40%] overflow-hidden bg-[#F1F3F4] flex items-center justify-center flex-shrink-0">
             {imageUrl ? (
@@ -118,16 +117,11 @@ export default function TopicCard({
           <div className="flex-1 min-w-0">
             <h3 className="text-xl font-semibold text-[#202124] truncate">{topic}</h3>
             <p className="text-sm text-[#5F6368]">{getLabel('Topic', 'මාතෘකාව', 'தலைப்பு')}</p>
-            {articleCount !== undefined && (
-              <p className="text-xs text-[#9AA0A6] mt-1">
-                {articleCount} {getLabel('articles', 'ලිපි', 'கட்டுரைகள்')}
-              </p>
-            )}
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 mb-4">
           <button
             onClick={handleFollow}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-[40%] transition-colors ${
@@ -152,12 +146,64 @@ export default function TopicCard({
           </button>
         </div>
 
-        {/* View Topic Link */}
+        {/* Top 3 News Articles */}
+        {topArticles.length > 0 && (
+          <div className="space-y-3 border-t border-[#E8EAED] pt-4">
+            <h4 className="text-sm font-medium text-[#202124] mb-3">
+              {getLabel('Top stories', 'ඉහළ කතා', 'முதன்மை செய்திகள்')}
+            </h4>
+            {topArticles.slice(0, 3).map((article) => {
+              const articleHref = getStoryUrl(language, article.slug, article.id);
+              const articleImageUrl = getImageUrl({
+                id: article.id,
+                slug: article.slug,
+                headline: article.headline,
+                sources: article.sources,
+                updatedAt: article.last_updated,
+                sourceCount: article.source_count || 0,
+                language,
+                imageUrl: article.image_url || null
+              });
+
+              return (
+                <Link key={article.id} href={articleHref} className="block group">
+                  <div className="flex gap-3 hover:bg-[#F8F9FA] p-2 rounded-lg transition-colors">
+                    {/* Small Thumbnail */}
+                    <div className="w-16 h-16 flex-shrink-0 rounded-[40%] overflow-hidden relative bg-[#F1F3F4]">
+                      <Image 
+                        src={articleImageUrl} 
+                        alt={article.headline}
+                        fill
+                        className="object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80';
+                        }}
+                      />
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-medium text-[#202124] line-clamp-2 group-hover:text-[#1A73E8] transition-colors mb-1">
+                        {article.headline}
+                      </h3>
+                      <div className="text-[10px] text-[#5F6368]">
+                        {formatTimeAgo(article.last_updated)}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
+        {/* View All Link */}
         <Link
           href={getTopicUrl(language, topicSlug)}
-          className="block mt-3 text-center text-sm text-[#1A73E8] hover:underline"
+          className="block mt-4 text-center text-sm text-[#1A73E8] hover:underline"
         >
-          {getLabel('View all news', 'සියලුම පුවත්', 'அனைத்து செய்திகளும்')}
+          {getLabel('View all news', 'සියලුම පුවත්', 'அனைத்து செய்திகளும்')} →
         </Link>
       </div>
     </div>

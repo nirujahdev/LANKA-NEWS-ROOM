@@ -6,12 +6,13 @@
  */
 
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import NavigationWrapper from '@/components/NavigationWrapper';
 import IncidentCard from '@/components/IncidentCard';
 import TopicCard from '@/components/TopicCard';
 import RelatedTopics from '@/components/RelatedTopics';
+import { normalizeTopicSlug, getTopicLabel, VALID_TOPICS, isValidTopic } from '@/lib/topics';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 300;
@@ -20,56 +21,18 @@ type Props = {
   params: Promise<{ lang: 'en' | 'si' | 'ta'; topic: string }>;
 };
 
-const VALID_TOPICS = ['politics', 'economy', 'sports', 'crime', 'education', 'health', 'environment', 'technology', 'culture', 'sri-lanka'];
-
-const TOPIC_LABELS = {
-  en: {
-    politics: 'Politics',
-    economy: 'Economy',
-    sports: 'Sports',
-    crime: 'Crime',
-    education: 'Education',
-    health: 'Health',
-    environment: 'Environment',
-    technology: 'Technology',
-    culture: 'Culture',
-    'sri-lanka': 'Sri Lanka'
-  },
-  si: {
-    politics: 'දේශපාලනය',
-    economy: 'ආර්ථිකය',
-    sports: 'ක්‍රීඩා',
-    crime: 'අපරාධ',
-    education: 'අධ්‍යාපනය',
-    health: 'සෞඛ්‍යය',
-    environment: 'පරිසරය',
-    technology: 'තාක්ෂණය',
-    culture: 'සංස්කෘතිය',
-    'sri-lanka': 'ශ්‍රී ලංකාව'
-  },
-  ta: {
-    politics: 'அரசியல்',
-    economy: 'பொருளாதாரம்',
-    sports: 'விளையாட்டு',
-    crime: 'குற்றம்',
-    education: 'கல்வி',
-    health: 'சுகாதாரம்',
-    environment: 'சுற்றுச்சூழல்',
-    technology: 'தொழில்நுட்பம்',
-    culture: 'கலாச்சாரம்',
-    'sri-lanka': 'இலங்கை'
-  }
-};
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const resolvedParams = await params;
-  const { lang, topic } = resolvedParams;
+  const { lang, topic: rawTopic } = resolvedParams;
   
-  if (!VALID_TOPICS.includes(topic)) {
+  // Normalize topic slug
+  const topic = normalizeTopicSlug(rawTopic);
+  
+  if (!topic || !isValidTopic(topic)) {
     return { title: 'Not Found' };
   }
 
-  const topicLabel = TOPIC_LABELS[lang][topic as keyof typeof TOPIC_LABELS.en];
+  const topicLabel = getTopicLabel(topic, lang);
   const countryRef = lang === 'en' ? 'Sri Lanka' : lang === 'si' ? 'ශ්‍රී ලංකා' : 'இலங்கை';
   const newsLabel = lang === 'en' ? 'News' : lang === 'si' ? 'පුවත්' : 'செய்திகள்';
   
@@ -136,13 +99,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TopicPage({ params }: Props) {
   const resolvedParams = await params;
-  const { lang, topic } = resolvedParams;
+  const { lang, topic: rawTopic } = resolvedParams;
 
-  if (!VALID_TOPICS.includes(topic)) {
+  // Normalize topic slug
+  const topic = normalizeTopicSlug(rawTopic);
+  
+  if (!topic || !isValidTopic(topic)) {
     notFound();
   }
 
+  // Redirect if the URL topic doesn't match normalized topic (e.g., "Sri Lanka" -> "sri-lanka")
+  if (rawTopic !== topic) {
+    redirect(`/${lang}/topic/${topic}`);
+  }
+
   // Get latest articles for this topic with sources
+  // Use case-insensitive matching with ilike for better compatibility
   const { data: clusters } = await supabaseAdmin
     .from('clusters')
     .select(`
@@ -156,11 +128,11 @@ export default async function TopicPage({ params }: Props) {
       )
     `)
     .eq('status', 'published')
-    .eq('topic', topic)
+    .ilike('topic', topic) // Case-insensitive matching
     .order('last_seen_at', { ascending: false })
     .limit(20);
 
-  const topicLabel = TOPIC_LABELS[lang][topic as keyof typeof TOPIC_LABELS.en];
+  const topicLabel = getTopicLabel(topic, lang);
   const countryRef = lang === 'en' ? 'Sri Lanka' : lang === 'si' ? 'ශ්‍රී ලංකා' : 'இலங்கை';
   const newsLabel = lang === 'en' ? 'News' : lang === 'si' ? 'පුවත්' : 'செய்திகள்';
 
