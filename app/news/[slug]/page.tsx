@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 300; // Revalidate every 5 minutes
 
 type Props = {
-  params: { slug: string };
-  searchParams: { lang?: 'en' | 'si' | 'ta' };
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ lang?: 'en' | 'si' | 'ta' }>;
 };
 
 async function getClusterBySlug(slug: string) {
@@ -93,8 +93,10 @@ async function getClusterBySlug(slug: string) {
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   try {
-    const lang = searchParams.lang || 'en';
-    const data = await getClusterBySlug(params.slug);
+    const resolvedParams = await params;
+    const resolvedSearchParams = await searchParams;
+    const lang = resolvedSearchParams.lang || 'en';
+    const data = await getClusterBySlug(resolvedParams.slug);
 
     if (!data || !data.cluster) {
       return {
@@ -117,10 +119,10 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
       lang === 'ta' ? cluster.meta_description_ta || summary?.summary_ta :
       cluster.meta_description_en || summary?.summary_en;
 
-    const canonicalUrl = `${baseUrl}/news/${params.slug}`;
-    const enUrl = `${baseUrl}/news/${params.slug}?lang=en`;
-    const siUrl = `${baseUrl}/news/${params.slug}?lang=si`;
-    const taUrl = `${baseUrl}/news/${params.slug}?lang=ta`;
+    const canonicalUrl = `${baseUrl}/news/${resolvedParams.slug}`;
+    const enUrl = `${baseUrl}/news/${resolvedParams.slug}?lang=en`;
+    const siUrl = `${baseUrl}/news/${resolvedParams.slug}?lang=si`;
+    const taUrl = `${baseUrl}/news/${resolvedParams.slug}?lang=ta`;
 
     // Get first article image if cluster doesn't have one
     const firstArticle = data.articles?.[0] as { image_url?: string | null } | undefined;
@@ -187,8 +189,10 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 
 export default async function NewsDetailPage({ params, searchParams }: Props) {
   try {
-    const lang = searchParams.lang || 'en';
-    const data = await getClusterBySlug(params.slug);
+    const resolvedParams = await params;
+    const resolvedSearchParams = await searchParams;
+    const lang = resolvedSearchParams.lang || 'en';
+    const data = await getClusterBySlug(resolvedParams.slug);
 
     if (!data || !data.cluster) {
       notFound();
@@ -200,7 +204,7 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
     // Summary will be empty string if not available
 
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
-    const canonicalUrl = `${baseUrl}/news/${params.slug}`;
+    const canonicalUrl = `${baseUrl}/news/${resolvedParams.slug}`;
     
     // Get metadata for JSON-LD
     const metaDescription =

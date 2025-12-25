@@ -145,5 +145,6 @@ export async function GET(req: Request) {
   }
 }
 
-export const runtime = 'edge';
+// Removed edge runtime to avoid static generation issues
+// export const runtime = 'edge';
 
