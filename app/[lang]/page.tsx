@@ -48,12 +48,14 @@ function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 'ta' }) {
       // Continue loading - getSupabaseClient returns a placeholder client
     }
 
-    // Check authentication
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
-    }).catch(err => {
-      console.error('Auth check failed:', err);
-    });
+    // Check authentication (only if Supabase is properly configured)
+    if (supabaseUrl && supabaseAnonKey && supabase) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setIsAuthenticated(!!session);
+      }).catch(err => {
+        console.error('Auth check failed:', err);
+      });
+    }
 
     // Load clusters using current language (from hook, which respects user preference)
     loadClusters(currentLanguage, null, null)
