@@ -685,7 +685,7 @@ async function runPipeline(): Promise<Stats> {
     let consecutiveFailures = 0;
     const MAX_CONSECUTIVE_FAILURES = 5; // Stop if 5 in a row fail
     const MAX_PROCESSING_TIME_MS = 50 * 60 * 1000; // 50 minutes (leave 10min buffer for timeout)
-    const startTime = Date.now();
+    const processingStartTime = Date.now();
     let totalProcessed = 0;
     const MAX_ARTICLES_PER_RUN = 100; // Limit articles per run to prevent timeout
     
