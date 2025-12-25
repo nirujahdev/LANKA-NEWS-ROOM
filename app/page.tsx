@@ -321,11 +321,11 @@ export default function HomePage() {
                   )}
                 </div>
 
-                {/* "Your topics" Section - 3x2 Grid */}
+                {/* "Your topics" Section - 2x3 Grid (wider cards) */}
                 <div className="mb-6">
                    <h2 className="text-xl font-normal text-[#202124] mb-4">Your topics</h2>
                    {topicLoading ? (
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                        {[1, 2, 3, 4, 5, 6].map((i) => (
                          <div key={i} className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] h-64 animate-pulse">
                            <div className="px-4 py-3 border-b border-[#E8EAED] bg-gray-100 h-12"></div>
@@ -337,7 +337,7 @@ export default function HomePage() {
                        ))}
                      </div>
                    ) : (
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                        {[
                          { id: 'politics', category: 'politics' as CategoryType, label: 'Politics', labelSi: 'දේශපාලනය', labelTa: 'அரசியல்', href: '/politics' },
                          { id: 'business', category: 'economy' as CategoryType, label: 'Business', labelSi: 'ව්‍යාපාර', labelTa: 'வணிகம்', href: '/business' },
