@@ -194,7 +194,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       twitter: {
         card: 'summary_large_image',
         title: metaTitle,
-        description: metaDescription || ''
+        description: metaDescription || '',
+        ...(imageUrl && { images: [imageUrl] })
       },
       robots: {
         index: true,

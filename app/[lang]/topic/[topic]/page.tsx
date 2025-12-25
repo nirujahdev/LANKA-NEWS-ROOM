@@ -20,7 +20,7 @@ type Props = {
   params: Promise<{ lang: 'en' | 'si' | 'ta'; topic: string }>;
 };
 
-const VALID_TOPICS = ['politics', 'economy', 'sports', 'crime', 'education', 'health', 'environment', 'technology', 'culture'];
+const VALID_TOPICS = ['politics', 'economy', 'sports', 'crime', 'education', 'health', 'environment', 'technology', 'culture', 'sri-lanka'];
 
 const TOPIC_LABELS = {
   en: {
@@ -32,7 +32,8 @@ const TOPIC_LABELS = {
     health: 'Health',
     environment: 'Environment',
     technology: 'Technology',
-    culture: 'Culture'
+    culture: 'Culture',
+    'sri-lanka': 'Sri Lanka'
   },
   si: {
     politics: 'දේශපාලනය',
@@ -43,7 +44,8 @@ const TOPIC_LABELS = {
     health: 'සෞඛ්‍යය',
     environment: 'පරිසරය',
     technology: 'තාක්ෂණය',
-    culture: 'සංස්කෘතිය'
+    culture: 'සංස්කෘතිය',
+    'sri-lanka': 'ශ්‍රී ලංකාව'
   },
   ta: {
     politics: 'அரசியல்',
@@ -54,7 +56,8 @@ const TOPIC_LABELS = {
     health: 'சுகாதாரம்',
     environment: 'சுற்றுச்சூழல்',
     technology: 'தொழில்நுட்பம்',
-    culture: 'கலாச்சாரம்'
+    culture: 'கலாச்சாரம்',
+    'sri-lanka': 'இலங்கை'
   }
 };
 
@@ -101,11 +104,32 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: 'website',
       locale: lang === 'si' ? 'si_LK' : lang === 'ta' ? 'ta_LK' : 'en_LK',
       url: canonicalUrl,
-      siteName: 'Lanka News Room'
+      siteName: 'Lanka News Room',
+      images: [
+        {
+          url: `${baseUrl}/og-image.jpg`,
+          width: 1200,
+          height: 630,
+          alt: `${topicLabel} News - Lanka News Room`
+        }
+      ]
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [`${baseUrl}/og-image.jpg`]
     },
     robots: {
       index: true,
-      follow: true
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1
+      }
     }
   };
 }

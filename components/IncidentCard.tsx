@@ -83,6 +83,7 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
       'crime': { en: 'Crime', si: 'අපරාධ', ta: 'குற்றம்' },
       'environment': { en: 'Environment', si: 'පරිසරය', ta: 'சுற்றுச்சூழல்' },
       'culture': { en: 'Culture', si: 'සංස්කෘතිය', ta: 'கலாச்சாரம்' },
+      'sri-lanka': { en: 'Sri Lanka', si: 'ශ්‍රී ලංකාව', ta: 'இலங்கை' },
       'other': { en: 'Other', si: 'වෙනත්', ta: 'மற்ற' }
     };
 
@@ -218,47 +219,49 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
   // Default List Variant (Top Stories list below featured)
   return (
     <Link href={href} className="block group">
-      <article className="relative py-4 flex gap-4 cursor-pointer hover:bg-[#F8F9FA] -mx-4 px-4 transition-colors rounded-2xl">
-        <div className="flex-1 min-w-0 flex flex-col justify-between">
-          <div>
-            {/* Topic Tags */}
-            <div className="mb-1.5 flex items-center gap-2 flex-wrap">
-              {topicTags.map((topic, idx) => (
-                <span
-                  key={idx}
-                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#E8F0FE] text-[#1A73E8]"
-                >
-                  {getTopicLabel(topic)}
-                </span>
-              ))}
+      <article className="relative bg-white rounded-lg border border-[#E8EAED] p-4 sm:p-5 cursor-pointer hover:shadow-sm transition-all duration-200">
+        <div className="flex gap-4">
+          <div className="flex-1 min-w-0 flex flex-col justify-between">
+            <div>
+              {/* Topic Tags */}
+              <div className="mb-2 flex items-center gap-2 flex-wrap">
+                {topicTags.map((topic, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E8F0FE] text-[#1A73E8]"
+                  >
+                    {getTopicLabel(topic)}
+                  </span>
+                ))}
+              </div>
+
+              {/* Headline */}
+              <h2 className="text-base font-medium text-[#202124] mb-2 leading-snug group-hover:text-[#1A73E8] transition-colors duration-200 flex items-center gap-2">
+                <span className="group-hover:underline decoration-1 underline-offset-2">{headline}</span>
+                <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#1A73E8]">➝</span>
+              </h2>
             </div>
 
-            {/* Headline */}
-            <h2 className="text-base font-medium text-[#202124] mb-1 leading-snug group-hover:text-[#1A73E8] transition-colors duration-200 flex items-center gap-2">
-              <span className="group-hover:underline decoration-1 underline-offset-2">{headline}</span>
-              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#1A73E8]">➝</span>
-            </h2>
+            {/* Meta Information - Time */}
+            <div className="flex items-center gap-2 text-xs text-[#5F6368] mt-2">
+              <span>{formatTimeAgo(updatedAt)}</span>
+            </div>
           </div>
 
-          {/* Meta Information - Time */}
-          <div className="flex items-center gap-2 text-xs text-[#5F6368] mt-1">
-            <span>{formatTimeAgo(updatedAt)}</span>
+          {/* Image - Right side */}
+          <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden relative bg-[#F1F3F4]">
+            <Image 
+              src={getImageUrl()} 
+              alt={headline}
+              fill
+              className="object-cover group-hover:brightness-[1.02] transition-all duration-200"
+              onError={(e) => {
+                // Fallback to default image on error
+                const target = e.target as HTMLImageElement;
+                target.src = 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80';
+              }}
+            />
           </div>
-        </div>
-
-        {/* Image - Right side */}
-        <div className="w-24 h-24 flex-shrink-0 rounded-2xl overflow-hidden relative bg-[#F1F3F4]">
-          <Image 
-            src={getImageUrl()} 
-            alt={headline}
-            fill
-            className="object-cover group-hover:brightness-[1.02] transition-all duration-200"
-            onError={(e) => {
-              // Fallback to default image on error
-              const target = e.target as HTMLImageElement;
-              target.src = 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80';
-            }}
-          />
         </div>
       </article>
     </Link>

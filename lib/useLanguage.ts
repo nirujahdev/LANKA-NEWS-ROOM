@@ -105,7 +105,8 @@ export function useLanguage(initialLang?: 'en' | 'si' | 'ta') {
     if (isLoading) return;
 
     // Priority 1: User profile language (if authenticated and no manual override)
-    if (userLanguage && !localStorage.getItem('preferredLanguage')) {
+    // Only check localStorage on client side to avoid hydration issues
+    if (typeof window !== 'undefined' && userLanguage && !localStorage.getItem('preferredLanguage')) {
       setCurrentLanguageState(userLanguage);
       localStorage.setItem('preferredLanguage', userLanguage);
       // Update URL if needed (only on language-aware routes)
@@ -119,35 +120,37 @@ export function useLanguage(initialLang?: 'en' | 'si' | 'ta') {
       return;
     }
 
-    // Priority 2: localStorage preference (session)
-    const stored = localStorage.getItem('preferredLanguage') as 'en' | 'si' | 'ta' | null;
-    if (stored && ['en', 'si', 'ta'].includes(stored)) {
-      // Check if URL matches stored preference
-      const pathLang = getLangFromPath(pathname);
-      if (pathLang && pathLang !== stored && pathname.match(/^\/(en|si|ta)(\/|$)/)) {
-        // URL doesn't match preference - update URL to match preference
-        const newPath = pathname.replace(/^\/(en|si|ta)/, `/${stored}`);
-        if (newPath !== pathname) {
-          router.replace(newPath);
+    // Priority 2: localStorage preference (session) - only on client
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('preferredLanguage') as 'en' | 'si' | 'ta' | null;
+      if (stored && ['en', 'si', 'ta'].includes(stored)) {
+        // Check if URL matches stored preference
+        const pathLang = getLangFromPath(pathname);
+        if (pathLang && pathLang !== stored && pathname.match(/^\/(en|si|ta)(\/|$)/)) {
+          // URL doesn't match preference - update URL to match preference
+          const newPath = pathname.replace(/^\/(en|si|ta)/, `/${stored}`);
+          if (newPath !== pathname) {
+            router.replace(newPath);
+          }
         }
+        setCurrentLanguageState(stored);
+        return;
       }
-      setCurrentLanguageState(stored);
-      return;
-    }
 
-    // Priority 3: URL param (only if no preference exists)
-    const pathLang = getLangFromPath(pathname);
-    if (pathLang) {
-      setCurrentLanguageState(pathLang);
-      localStorage.setItem('preferredLanguage', pathLang);
-      return;
-    }
+      // Priority 3: URL param (only if no preference exists)
+      const pathLang = getLangFromPath(pathname);
+      if (pathLang) {
+        setCurrentLanguageState(pathLang);
+        localStorage.setItem('preferredLanguage', pathLang);
+        return;
+      }
 
-    // Priority 4: Default to 'en' - only set if we're on a language-aware route
-    if (pathname.match(/^\/(en|si|ta)(\/|$)/)) {
-      if (currentLanguage !== 'en') {
-        setCurrentLanguageState('en');
-        localStorage.setItem('preferredLanguage', 'en');
+      // Priority 4: Default to 'en' - only set if we're on a language-aware route
+      if (pathname.match(/^\/(en|si|ta)(\/|$)/)) {
+        if (currentLanguage !== 'en') {
+          setCurrentLanguageState('en');
+          localStorage.setItem('preferredLanguage', 'en');
+        }
       }
     }
   }, [pathname, userLanguage, isLoading, router, getLangFromPath, currentLanguage]);
