@@ -21,11 +21,6 @@ export default function HomePage() {
   const [userCity, setUserCity] = useState('Colombo');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Build tabs with "For You" if authenticated
-  const tabs = isAuthenticated 
-    ? [{ id: 'for-you', label: 'For you', labelSi: 'ඔබ වෙනුවෙන්', labelTa: 'உங்களுக்காக' }, ...baseTabs]
-    : baseTabs;
-
   useEffect(() => {
     // Only run on client side
     if (typeof window === 'undefined') return;
