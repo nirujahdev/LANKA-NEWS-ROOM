@@ -52,8 +52,9 @@ export async function GET(req: Request) {
 
     // Apply category filter - check both category and topic fields
     if (category && category !== 'home' && category !== 'recent') {
-      // Use OR condition to match either category or topic field
-      query = query.or(`category.eq.${category},topic.eq.${category}`);
+      // Filter by category field (topic field may not exist in all clusters)
+      // We'll match clusters where category equals the requested category
+      query = query.eq('category', category);
     }
 
     // Apply time filter
@@ -61,7 +62,7 @@ export async function GET(req: Request) {
       query = query.gte(timeFilter.column, timeFilter.value);
     }
 
-    // Order by: home uses last_updated, recent uses created_at, others use updated_at
+    // Order by: home uses last_updated, recent uses created_at, others use updated_at (most recent first)
     const orderBy = feed === 'home' ? 'last_seen_at' : feed === 'recent' ? 'created_at' : 'updated_at';
     query = query.order(orderBy, { ascending: false }).limit(limit);
 
