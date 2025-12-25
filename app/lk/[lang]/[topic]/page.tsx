@@ -111,12 +111,18 @@ export default async function TopicPage({ params }: Props) {
     notFound();
   }
 
-  // Get latest articles for this topic
+  // Get latest articles for this topic with sources
   const { data: clusters } = await supabaseAdmin
     .from('clusters')
     .select(`
       *,
-      summaries (*)
+      summaries (*),
+      articles (
+        sources (
+          name,
+          feed_url
+        )
+      )
     `)
     .eq('status', 'published')
     .eq('topic', topic)
@@ -153,6 +159,21 @@ export default async function TopicPage({ params }: Props) {
               lang === 'ta' ? summary?.summary_ta || summary?.summary_en :
               summary?.summary_en;
 
+            // Extract unique sources from articles
+            const sourcesMap = new Map<string, { name: string; feed_url: string }>();
+            cluster.articles?.forEach((article: any) => {
+              if (article.sources) {
+                const source = article.sources;
+                if (!sourcesMap.has(source.name)) {
+                  sourcesMap.set(source.name, {
+                    name: source.name,
+                    feed_url: source.feed_url || '#'
+                  });
+                }
+              }
+            });
+            const sources = Array.from(sourcesMap.values());
+
             return (
               <IncidentCard
                 key={cluster.id}
@@ -161,9 +182,9 @@ export default async function TopicPage({ params }: Props) {
                 summary={summaryText || ''}
                 sourceCount={cluster.source_count || 0}
                 updatedAt={cluster.last_seen_at}
-                category={cluster.category}
                 slug={cluster.slug}
-                currentLanguage={lang}
+                language={lang}
+                sources={sources.length > 0 ? sources : [{ name: 'Multiple Sources', feed_url: '#' }]}
               />
             );
           })}
