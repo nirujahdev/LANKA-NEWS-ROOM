@@ -100,8 +100,8 @@ export default function TopicNewsCard({
     switch (sortBy) {
       case 'date':
         return articles.sort((a, b) => {
-          const dateA = new Date(a.last_updated).getTime();
-          const dateB = new Date(b.last_updated).getTime();
+          const dateA = a.last_updated ? new Date(a.last_updated).getTime() : 0;
+          const dateB = b.last_updated ? new Date(b.last_updated).getTime() : 0;
           return dateB - dateA; // Newest first
         });
       

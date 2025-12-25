@@ -5,10 +5,11 @@ import { fetchRssFeed } from './rss';
 import { detectLanguage } from './language';
 import { makeArticleHash } from './hash';
 import { extractEntities, normalizeTitle, similarityScore, generateSlug } from './text';
-import { summarizeEnglish, translateSummary, generateSEOMetadata, generateComprehensiveSEO, summarizeInSourceLanguage, translateToMultipleLanguages, generateKeyFacts, generateConfirmedVsDiffers, generateKeywords, translateFromTo } from './openaiClient';
+import { summarizeEnglish, translateSummary, generateSEOMetadata, generateComprehensiveSEO, summarizeInSourceLanguage, translateToMultipleLanguages, generateKeyFacts, generateConfirmedVsDiffers, generateKeywords, translateFromTo, validateSummaryQuality } from './openaiClient';
 import { categorizeCluster } from './categorize';
 import { updateLastSuccessfulRun } from './pipelineEarlyExit';
 import { selectBestImage } from './imageSelection';
+import { extractAllImagesFromHtml, fetchArticleImages } from './imageExtraction';
 import { cache } from './cache';
 
 type ClusterCache = {
@@ -156,6 +157,8 @@ async function insertArticles(
   for (const batch of fetched) {
     const rows = batch.items.map((item) => {
       const hash = makeArticleHash({ url: item.url, guid: item.guid, title: item.title });
+      // Store all images in image_urls array, primary image in image_url for backward compatibility
+      const imageUrls = item.imageUrls && item.imageUrls.length > 0 ? item.imageUrls : (item.imageUrl ? [item.imageUrl] : null);
       return {
         source_id: batch.source_id,
         title: item.title,
@@ -166,7 +169,8 @@ async function insertArticles(
         content_excerpt: item.contentSnippet || item.content?.slice(0, 400) || null,
         lang: detectLanguage(item.title ?? item.content),
         hash,
-        image_url: item.imageUrl || null
+        image_url: item.imageUrl || null,
+        image_urls: imageUrls
       };
     });
 
@@ -365,7 +369,7 @@ async function summarizeEligible(
 
     const { data: articles, error } = await supabaseAdmin
       .from('articles')
-      .select('title, content_excerpt, content_text, published_at, image_url')
+      .select('title, content_excerpt, content_text, published_at, image_url, url')
       .eq('cluster_id', cluster.id)
       .order('published_at', { ascending: false })
       .limit(env.MAX_SUMMARY_ARTICLES);
@@ -429,48 +433,120 @@ async function summarizeEligible(
 
     // Generate summary in source language
     let summaryInSource: string;
+    let summaryQualityScore = 0;
     try {
       summaryInSource = await summarizeInSourceLanguage(sourcePayload, sourceLang, summary?.summary_en || summary?.summary_si || summary?.summary_ta);
+      
+      // Validate summary quality
+      const qualityCheck = validateSummaryQuality(summaryInSource);
+      summaryQualityScore = qualityCheck.score;
+      
+      if (!qualityCheck.isValid) {
+        console.warn(`[Pipeline] Summary quality check failed (score: ${qualityCheck.score}):`, qualityCheck.issues);
+        // If quality is very poor, try regenerating once
+        if (qualityCheck.score < 50) {
+          console.log('[Pipeline] Regenerating summary due to poor quality...');
+          try {
+            summaryInSource = await summarizeInSourceLanguage(sourcePayload, sourceLang);
+            const retryCheck = validateSummaryQuality(summaryInSource);
+            summaryQualityScore = retryCheck.score;
+            if (!retryCheck.isValid) {
+              console.warn(`[Pipeline] Retry summary also failed quality check (score: ${retryCheck.score})`);
+            }
+          } catch (retryError) {
+            console.error('[Pipeline] Summary regeneration failed:', retryError);
+          }
+        }
+      } else {
+        console.log(`[Pipeline] Summary quality check passed (score: ${qualityCheck.score})`);
+      }
     } catch (error) {
       console.error('[Pipeline] Source language summarization failed, falling back to English:', error);
       // Fallback to English summarization
       summaryInSource = await summarizeEnglish(sourcePayload, summary?.summary_en);
       sourceLang = 'en';
+      
+      // Validate fallback summary
+      const qualityCheck = validateSummaryQuality(summaryInSource);
+      summaryQualityScore = qualityCheck.score;
+      if (!qualityCheck.isValid) {
+        console.warn(`[Pipeline] Fallback summary quality check failed (score: ${qualityCheck.score})`);
+      }
     }
 
     // Translate to all 3 languages - ensure all are always generated
     let summaryEn: string, summarySi: string, summaryTa: string;
+    const translationStatus: { en: boolean; si: boolean; ta: boolean } = { en: false, si: false, ta: false };
+    
     try {
+      console.log(`[Pipeline] Starting translation from ${sourceLang} to all languages...`);
       const translations = await translateToMultipleLanguages(summaryInSource, sourceLang);
       summaryEn = translations.en;
       summarySi = translations.si;
       summaryTa = translations.ta;
       
+      // Track which translations succeeded
+      translationStatus.en = !!summaryEn && summaryEn.trim().length > 0;
+      translationStatus.si = !!summarySi && summarySi.trim().length > 0;
+      translationStatus.ta = !!summaryTa && summaryTa.trim().length > 0;
+      
       // Validate all 3 languages are present and non-empty
-      if (!summaryEn || !summarySi || !summaryTa) {
-        console.warn('[Pipeline] Some translations are missing, using fallbacks');
-        // Use English as ultimate fallback for missing translations
-        summaryEn = summaryEn || summaryInSource;
-        summarySi = summarySi || summaryEn;
-        summaryTa = summaryTa || summaryEn;
+      if (!translationStatus.en || !translationStatus.si || !translationStatus.ta) {
+        console.warn(`[Pipeline] Some translations failed: en=${translationStatus.en}, si=${translationStatus.si}, ta=${translationStatus.ta}`);
+        
+        // Retry failed translations individually with simpler approach
+        if (!translationStatus.en) {
+          try {
+            summaryEn = await translateFromTo(summaryInSource, sourceLang, 'en');
+            translationStatus.en = !!summaryEn && summaryEn.trim().length > 0;
+          } catch (err) {
+            console.error('[Pipeline] English translation retry failed:', err);
+            summaryEn = summaryInSource;
+          }
+        }
+        
+        if (!translationStatus.si) {
+          try {
+            summarySi = await translateFromTo(summaryEn || summaryInSource, 'en', 'si');
+            translationStatus.si = !!summarySi && summarySi.trim().length > 0;
+          } catch (err) {
+            console.error('[Pipeline] Sinhala translation retry failed:', err);
+            summarySi = summaryEn || summaryInSource;
+          }
+        }
+        
+        if (!translationStatus.ta) {
+          try {
+            summaryTa = await translateFromTo(summaryEn || summaryInSource, 'en', 'ta');
+            translationStatus.ta = !!summaryTa && summaryTa.trim().length > 0;
+          } catch (err) {
+            console.error('[Pipeline] Tamil translation retry failed:', err);
+            summaryTa = summaryEn || summaryInSource;
+          }
+        }
       }
       
-      console.log(`[Pipeline] Translated summary from ${sourceLang} to all languages`);
+      console.log(`[Pipeline] Translation complete: en=${translationStatus.en}, si=${translationStatus.si}, ta=${translationStatus.ta}`);
     } catch (error) {
       console.error('[Pipeline] Multi-language translation failed, using fallback:', error);
       // Fallback: Always ensure all 3 languages are set
       // If source was English, translate to Si/Ta; otherwise translate to English first
       if (sourceLang === 'en') {
         summaryEn = summaryInSource;
+        translationStatus.en = true;
         // Try to translate to Si and Ta, fallback to English if fails
         try {
           summarySi = await translateSummary(summaryEn, 'si');
+          translationStatus.si = !!summarySi && summarySi.trim().length > 0;
         } catch {
+          console.warn('[Pipeline] Sinhala translation failed, using English fallback');
           summarySi = summaryEn;
         }
         try {
           summaryTa = await translateSummary(summaryEn, 'ta');
+          translationStatus.ta = !!summaryTa && summaryTa.trim().length > 0;
         } catch {
+          console.warn('[Pipeline] Tamil translation failed, using English fallback');
           summaryTa = summaryEn;
         }
       } else {
@@ -478,20 +554,36 @@ async function summarizeEligible(
         try {
           // First translate to English
           summaryEn = await translateFromTo(summaryInSource, sourceLang, 'en');
+          translationStatus.en = !!summaryEn && summaryEn.trim().length > 0;
           
           // Set source language summary
           if (sourceLang === 'si') {
             summarySi = summaryInSource;
+            translationStatus.si = true;
             // Translate English to Tamil
-            summaryTa = await translateFromTo(summaryEn, 'en', 'ta').catch(() => summaryEn);
+            try {
+              summaryTa = await translateFromTo(summaryEn, 'en', 'ta');
+              translationStatus.ta = !!summaryTa && summaryTa.trim().length > 0;
+            } catch {
+              console.warn('[Pipeline] Tamil translation failed, using English fallback');
+              summaryTa = summaryEn;
+            }
           } else {
             // Tamil source
             summaryTa = summaryInSource;
+            translationStatus.ta = true;
             // Translate English to Sinhala
-            summarySi = await translateFromTo(summaryEn, 'en', 'si').catch(() => summaryEn);
+            try {
+              summarySi = await translateFromTo(summaryEn, 'en', 'si');
+              translationStatus.si = !!summarySi && summarySi.trim().length > 0;
+            } catch {
+              console.warn('[Pipeline] Sinhala translation failed, using English fallback');
+              summarySi = summaryEn;
+            }
           }
         } catch {
           // Ultimate fallback - use source for all
+          console.error('[Pipeline] All translation attempts failed, using source language for all');
           summaryEn = summaryInSource;
           summarySi = summaryInSource;
           summaryTa = summaryInSource;
@@ -499,12 +591,19 @@ async function summarizeEligible(
       }
     }
     
-    // Final validation - ensure all 3 are non-empty
-    if (!summaryEn || !summarySi || !summaryTa) {
-      console.error('[Pipeline] CRITICAL: Some summaries are still empty after all fallbacks');
+    // Final validation - ensure all 3 are non-empty and meet minimum length
+    const minLength = 20; // Minimum characters for a valid summary
+    if (!summaryEn || summaryEn.trim().length < minLength) {
+      console.error('[Pipeline] CRITICAL: English summary is invalid');
       summaryEn = summaryEn || summaryInSource || 'Summary unavailable';
-      summarySi = summarySi || summaryEn;
-      summaryTa = summaryTa || summaryEn;
+    }
+    if (!summarySi || summarySi.trim().length < minLength) {
+      console.warn('[Pipeline] Sinhala summary is invalid, using English fallback');
+      summarySi = summaryEn;
+    }
+    if (!summaryTa || summaryTa.trim().length < minLength) {
+      console.warn('[Pipeline] Tamil summary is invalid, using English fallback');
+      summaryTa = summaryEn;
     }
 
     // Generate comprehensive SEO metadata with topic/city/entity extraction
@@ -528,24 +627,87 @@ async function summarizeEligible(
       primaryEntity = comprehensiveSEO.primary_entity;
       eventType = comprehensiveSEO.event_type;
 
-      // Use AI to select best image from all available images
-      const availableImages = articles
-        ?.filter(a => a.image_url)
-        .map(a => ({
-          url: a.image_url!,
-          source: (a as any).sources?.name || 'Unknown'
-        })) || [];
+      // Collect images from all sources
+      const availableImages: Array<{ url: string; source: string }> = [];
       
-      if (availableImages.length > 0) {
+      // 1. Collect images from article image_url fields
+      articles?.forEach(article => {
+        if (article.image_url) {
+          availableImages.push({
+            url: article.image_url,
+            source: 'RSS Feed'
+          });
+        }
+      });
+      
+      // 2. Extract images from article HTML content
+      articles?.forEach(article => {
+        if (article.content_text || article.content_excerpt) {
+          const html = article.content_text || article.content_excerpt || '';
+          const articleUrl = (article as any).url || '';
+          if (html && articleUrl) {
+            try {
+              const extractedImages = extractAllImagesFromHtml(html, articleUrl);
+              extractedImages.forEach(imgUrl => {
+                availableImages.push({
+                  url: imgUrl,
+                  source: 'Article Content'
+                });
+              });
+            } catch (error) {
+              console.warn('[Pipeline] Error extracting images from HTML:', error);
+            }
+          }
+        }
+      });
+      
+      // 3. Optionally fetch article pages if we have few images (rate-limited)
+      if (availableImages.length < 3 && articles && articles.length > 0) {
+        // Only fetch from first article to avoid rate limiting
+        const firstArticle = articles[0];
+        const articleUrl = (firstArticle as any).url;
+        if (articleUrl) {
+          try {
+            console.log(`[Pipeline] Fetching article page for additional images: ${articleUrl}`);
+            const pageImages = await fetchArticleImages(articleUrl);
+            pageImages.forEach(imgUrl => {
+              availableImages.push({
+                url: imgUrl,
+                source: 'Article Page'
+              });
+            });
+            console.log(`[Pipeline] Found ${pageImages.length} additional images from article page`);
+          } catch (error) {
+            console.warn('[Pipeline] Error fetching article page images:', error);
+          }
+        }
+      }
+      
+      // Deduplicate images by URL
+      const uniqueImages = Array.from(
+        new Map(availableImages.map(img => [img.url, img])).values()
+      );
+      
+      const imageStats = {
+        rss: availableImages.filter(img => img.source === 'RSS Feed').length,
+        content: availableImages.filter(img => img.source === 'Article Content').length,
+        page: availableImages.filter(img => img.source === 'Article Page').length,
+        total: uniqueImages.length
+      };
+      
+      console.log(`[Pipeline] Image collection stats for cluster ${cluster.id}:`, imageStats);
+      
+      if (uniqueImages.length > 0) {
         try {
-          imageUrl = await selectBestImage(availableImages, cluster.headline, summaryEn);
-          console.log(`[Pipeline] Selected best image from ${availableImages.length} options`);
+          imageUrl = await selectBestImage(uniqueImages, cluster.headline, summaryEn);
+          console.log(`[Pipeline] Selected best image from ${uniqueImages.length} options`);
         } catch (error) {
           console.error('[Pipeline] Image selection failed, using first image:', error);
-          imageUrl = availableImages[0].url;
+          imageUrl = uniqueImages[0].url;
         }
       } else {
         imageUrl = null;
+        console.warn('[Pipeline] No images found for cluster');
       }
 
       // Generate SEO for other languages (simpler, just title/description)
@@ -652,7 +814,7 @@ async function summarizeEligible(
       // Continue with empty values - these are optional enhancements
     }
 
-    // Save summaries with new SEO content fields
+    // Save summaries with new SEO content fields, translation status, and quality score
     await supabaseAdmin.from('summaries').upsert(
       {
         cluster_id: cluster.id,
@@ -665,6 +827,8 @@ async function summarizeEligible(
         confirmed_vs_differs_en: confirmedDiffersEn || null,
         confirmed_vs_differs_si: confirmedDiffersSi || null,
         confirmed_vs_differs_ta: confirmedDiffersTa || null,
+        translation_status: translationStatus,
+        summary_quality_score: summaryQualityScore,
         model: env.SUMMARY_MODEL,
         prompt_version: 'v1-title-excerpt',
         version: summary?.version ? summary.version + 1 : 1,
@@ -672,6 +836,15 @@ async function summarizeEligible(
       },
       { onConflict: 'cluster_id' }
     );
+    
+    // Log translation status and quality for monitoring
+    console.log(`[Pipeline] Cluster ${cluster.id} - Translation: en=${translationStatus.en}, si=${translationStatus.si}, ta=${translationStatus.ta}, Quality: ${summaryQualityScore}`);
+    if (!translationStatus.en || !translationStatus.si || !translationStatus.ta) {
+      console.warn(`[Pipeline] ⚠️ Translation incomplete for cluster ${cluster.id}:`, translationStatus);
+    }
+    if (summaryQualityScore < 70) {
+      console.warn(`[Pipeline] ⚠️ Low quality score (${summaryQualityScore}) for cluster ${cluster.id}`);
+    }
 
     // Update cluster with comprehensive SEO metadata and publish
     const updateResult = await supabaseAdmin.from('clusters').update({

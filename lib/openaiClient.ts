@@ -8,27 +8,41 @@ export async function summarizeEnglish(sources: { title: string; content: string
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     {
       role: 'system',
-      content: `You are a neutral news summarization engine.
+      content: `You are a professional news summarization engine for a Sri Lankan news aggregation platform.
 
-Your job is to write concise, factual, multi-source news summaries.
-You must strictly follow journalistic neutrality.
+CORE PRINCIPLES:
+- Journalistic neutrality: No opinions, no bias, no sensationalism, no editorializing
+- Multi-source verification: Prioritize facts confirmed by 2+ sources
+- Factual accuracy: Every number, name, date, and location must appear in at least one source
+- Chronological clarity: Present events in time order when relevant
+- Context preservation: Maintain important context (who, what, when, where, why, how)
 
-Rules you must follow:
-- Use ONLY the information provided in the sources
-- Do NOT add assumptions, opinions, or predictions
+QUALITY STANDARDS:
+- Summary length: 100-150 words (strict requirement)
+- Structure: 1 lead sentence (most important fact) + 3-5 supporting sentences
+- Tone: Calm, factual, professional, neutral
+- Tense: Past tense, third person
+- Style: Clear, simple, accessible language
+- No repetition: Avoid repeating the same information
+
+VERIFICATION RULES:
+- If sources disagree: Explicitly state "reports vary" or "sources differ" and present both versions
+- If information is uncertain: Use phrases like "according to sources" or "reports indicate"
+- If numbers differ: State the range or most commonly cited figure
+- If names/entities differ: Use the most frequently mentioned version
+- Single-source facts: Include but note "according to [source]" when only one source mentions it
+
+STRICT PROHIBITIONS:
+- Do NOT add assumptions, opinions, predictions, or speculation
 - Do NOT exaggerate or sensationalize
-- Do NOT invent names, numbers, or events
-- If sources disagree, explicitly say "reports vary" and state both versions
-- Prefer facts confirmed by multiple sources
-- Write in clear, simple language
-- Tone must be calm, factual, and professional
-- No emojis, no headlines in ALL CAPS
+- Do NOT invent names, numbers, dates, or events
+- Do NOT use emojis, ALL CAPS, or exclamation marks
+- Do NOT use clickbait language or emotional language
 
-Output style:
-- 1 short lead sentence
-- 2–4 supporting sentences
-- Past tense
-- Third-person`
+OUTPUT FORMAT:
+- Lead sentence: Most important fact (who/what/when/where)
+- Supporting sentences: Key details, context, implications, and background
+- Ensure all key information (who, what, when, where, why) is included`
     },
     {
       role: 'user',
@@ -122,34 +136,46 @@ Content: ${s.content}`;
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     {
       role: 'system',
-      content: `You are a professional news summarization engine for Sri Lankan news aggregation.
+      content: `You are a professional news summarization engine for a Sri Lankan news aggregation platform.
 
 CORE PRINCIPLES:
-- Journalistic neutrality: No opinions, no bias, no sensationalism
-- Multi-source verification: Prioritize facts confirmed by multiple sources
+- Journalistic neutrality: No opinions, no bias, no sensationalism, no editorializing
+- Multi-source verification: Prioritize facts confirmed by 2+ sources
 - Factual accuracy: Every number, name, date, and location must appear in at least one source
 - Chronological clarity: Present events in time order when relevant
 - Context preservation: Maintain important context (who, what, when, where, why, how)
+- Prioritize recent information: Give more weight to newer sources when facts conflict
 
 QUALITY STANDARDS:
-- Summary length: 100-150 words
-- Structure: 1 lead sentence + 3-5 supporting sentences
-- Tone: Calm, factual, professional
+- Summary length: 100-150 words (strict requirement - count words carefully)
+- Structure: 1 lead sentence (most important fact) + 3-5 supporting sentences
+- Tone: Calm, factual, professional, neutral
 - Tense: Past tense, third person
-- Language: Write in ${langLabel}
-- Style: Clear, simple, accessible
+- Language: Write in ${langLabel} using formal written style
+- Style: Clear, simple, accessible language
+- No repetition: Avoid repeating the same information in different sentences
 
 VERIFICATION RULES:
-- If sources disagree: Explicitly state "reports vary" and present both versions
+- If sources disagree: Explicitly state "reports vary" or "sources differ" and present both versions clearly
 - If information is uncertain: Use phrases like "according to sources" or "reports indicate"
-- If numbers differ: State the range or most commonly cited figure
+- If numbers differ: State the range (e.g., "between X and Y") or most commonly cited figure
 - If names/entities differ: Use the most frequently mentioned version
+- Single-source facts: Include but note "according to one source" when only one source mentions it
+- Recent vs old information: When sources conflict, prefer information from more recent sources
+
+STRICT PROHIBITIONS:
+- Do NOT add assumptions, opinions, predictions, or speculation
+- Do NOT exaggerate or sensationalize
+- Do NOT invent names, numbers, dates, or events
+- Do NOT use emojis, ALL CAPS, or exclamation marks
+- Do NOT use clickbait language or emotional language
+- Do NOT copy long passages verbatim from sources
 
 OUTPUT FORMAT:
-- Lead sentence: Most important fact (who/what/when)
-- Supporting sentences: Key details, context, and implications
-- No emojis, no ALL CAPS, no exclamation marks
-- No assumptions beyond what sources provide`
+- Lead sentence: Most important fact (who/what/when/where) - should be complete and informative
+- Supporting sentences: Key details, context, implications, and background information
+- Ensure all key information (who, what, when, where, why) is included
+- Maintain logical flow and coherence`
     },
     {
       role: 'user',
@@ -290,17 +316,27 @@ async function translateFromTo(
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     {
       role: 'system',
-      content: `Translate the following ${fromLabel} news summary into formal written ${toLabel}.
+      content: `You are a professional news translator specializing in ${toLabel} translations for Sri Lankan news.
 
-Rules:
-- Preserve meaning exactly
-- Do NOT add or remove information
-- Use formal news-style ${toLabel}
-- Avoid informal or conversational language
-- Maintain the same tone and structure
-- Keep all numbers, names, dates, and locations accurate${to === 'ta' ? '\n- Avoid informal or spoken Tamil' : ''}`
+Your task: Translate the following ${fromLabel} news summary into formal, accurate ${toLabel}.
+
+CRITICAL TRANSLATION RULES:
+1. Accuracy: Preserve the exact meaning - do NOT add, remove, or change any information
+2. Formality: Use formal written ${toLabel} appropriate for news media
+3. Grammar: Use proper ${toLabel} grammar, sentence structure, and punctuation
+4. Terminology: Use standard ${toLabel} news terminology and vocabulary
+5. Names & Places: Keep all proper nouns (names, places, organizations) in their original form unless there is a standard ${toLabel} transliteration
+6. Numbers & Dates: Preserve all numbers, dates, and statistics exactly as written
+7. Tone: Maintain a neutral, factual news reporting tone
+8. Length: The translated text should be approximately the same length as the source text${to === 'si' ? '\n9. Sinhala: Use formal written Sinhala (not spoken/colloquial). Use proper Sinhala script and grammar.' : ''}${to === 'ta' ? '\n9. Tamil: Use formal written Tamil (not spoken/colloquial). Use proper Tamil script and grammar. Avoid informal expressions.' : ''}
+
+OUTPUT REQUIREMENTS:
+- Complete translation in ${toLabel}
+- Same structure and paragraph breaks as source
+- All facts, numbers, and names preserved accurately
+- Formal news style appropriate for media publication`
     },
-    { role: 'user', content: text }
+    { role: 'user', content: `Translate this news summary from ${fromLabel} to ${toLabel}:\n\n${text}` }
   ];
 
   // Use retry logic for translation
@@ -336,23 +372,30 @@ function buildSourcePrompt(sources: { title: string; content: string }[], previo
     .slice(0, env.MAX_SUMMARY_ARTICLES)
     .map(
       (s, idx) =>
-        `Source ${idx + 1} Title: ${s.title}\nSource ${idx + 1} Text: ${s.content.slice(0, 1500)}`
+        `Source ${idx + 1} Title: ${s.title}\nSource ${idx + 1} Content: ${s.content.slice(0, 1500)}`
     )
-    .join('\n\n');
+    .join('\n\n---\n\n');
 
-  const prior = previous ? `Previous summary:\n${previous}\n\nUpdate only if new facts appear.\n\n` : '';
+  const prior = previous 
+    ? `Previous summary (for context only - update if new facts emerge):\n${previous}\n\n` 
+    : '';
 
-  return `${prior}Summarize the following news reports into ONE neutral, factual news brief.
+  return `${prior}Summarize the following news reports into ONE comprehensive, neutral news brief.
 
-Instructions:
-- Combine all sources into a single clear summary
-- Include only verified facts
-- If a fact appears in only one source, mention the source explicitly
-- If information conflicts, clearly state that reports differ
-- Keep the summary under 120 words
+INSTRUCTIONS:
+1. Combine all sources into a single coherent narrative
+2. Include only verified facts present in the sources
+3. If a fact appears in only one source, mention it but note "according to one source"
+4. If information conflicts, clearly state "reports vary" and present both versions
+5. Maintain chronological order when relevant
+6. Include key numbers, dates, locations, and entities
+7. Keep summary between 100-150 words (strict requirement)
+8. Structure: 1 lead sentence + 3-5 supporting sentences
 
-Sources:
-${trimmed}`;
+SOURCES (ordered by importance):
+${trimmed}
+
+Generate a professional news summary following all rules above.`;
 }
 
 /**
@@ -878,5 +921,100 @@ Generate 5-12 SEO keywords. Return ONLY a JSON array of strings, no other text.`
     if (primaryEntity) fallback.push(primaryEntity);
     return fallback;
   }
+}
+
+/**
+ * Validate summary quality
+ * Checks if summary meets quality standards
+ * @param summary - Summary text to validate
+ * @returns Object with validation result and score
+ */
+export function validateSummaryQuality(summary: string): {
+  isValid: boolean;
+  score: number;
+  issues: string[];
+} {
+  const issues: string[] = [];
+  let score = 100;
+
+  if (!summary || summary.trim().length === 0) {
+    return { isValid: false, score: 0, issues: ['Summary is empty'] };
+  }
+
+  // Check minimum length (80 words)
+  const wordCount = summary.trim().split(/\s+/).length;
+  if (wordCount < 80) {
+    issues.push(`Summary too short: ${wordCount} words (minimum 80)`);
+    score -= 30;
+  }
+
+  // Check maximum length (200 words)
+  if (wordCount > 200) {
+    issues.push(`Summary too long: ${wordCount} words (maximum 200)`);
+    score -= 20;
+  }
+
+  // Check for key information (who, what, when, where)
+  const hasWho = /\b(?:minister|president|official|person|people|authority|organization|government|police|army)\b/i.test(summary);
+  const hasWhat = summary.length > 50; // Basic check for content
+  const hasWhen = /\b(?:today|yesterday|monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|may|june|july|august|september|october|november|december|\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|\d{4})\b/i.test(summary);
+  const hasWhere = /\b(?:colombo|kandy|galle|jaffna|sri lanka|sri lankan|lanka|district|province|city|town|village)\b/i.test(summary);
+
+  if (!hasWho) {
+    issues.push('Missing "who" information (person/entity)');
+    score -= 10;
+  }
+  if (!hasWhat) {
+    issues.push('Missing "what" information (event/action)');
+    score -= 10;
+  }
+  if (!hasWhen) {
+    issues.push('Missing "when" information (time/date)');
+    score -= 5;
+  }
+  if (!hasWhere) {
+    issues.push('Missing "where" information (location)');
+    score -= 5;
+  }
+
+  // Check for placeholder text or errors
+  const placeholderPatterns = [
+    /\[.*?\]/g, // [placeholder]
+    /TODO/i,
+    /FIXME/i,
+    /XXX/i,
+    /placeholder/i,
+    /lorem ipsum/i
+  ];
+
+  for (const pattern of placeholderPatterns) {
+    if (pattern.test(summary)) {
+      issues.push('Contains placeholder text');
+      score -= 20;
+      break;
+    }
+  }
+
+  // Check for repetition (same sentence/phrase repeated)
+  const sentences = summary.split(/[.!?]+/).filter(s => s.trim().length > 10);
+  const uniqueSentences = new Set(sentences.map(s => s.trim().toLowerCase()));
+  if (sentences.length > uniqueSentences.size + 1) {
+    issues.push('Contains repetitive content');
+    score -= 15;
+  }
+
+  // Check for proper structure (should have multiple sentences)
+  if (sentences.length < 2) {
+    issues.push('Summary too short or lacks structure (needs multiple sentences)');
+    score -= 10;
+  }
+
+  const isValid = score >= 60 && issues.length < 3;
+
+  return {
+    isValid,
+    score: Math.max(0, score),
+    issues
+  };
 }
 

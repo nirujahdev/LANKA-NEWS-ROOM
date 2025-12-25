@@ -10,6 +10,7 @@ export type NormalizedItem = {
   content: string | null;
   contentSnippet: string | null;
   imageUrl: string | null;
+  imageUrls: string[] | null; // All extracted images
 };
 
 // Configure parser with custom headers to avoid 403 errors
@@ -34,27 +35,96 @@ export async function fetchRssFeed(feedUrl: string): Promise<NormalizedItem[]> {
       const feed = await parser.parseURL(feedUrl);
       return (feed.items || [])
         .map((item) => {
-        // Extract image URL from various RSS feed formats
-        let imageUrl: string | null = null;
+        // Extract image URLs from various RSS feed formats
+        const imageUrls: string[] = [];
         
         // Check for media:content or media:thumbnail (common RSS image formats)
-        if ((item as any).media?.content?.[0]?.$?.url) {
-          imageUrl = (item as any).media.content[0].$.url;
-        } else if ((item as any).media?.thumbnail?.[0]?.$?.url) {
-          imageUrl = (item as any).media.thumbnail[0].$.url;
-        } else if ((item as any)['media:content']?.[0]?.['$']?.url) {
-          imageUrl = (item as any)['media:content'][0]['$'].url;
-        } else if ((item as any)['media:thumbnail']?.[0]?.['$']?.url) {
-          imageUrl = (item as any)['media:thumbnail'][0]['$'].url;
-        } else if ((item as any).enclosure?.type?.startsWith('image/')) {
-          imageUrl = (item as any).enclosure.url;
-        } else if (item.content) {
-          // Try to extract image from HTML content
-          const imgMatch = item.content.match(/<img[^>]+src=["']([^"']+)["']/i);
-          if (imgMatch && imgMatch[1]) {
-            imageUrl = imgMatch[1];
+        if ((item as any).media?.content) {
+          const mediaContent = Array.isArray((item as any).media.content) 
+            ? (item as any).media.content 
+            : [(item as any).media.content];
+          mediaContent.forEach((media: any) => {
+            if (media?.$?.url && media?.$?.type?.startsWith('image/')) {
+              imageUrls.push(media.$.url);
+            }
+          });
+        }
+        
+        if ((item as any).media?.thumbnail) {
+          const thumbnails = Array.isArray((item as any).media.thumbnail) 
+            ? (item as any).media.thumbnail 
+            : [(item as any).media.thumbnail];
+          thumbnails.forEach((thumb: any) => {
+            if (thumb?.$?.url) {
+              imageUrls.push(thumb.$.url);
+            }
+          });
+        }
+        
+        // Check alternative media formats
+        if ((item as any)['media:content']) {
+          const mediaContent = Array.isArray((item as any)['media:content']) 
+            ? (item as any)['media:content'] 
+            : [(item as any)['media:content']];
+          mediaContent.forEach((media: any) => {
+            if (media?.['$']?.url && media?.['$']?.type?.startsWith('image/')) {
+              imageUrls.push(media['$'].url);
+            }
+          });
+        }
+        
+        if ((item as any)['media:thumbnail']) {
+          const thumbnails = Array.isArray((item as any)['media:thumbnail']) 
+            ? (item as any)['media:thumbnail'] 
+            : [(item as any)['media:thumbnail']];
+          thumbnails.forEach((thumb: any) => {
+            if (thumb?.['$']?.url) {
+              imageUrls.push(thumb['$'].url);
+            }
+          });
+        }
+        
+        // Check enclosure
+        if ((item as any).enclosure?.type?.startsWith('image/')) {
+          imageUrls.push((item as any).enclosure.url);
+        }
+        
+        // Extract ALL images from HTML content (not just the first one)
+        if (item.content) {
+          // Extract from src attribute
+          const srcMatches = item.content.matchAll(/<img[^>]+src=["']([^"']+)["']/gi);
+          for (const match of srcMatches) {
+            if (match[1]) imageUrls.push(match[1]);
+          }
+          
+          // Extract from data-src (lazy-loaded images)
+          const dataSrcMatches = item.content.matchAll(/<img[^>]+data-src=["']([^"']+)["']/gi);
+          for (const match of dataSrcMatches) {
+            if (match[1]) imageUrls.push(match[1]);
+          }
+          
+          // Extract from data-lazy-src
+          const lazySrcMatches = item.content.matchAll(/<img[^>]+data-lazy-src=["']([^"']+)["']/gi);
+          for (const match of lazySrcMatches) {
+            if (match[1]) imageUrls.push(match[1]);
           }
         }
+        
+        // Deduplicate and filter invalid URLs
+        const validImageUrls = Array.from(new Set(imageUrls))
+          .map(url => url?.trim())
+          .filter(url => {
+            if (!url) return false;
+            try {
+              new URL(url);
+              return url.startsWith('http');
+            } catch {
+              return false;
+            }
+          });
+        
+        // Primary image (first valid one) for backward compatibility
+        const imageUrl = validImageUrls.length > 0 ? validImageUrls[0] : null;
         
         return {
           title: item.title?.trim() || 'Untitled',
@@ -63,7 +133,8 @@ export async function fetchRssFeed(feedUrl: string): Promise<NormalizedItem[]> {
           publishedAt: item.isoDate || item.pubDate || null,
           content: item.content || null,
           contentSnippet: item.contentSnippet || null,
-          imageUrl: imageUrl?.trim() || null
+          imageUrl: imageUrl,
+          imageUrls: validImageUrls.length > 0 ? validImageUrls : null // All images
         };
         })
         .filter((item) => item.url && item.url.startsWith('http')); // Only valid HTTP(S) URLs
