@@ -17,10 +17,13 @@ async function getClusterBySlug(slug: string) {
   try {
     // Check if Supabase is configured
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('Supabase credentials not configured');
+      console.error('❌ Supabase credentials not configured');
+      console.error('   SUPABASE_URL:', process.env.SUPABASE_URL ? '✓' : '✗');
+      console.error('   SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✓' : '✗');
       return null;
     }
 
+    console.log(`🔍 Fetching cluster with slug: "${slug}"`);
     const { data: cluster, error } = await supabaseAdmin
       .from('clusters')
       .select(`
@@ -55,10 +58,20 @@ async function getClusterBySlug(slug: string) {
         }>;
       }>();
 
-    if (error || !cluster) {
-      console.error('Error fetching cluster:', error);
+    if (error) {
+      console.error('❌ Error fetching cluster:', error);
+      console.error('   Error code:', error.code);
+      console.error('   Error message:', error.message);
+      console.error('   Error details:', error.details);
       return null;
     }
+
+    if (!cluster) {
+      console.warn(`⚠️  No cluster found with slug: "${slug}"`);
+      return null;
+    }
+
+    console.log(`✅ Found cluster: ${cluster.id} - "${cluster.headline}"`);
 
     // Get articles for this cluster
     const { data: articles, error: articlesError } = await supabaseAdmin
@@ -76,8 +89,10 @@ async function getClusterBySlug(slug: string) {
       }>>();
 
     if (articlesError) {
-      console.error('Error fetching articles:', articlesError);
+      console.error('⚠️  Error fetching articles:', articlesError);
       // Continue with empty articles array
+    } else {
+      console.log(`✅ Found ${articles?.length || 0} articles for cluster`);
     }
 
     return {
