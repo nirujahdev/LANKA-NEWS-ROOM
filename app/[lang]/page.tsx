@@ -7,7 +7,7 @@ import IncidentCard from '@/components/IncidentCard';
 import Sidebar from '@/components/Sidebar';
 import { ClusterListItem, loadClusters, FeedType, CategoryType } from '@/lib/api';
 import { getSupabaseClient } from '@/lib/supabaseClient';
-import { setLanguage } from '@/lib/language';
+import { useLanguage } from '@/lib/useLanguage';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +17,8 @@ type Props = {
 
 // Client component that receives resolved lang
 function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 'ta' }) {
-  const [currentLanguage, setCurrentLanguage] = useState<'en' | 'si' | 'ta'>(lang);
+  // Use language hook for persistence
+  const { language: currentLanguage, setLanguage } = useLanguage(lang);
   const [incidents, setIncidents] = useState<ClusterListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -30,10 +31,6 @@ function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 'ta' }) {
   useEffect(() => {
     // Only run on client side
     if (typeof window === 'undefined') return;
-
-    // Set language immediately
-    setLanguage(lang);
-    setCurrentLanguage(lang);
 
     let supabase: ReturnType<typeof getSupabaseClient>;
     try {
@@ -61,8 +58,8 @@ function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 'ta' }) {
       console.error('Auth check failed:', err);
     });
 
-    // Load clusters
-    loadClusters(lang, null, null)
+    // Load clusters using current language (from hook, which respects user preference)
+    loadClusters(currentLanguage, null, null)
       .then(data => {
         setIncidents(data || []);
         setLatestUpdates((data || []).slice(0, 10));
@@ -85,7 +82,7 @@ function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 'ta' }) {
     const topics = ['politics', 'economy', 'sports', 'crime', 'education', 'health'];
     Promise.all(
       topics.map(topic =>
-        loadClusters(lang, null, topic as CategoryType)
+        loadClusters(currentLanguage, null, topic as CategoryType)
           .then(data => ({ topic, data }))
           .catch(() => ({ topic, data: [] }))
       )
@@ -97,12 +94,12 @@ function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 'ta' }) {
       setTopicData(topicMap);
       setTopicLoading(false);
     });
-  }, [lang]);
+  }, [currentLanguage]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F5F5F5]">
-        <Navigation currentLanguage={currentLanguage} onLanguageChange={setCurrentLanguage} />
+        <Navigation currentLanguage={currentLanguage} onLanguageChange={setLanguage} />
         <TopicNavigation language={currentLanguage} />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center py-12">
@@ -116,7 +113,7 @@ function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 'ta' }) {
   if (error) {
     return (
       <div className="min-h-screen bg-[#F5F5F5]">
-        <Navigation currentLanguage={currentLanguage} onLanguageChange={setCurrentLanguage} />
+        <Navigation currentLanguage={currentLanguage} onLanguageChange={setLanguage} />
         <TopicNavigation language={currentLanguage} />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center py-12">
@@ -129,7 +126,7 @@ function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 'ta' }) {
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
-      <Navigation currentLanguage={currentLanguage} onLanguageChange={setCurrentLanguage} />
+      <Navigation currentLanguage={currentLanguage} onLanguageChange={setLanguage} />
       <TopicNavigation language={currentLanguage} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

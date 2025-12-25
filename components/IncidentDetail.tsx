@@ -80,7 +80,7 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({
     <div className="py-4 sm:py-6 md:py-8">
       {/* Back Button - Mobile optimized */}
       <Link
-        href="/"
+        href={`/${language}`}
         className="inline-flex items-center gap-2 text-[#5F6368] hover:text-[#202124] mb-4 sm:mb-6 transition-colors duration-200 group touch-target"
       >
         <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-0.5 transition-transform duration-200" />

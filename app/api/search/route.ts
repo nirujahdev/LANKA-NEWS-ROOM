@@ -103,7 +103,11 @@ export async function GET(req: Request) {
         id: item.id,
         slug: item.slug,
         headline: item.headline,
-        summary: lang === 'si' ? summary?.summary_si : lang === 'ta' ? summary?.summary_ta : summary?.summary_en || item.summary,
+        summary: lang === 'si' 
+          ? (summary?.summary_si || summary?.summary_en || item.summary || '')
+          : lang === 'ta' 
+          ? (summary?.summary_ta || summary?.summary_en || item.summary || '')
+          : (summary?.summary_en || item.summary || ''),
         sourceCount: item.source_count,
         sources: sourcesMap.get(item.id) || [],
         publishedAt: item.published_at,

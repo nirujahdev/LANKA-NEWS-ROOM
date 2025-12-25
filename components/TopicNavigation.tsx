@@ -19,17 +19,17 @@ interface TopicNavigationProps {
 }
 
 const topics: Topic[] = [
-  { id: 'home', label: 'Home', labelSi: 'මුල් පිටුව', labelTa: 'முகப்பு', href: '/' },
-  { id: 'for-you', label: 'For you', labelSi: 'ඔබ වෙනුවෙන්', labelTa: 'உங்களுக்காக', href: '/for-you' },
-  { id: 'sri-lanka', label: 'Sri Lanka', labelSi: 'ශ්‍රී ලංකාව', labelTa: 'இலங்கை', href: '/sri-lanka' },
-  { id: 'world', label: 'World', labelSi: 'ලෝකය', labelTa: 'உலகம்', href: '/world' },
-  { id: 'politics', label: 'Politics', labelSi: 'දේශපාලනය', labelTa: 'அரசியல்', href: '/politics' },
-  { id: 'business', label: 'Business', labelSi: 'ව්‍යාපාර', labelTa: 'வணிகம்', href: '/business' },
-  { id: 'technology', label: 'Technology', labelSi: 'තාක්ෂණය', labelTa: 'தொழில்நுட்பம்', href: '/technology' },
-  { id: 'entertainment', label: 'Entertainment', labelSi: 'විනෝදාස්වාදය', labelTa: 'பொழுதுபோக்கு', href: '/entertainment' },
-  { id: 'sports', label: 'Sports', labelSi: 'ක්‍රීඩා', labelTa: 'விளையாட்டு', href: '/sports' },
-  { id: 'science', label: 'Science', labelSi: 'විද්‍යාව', labelTa: 'அறிவியல்', href: '/science' },
-  { id: 'health', label: 'Health', labelSi: 'සෞඛ්‍ය', labelTa: 'சுகாதாரம்', href: '/health' }
+  { id: 'home', label: 'Home', labelSi: 'මුල් පිටුව', labelTa: 'முகப்பு', href: 'home' },
+  { id: 'for-you', label: 'For you', labelSi: 'ඔබ වෙනුවෙන්', labelTa: 'உங்களுக்காக', href: 'for-you' },
+  { id: 'sri-lanka', label: 'Sri Lanka', labelSi: 'ශ්‍රී ලංකාව', labelTa: 'இலங்கை', href: 'sri-lanka' },
+  { id: 'world', label: 'World', labelSi: 'ලෝකය', labelTa: 'உலகம்', href: 'world' },
+  { id: 'politics', label: 'Politics', labelSi: 'දේශපාලනය', labelTa: 'அரசியல்', href: 'politics' },
+  { id: 'business', label: 'Business', labelSi: 'ව්‍යාපාර', labelTa: 'வணிகம்', href: 'business' },
+  { id: 'technology', label: 'Technology', labelSi: 'තාක්ෂණය', labelTa: 'தொழில்நுட்பம்', href: 'technology' },
+  { id: 'entertainment', label: 'Entertainment', labelSi: 'විනෝදාස්වාදය', labelTa: 'பொழுதுபோக்கு', href: 'entertainment' },
+  { id: 'sports', label: 'Sports', labelSi: 'ක්‍රීඩා', labelTa: 'விளையாட்டு', href: 'sports' },
+  { id: 'science', label: 'Science', labelSi: 'විද්‍යාව', labelTa: 'அறிவியல்', href: 'science' },
+  { id: 'health', label: 'Health', labelSi: 'සෞඛ්‍ය', labelTa: 'சுகாதாரம்', href: 'health' }
 ];
 
 const TopicNavigationContent: React.FC<TopicNavigationProps> = ({ 
@@ -45,26 +45,37 @@ const TopicNavigationContent: React.FC<TopicNavigationProps> = ({
     return topic.label;
   };
 
-  // Build href with language parameter
-  const getHref = (href: string) => {
-    if (language === 'en') return href;
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('lang', language);
-    return `${href}?${params.toString()}`;
+  // Extract current language from path (e.g., /en/topic/politics -> 'en')
+  const getCurrentLang = (): 'en' | 'si' | 'ta' => {
+    const match = pathname.match(/^\/(en|si|ta)/);
+    return (match ? match[1] : language) as 'en' | 'si' | 'ta';
   };
 
-  const formatDate = () => {
-    const now = new Date();
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    return `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
-  };
+  const currentLang = getCurrentLang();
 
-  const isActive = (href: string) => {
-    if (href === '/') {
-      return pathname === '/';
+  // Build href with path-based language structure
+  const getHref = (topicHref: string) => {
+    // Special cases for home and for-you
+    if (topicHref === 'home') {
+      return `/${currentLang}`;
     }
-    return pathname.startsWith(href);
+    if (topicHref === 'for-you') {
+      return '/for-you'; // For-you doesn't use language prefix
+    }
+    // For topic pages, use /lang/topic/topicname
+    return `/${currentLang}/topic/${topicHref}`;
+  };
+
+  const isActive = (topicHref: string) => {
+    if (topicHref === 'home') {
+      return pathname === `/${currentLang}` || pathname === '/';
+    }
+    if (topicHref === 'for-you') {
+      return pathname.startsWith('/for-you');
+    }
+    // Check if path matches /lang/topic/topicname
+    return pathname === `/${currentLang}/topic/${topicHref}` || 
+           pathname.startsWith(`/${currentLang}/topic/${topicHref}/`);
   };
 
   return (

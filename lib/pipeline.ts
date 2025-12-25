@@ -5,7 +5,7 @@ import { fetchRssFeed } from './rss';
 import { detectLanguage } from './language';
 import { makeArticleHash } from './hash';
 import { extractEntities, normalizeTitle, similarityScore, generateSlug } from './text';
-import { summarizeEnglish, translateSummary, generateSEOMetadata, generateComprehensiveSEO, summarizeInSourceLanguage, translateToMultipleLanguages, generateKeyFacts, generateConfirmedVsDiffers, generateKeywords } from './openaiClient';
+import { summarizeEnglish, translateSummary, generateSEOMetadata, generateComprehensiveSEO, summarizeInSourceLanguage, translateToMultipleLanguages, generateKeyFacts, generateConfirmedVsDiffers, generateKeywords, translateFromTo } from './openaiClient';
 import { categorizeCluster } from './categorize';
 import { updateLastSuccessfulRun } from './pipelineEarlyExit';
 import { selectBestImage } from './imageSelection';
@@ -438,7 +438,7 @@ async function summarizeEligible(
       sourceLang = 'en';
     }
 
-    // Translate to all 3 languages
+    // Translate to all 3 languages - ensure all are always generated
     let summaryEn: string, summarySi: string, summaryTa: string;
     try {
       const translations = await translateToMultipleLanguages(summaryInSource, sourceLang);
@@ -446,23 +446,65 @@ async function summarizeEligible(
       summarySi = translations.si;
       summaryTa = translations.ta;
       
+      // Validate all 3 languages are present and non-empty
+      if (!summaryEn || !summarySi || !summaryTa) {
+        console.warn('[Pipeline] Some translations are missing, using fallbacks');
+        // Use English as ultimate fallback for missing translations
+        summaryEn = summaryEn || summaryInSource;
+        summarySi = summarySi || summaryEn;
+        summaryTa = summaryTa || summaryEn;
+      }
+      
       console.log(`[Pipeline] Translated summary from ${sourceLang} to all languages`);
     } catch (error) {
       console.error('[Pipeline] Multi-language translation failed, using fallback:', error);
-      // Fallback: if source was English, translate to Si/Ta; otherwise use source as-is
+      // Fallback: Always ensure all 3 languages are set
+      // If source was English, translate to Si/Ta; otherwise translate to English first
       if (sourceLang === 'en') {
         summaryEn = summaryInSource;
-        summarySi = await translateSummary(summaryEn, 'si').catch(() => summaryEn);
-        summaryTa = await translateSummary(summaryEn, 'ta').catch(() => summaryEn);
-      } else if (sourceLang === 'si') {
-        summarySi = summaryInSource;
-        summaryEn = summaryInSource; // Fallback
-        summaryTa = summaryInSource; // Fallback
+        // Try to translate to Si and Ta, fallback to English if fails
+        try {
+          summarySi = await translateSummary(summaryEn, 'si');
+        } catch {
+          summarySi = summaryEn;
+        }
+        try {
+          summaryTa = await translateSummary(summaryEn, 'ta');
+        } catch {
+          summaryTa = summaryEn;
+        }
       } else {
-        summaryTa = summaryInSource;
-        summaryEn = summaryInSource; // Fallback
-        summarySi = summaryInSource; // Fallback
+        // Source is Si or Ta - translate to English first, then to other languages
+        try {
+          // First translate to English
+          summaryEn = await translateFromTo(summaryInSource, sourceLang, 'en');
+          
+          // Set source language summary
+          if (sourceLang === 'si') {
+            summarySi = summaryInSource;
+            // Translate English to Tamil
+            summaryTa = await translateFromTo(summaryEn, 'en', 'ta').catch(() => summaryEn);
+          } else {
+            // Tamil source
+            summaryTa = summaryInSource;
+            // Translate English to Sinhala
+            summarySi = await translateFromTo(summaryEn, 'en', 'si').catch(() => summaryEn);
+          }
+        } catch {
+          // Ultimate fallback - use source for all
+          summaryEn = summaryInSource;
+          summarySi = summaryInSource;
+          summaryTa = summaryInSource;
+        }
       }
+    }
+    
+    // Final validation - ensure all 3 are non-empty
+    if (!summaryEn || !summarySi || !summaryTa) {
+      console.error('[Pipeline] CRITICAL: Some summaries are still empty after all fallbacks');
+      summaryEn = summaryEn || summaryInSource || 'Summary unavailable';
+      summarySi = summarySi || summaryEn;
+      summaryTa = summaryTa || summaryEn;
     }
 
     // Generate comprehensive SEO metadata with topic/city/entity extraction

@@ -34,10 +34,10 @@ export const metadata: Metadata = {
   alternates: {
     canonical: baseUrl,
     languages: {
-      'en-LK': baseUrl,
-      'si-LK': `${baseUrl}?lang=si`,
-      'ta-LK': `${baseUrl}?lang=ta`,
-      'x-default': baseUrl,
+      'en-LK': `${baseUrl}/en`,
+      'si-LK': `${baseUrl}/si`,
+      'ta-LK': `${baseUrl}/ta`,
+      'x-default': `${baseUrl}/en`,
     },
   },
   openGraph: {

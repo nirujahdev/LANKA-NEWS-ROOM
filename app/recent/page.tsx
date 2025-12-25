@@ -6,20 +6,12 @@ import Navigation from '@/components/Navigation';
 import TopicNavigation from '@/components/TopicNavigation';
 import IncidentCard from '@/components/IncidentCard';
 import { ClusterListItem, loadClusters, FeedType } from '@/lib/api';
-import { getLanguageFromURL, setLanguage } from '@/lib/language';
+import { useLanguage } from '@/lib/useLanguage';
 
 export const dynamic = 'force-dynamic';
 
 export default function RecentPage() {
-  const [currentLanguage, setCurrentLanguage] = useState<'en' | 'si' | 'ta'>('en');
-
-  // Initialize language from URL/localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const lang = getLanguageFromURL();
-      setCurrentLanguage(lang);
-    }
-  }, []);
+  const { language: currentLanguage, setLanguage } = useLanguage();
   const [incidents, setIncidents] = useState<ClusterListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -58,10 +50,7 @@ export default function RecentPage() {
     <div className="min-h-screen bg-[#F5F5F5]">
       <Navigation 
         currentLanguage={currentLanguage}
-        onLanguageChange={(lang) => {
-          setLanguage(lang);
-          setCurrentLanguage(lang);
-        }}
+        onLanguageChange={setLanguage}
       />
       
       <TopicNavigation 

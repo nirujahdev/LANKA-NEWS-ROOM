@@ -131,8 +131,13 @@ export async function GET(req: Request) {
 
     const payload = (clusters || []).map((cluster) => {
       const summary = summariesByCluster.get(cluster.id);
+      // Always fallback to English if language-specific summary is missing
       const summaryText =
-        lang === 'si' ? summary?.summary_si : lang === 'ta' ? summary?.summary_ta : summary?.summary_en;
+        lang === 'si' 
+          ? (summary?.summary_si || summary?.summary_en || '')
+          : lang === 'ta' 
+          ? (summary?.summary_ta || summary?.summary_en || '')
+          : (summary?.summary_en || '');
       return {
         id: cluster.id,
         slug: cluster.slug, // Add slug for SEO-friendly URLs

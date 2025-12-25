@@ -5,6 +5,7 @@ import Logo from './Logo';
 import SearchBar from './SearchBar';
 import { Search, Menu, X, HelpCircle, Settings, User } from 'lucide-react';
 import Link from 'next/link';
+import { useLanguage } from '@/lib/useLanguage';
 
 interface NavigationProps {
   currentLanguage?: 'en' | 'si' | 'ta';
@@ -12,9 +13,13 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ 
-  currentLanguage = 'en',
-  onLanguageChange 
+  currentLanguage: propLanguage,
+  onLanguageChange: propOnLanguageChange
 }) => {
+  // Use hook if no props provided, otherwise use props (for backward compatibility)
+  const { language: hookLanguage, setLanguage: setHookLanguage } = useLanguage(propLanguage);
+  const currentLanguage = propLanguage || hookLanguage;
+  const onLanguageChange = propOnLanguageChange || setHookLanguage;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 

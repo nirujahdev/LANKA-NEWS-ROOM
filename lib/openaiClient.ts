@@ -186,6 +186,7 @@ Generate a professional news summary in ${langLabel} following all rules above.`
 
 /**
  * Translate summary from source language to multiple target languages
+ * Always returns all 3 languages, with fallback to English if translation fails
  * @param summary - Summary in source language
  * @param sourceLang - Source language code
  * @returns Object with translations in all 3 languages
@@ -200,31 +201,68 @@ export async function translateToMultipleLanguages(
     ta: sourceLang === 'ta' ? summary : ''
   };
 
-  // Translate to the other 2 languages
+  // Translate to the other 2 languages with retry and fallback
   if (sourceLang === 'en') {
     // English → Sinhala + Tamil
-    const [sinhala, tamil] = await Promise.all([
+    const [sinhala, tamil] = await Promise.allSettled([
       translateFromTo(summary, 'en', 'si'),
       translateFromTo(summary, 'en', 'ta')
     ]);
-    result.si = sinhala;
-    result.ta = tamil;
+    result.si = sinhala.status === 'fulfilled' && sinhala.value ? sinhala.value : summary; // Fallback to English
+    result.ta = tamil.status === 'fulfilled' && tamil.value ? tamil.value : summary; // Fallback to English
   } else if (sourceLang === 'si') {
     // Sinhala → English + Tamil
-    const [english, tamil] = await Promise.all([
+    // First translate to English, then use English for Tamil if needed
+    const [englishResult, tamilResult] = await Promise.allSettled([
       translateFromTo(summary, 'si', 'en'),
       translateFromTo(summary, 'si', 'ta')
     ]);
+    
+    const english = englishResult.status === 'fulfilled' && englishResult.value ? englishResult.value : summary;
     result.en = english;
-    result.ta = tamil;
+    
+    // If Tamil translation failed, translate from English instead
+    if (tamilResult.status === 'fulfilled' && tamilResult.value) {
+      result.ta = tamilResult.value;
+    } else {
+      // Fallback: translate from English to Tamil
+      try {
+        result.ta = await translateFromTo(english, 'en', 'ta');
+      } catch {
+        result.ta = english; // Final fallback to English
+      }
+    }
   } else if (sourceLang === 'ta') {
     // Tamil → English + Sinhala
-    const [english, sinhala] = await Promise.all([
+    // First translate to English, then use English for Sinhala if needed
+    const [englishResult, sinhalaResult] = await Promise.allSettled([
       translateFromTo(summary, 'ta', 'en'),
       translateFromTo(summary, 'ta', 'si')
     ]);
+    
+    const english = englishResult.status === 'fulfilled' && englishResult.value ? englishResult.value : summary;
     result.en = english;
-    result.si = sinhala;
+    
+    // If Sinhala translation failed, translate from English instead
+    if (sinhalaResult.status === 'fulfilled' && sinhalaResult.value) {
+      result.si = sinhalaResult.value;
+    } else {
+      // Fallback: translate from English to Sinhala
+      try {
+        result.si = await translateFromTo(english, 'en', 'si');
+      } catch {
+        result.si = english; // Final fallback to English
+      }
+    }
+  }
+
+  // Validate all 3 languages are present and non-empty
+  if (!result.en || !result.si || !result.ta) {
+    console.warn('[OpenAI] Some translations are missing, using fallbacks');
+    // Ensure all are set - use English as ultimate fallback
+    result.en = result.en || summary;
+    result.si = result.si || result.en;
+    result.ta = result.ta || result.en;
   }
 
   return result;
@@ -242,6 +280,10 @@ async function translateFromTo(
   from: 'en' | 'si' | 'ta',
   to: 'en' | 'si' | 'ta'
 ): Promise<string> {
+  if (from === to) {
+    return text; // No translation needed
+  }
+
   const fromLabel = from === 'en' ? 'English' : from === 'si' ? 'Sinhala' : 'Tamil';
   const toLabel = to === 'en' ? 'English' : to === 'si' ? 'Sinhala' : 'Tamil';
   
@@ -261,15 +303,33 @@ Rules:
     { role: 'user', content: text }
   ];
 
-  const completion = await client.chat.completions.create({
-    model: env.SUMMARY_TRANSLATE_MODEL,
-    messages,
-    temperature: 0.2,
-    max_tokens: 500
-  });
-
-  return completion.choices[0]?.message?.content?.trim() || '';
+  // Use retry logic for translation
+  return withRetry(
+    async () => {
+      const completion = await client.chat.completions.create({
+        model: env.SUMMARY_TRANSLATE_MODEL,
+        messages,
+        temperature: 0.2,
+        max_tokens: 500
+      });
+      const translated = completion.choices[0]?.message?.content?.trim();
+      if (!translated) {
+        throw new Error('Empty translation response');
+      }
+      return translated;
+    },
+    {
+      maxRetries: 3,
+      retryDelay: 1000,
+      onRetry: (attempt, error) => {
+        console.warn(`[OpenAI] Retry ${attempt}/3 for translateFromTo (${from}→${to}): ${error.message}`);
+      }
+    }
+  )();
 }
+
+// Export translateFromTo for use in pipeline
+export { translateFromTo };
 
 function buildSourcePrompt(sources: { title: string; content: string }[], previous?: string | null) {
   const trimmed = sources

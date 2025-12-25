@@ -4,13 +4,27 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Redirect root path to /en
+  // Redirect root path to language-specific homepage
   if (pathname === '/') {
-    const lang = request.cookies.get('lang')?.value || 
-                 request.headers.get('accept-language')?.split(',')[0]?.split('-')[0] || 
-                 'en';
-    const detectedLang = ['en', 'si', 'ta'].includes(lang) ? lang : 'en';
-    return NextResponse.redirect(new URL(`/${detectedLang}`, request.url));
+    // Priority: cookie > browser language > default to 'en'
+    const langCookie = request.cookies.get('preferredLanguage')?.value;
+    const browserLang = request.headers.get('accept-language')?.split(',')[0]?.split('-')[0];
+    
+    let detectedLang = 'en';
+    if (langCookie && ['en', 'si', 'ta'].includes(langCookie)) {
+      detectedLang = langCookie;
+    } else if (browserLang && ['en', 'si', 'ta'].includes(browserLang)) {
+      detectedLang = browserLang;
+    }
+    
+    const response = NextResponse.redirect(new URL(`/${detectedLang}`, request.url));
+    // Set cookie for future requests
+    response.cookies.set('preferredLanguage', detectedLang, {
+      maxAge: 60 * 60 * 24 * 365, // 1 year
+      path: '/',
+      sameSite: 'lax'
+    });
+    return response;
   }
 
   // Protected routes
