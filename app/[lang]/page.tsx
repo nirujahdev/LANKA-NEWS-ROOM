@@ -61,7 +61,7 @@ export default function LanguageHomePage({ params }: { params: Promise<{ lang: '
     });
 
     // Load clusters
-    loadClusters(resolvedParams.lang, null, null, 20)
+    loadClusters(resolvedParams.lang, null, null)
       .then(data => {
         setIncidents(data);
         setLatestUpdates(data.slice(0, 10));
@@ -77,7 +77,7 @@ export default function LanguageHomePage({ params }: { params: Promise<{ lang: '
     const topics = ['politics', 'economy', 'sports', 'crime', 'education', 'health'];
     Promise.all(
       topics.map(topic =>
-        loadClusters(resolvedParams.lang, null, topic as CategoryType, 5)
+        loadClusters(resolvedParams.lang, null, topic as CategoryType)
           .then(data => ({ topic, data }))
           .catch(() => ({ topic, data: [] }))
       )
