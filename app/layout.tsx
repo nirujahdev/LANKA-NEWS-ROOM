@@ -136,6 +136,7 @@ export default function RootLayout({
         {/* Additional meta tags */}
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#1A73E8" />
+        <meta name="google-adsense-account" content="ca-pub-8312977389353751" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
