@@ -3,22 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
-import TabNavigation from '@/components/TabNavigation';
+import TopicNavigation from '@/components/TopicNavigation';
 import IncidentCard from '@/components/IncidentCard';
 import { ClusterListItem, loadClusters, FeedType } from '@/lib/api';
+import { getLanguageFromURL, setLanguage } from '@/lib/language';
 
 export const dynamic = 'force-dynamic';
-
-const baseTabs = [
-  { id: 'home', label: 'Home', labelSi: 'මුල් පිටුව', labelTa: 'முகப்பு' },
-  { id: 'recent', label: 'Recent', labelSi: 'මෑත', labelTa: 'சமீபத்திய' },
-  { id: 'sri-lanka', label: 'Sri Lanka', labelSi: 'ශ්‍රී ලංකාව', labelTa: 'இலங்கை' },
-  { id: 'politics', label: 'Politics', labelSi: 'දේශපාලනය', labelTa: 'அரசியல்' },
-  { id: 'economy', label: 'Economy', labelSi: 'ආර්ථිකය', labelTa: 'பொருளாதாரம்' },
-  { id: 'sports', label: 'Sports', labelSi: 'ක්‍රීඩා', labelTa: 'விளையாட்டு' },
-  { id: 'technology', label: 'Technology', labelSi: 'තාක්ෂණය', labelTa: 'தொழில்நுட்பம்' },
-  { id: 'health', label: 'Health', labelSi: 'සෞඛ්‍ය', labelTa: 'சுகாதாரம்' }
-];
 
 export default function RecentPage() {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'si' | 'ta'>('en');
@@ -26,12 +16,10 @@ export default function RecentPage() {
   // Initialize language from URL/localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const { getLanguageFromURL } = require('@/lib/language');
       const lang = getLanguageFromURL();
       setCurrentLanguage(lang);
     }
   }, []);
-  const [activeTab, setActiveTab] = useState('recent');
   const [incidents, setIncidents] = useState<ClusterListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -133,6 +121,7 @@ export default function RecentPage() {
                       language={currentLanguage}
                       variant="default"
                       imageUrl={incident.image_url || undefined}
+                      category={incident.topic || incident.category || undefined}
                     />
                   ))}
                 </div>
