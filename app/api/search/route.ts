@@ -42,7 +42,7 @@ export async function GET(req: Request) {
     
     // Check cache
     const cacheKey = CacheKeys.search(query, lang, limit, filters);
-    const cached = cache.get(cacheKey);
+    const cached = cache.get<any[]>(cacheKey);
     if (cached) {
       return NextResponse.json({ results: cached, query, total: cached.length, filters });
     }
