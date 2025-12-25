@@ -118,8 +118,8 @@ export default function TopicNewsCard({
         return articles.sort((a, b) => {
           const sourceDiff = (b.source_count || 0) - (a.source_count || 0);
           if (sourceDiff !== 0) return sourceDiff;
-          const dateA = new Date(a.last_updated).getTime();
-          const dateB = new Date(b.last_updated).getTime();
+          const dateA = a.last_updated ? new Date(a.last_updated).getTime() : 0;
+          const dateB = b.last_updated ? new Date(b.last_updated).getTime() : 0;
           return dateB - dateA;
         });
     }
