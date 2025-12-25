@@ -4,6 +4,7 @@ export type ClusterListItem = {
   headline: string;
   status: 'draft' | 'published';
   category?: string | null;
+  topic?: string | null; // Primary topic from OpenAI
   first_seen: string | null;
   last_updated: string | null;
   created_at?: string | null;

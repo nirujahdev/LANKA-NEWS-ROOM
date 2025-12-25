@@ -13,6 +13,8 @@ interface IncidentCardProps {
   language?: 'en' | 'si' | 'ta';
   variant?: 'default' | 'featured' | 'compact';
   imageUrl?: string | null; // Article image URL from RSS feed
+  category?: string | null; // Topic/category for tags
+  topics?: string[]; // Array of topics from OpenAI
 }
 
 const IncidentCard: React.FC<IncidentCardProps> = ({
@@ -54,9 +56,41 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
     return `${days} days ago`;
   };
 
-  const sourceLabel = sources.length > 0 
-    ? sources[0].name 
-    : `${sourceCount} source${sourceCount !== 1 ? 's' : ''}`;
+  // Get topic tags - use topics array first, then category, then fallback
+  const getTopicTags = (): string[] => {
+    if (topics && topics.length > 0) {
+      return topics.slice(0, 2); // Show max 2 topics
+    }
+    if (category) {
+      return [category];
+    }
+    return []; // No fallback - don't show tag if no topic
+  };
+
+  const topicTags = getTopicTags();
+
+  // Topic label translations
+  const getTopicLabel = (topic: string): string => {
+    const topicMap: Record<string, { en: string; si: string; ta: string }> = {
+      'politics': { en: 'Politics', si: 'දේශපාලනය', ta: 'அரசியல்' },
+      'economy': { en: 'Economy', si: 'ආර්ථිකය', ta: 'பொருளாதாரம்' },
+      'sports': { en: 'Sports', si: 'ක්‍රීඩා', ta: 'விளையாட்டு' },
+      'technology': { en: 'Technology', si: 'තාක්ෂණය', ta: 'தொழில்நுட்பம்' },
+      'health': { en: 'Health', si: 'සෞඛ්‍ය', ta: 'சுகாதாரம்' },
+      'education': { en: 'Education', si: 'අධ්‍යාපනය', ta: 'கல்வி' },
+      'crime': { en: 'Crime', si: 'අපරාධ', ta: 'குற்றம்' },
+      'environment': { en: 'Environment', si: 'පරිසරය', ta: 'சுற்றுச்சூழல்' },
+      'culture': { en: 'Culture', si: 'සංස්කෘතිය', ta: 'கலாச்சாரம்' },
+      'other': { en: 'Other', si: 'වෙනත්', ta: 'மற்ற' }
+    };
+
+    const topicLower = topic.toLowerCase();
+    const mapped = topicMap[topicLower] || { en: topic, si: topic, ta: topic };
+    
+    if (language === 'si') return mapped.si;
+    if (language === 'ta') return mapped.ta;
+    return mapped.en;
+  };
 
   const getImageUrl = () => {
     // Use article image if available and valid, otherwise fallback to category-based images
@@ -89,7 +123,7 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
       <Link href={href} className="block group mb-6">
         <article className="flex flex-col md:flex-row gap-6">
           {/* Image - Left Side for Featured (Desktop) / Top (Mobile) */}
-          <div className="relative w-full md:w-2/3 aspect-video md:aspect-[16/9] rounded-xl overflow-hidden mb-1 md:mb-0 order-first">
+          <div className="relative w-full md:w-2/3 aspect-video md:aspect-[16/9] rounded-2xl overflow-hidden mb-1 md:mb-0 order-first">
             <Image 
               src={getImageUrl()} 
               alt={headline}
@@ -99,23 +133,22 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
           </div>
           
           <div className="flex flex-col gap-2 w-full md:w-1/3 py-1">
-             {/* Source */}
-            <div className="flex items-center gap-2 mb-1">
-               <Image 
-                  src={`https://www.google.com/s2/favicons?domain=${sources[0]?.feed_url || 'google.com'}&sz=128`}
-                  alt=""
-                  width={16}
-                  height={16}
-                  className="rounded-sm"
-               />
-              <span className="text-xs font-bold text-[#202124] uppercase">
-                {sourceLabel}
-              </span>
+             {/* Topic Tags */}
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              {topicTags.map((topic, idx) => (
+                <span
+                  key={idx}
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E8F0FE] text-[#1A73E8]"
+                >
+                  {getTopicLabel(topic)}
+                </span>
+              ))}
             </div>
 
             {/* Headline */}
-            <h2 className="text-xl md:text-2xl font-normal text-[#1F1F1F] leading-tight group-hover:text-[#1A73E8] group-hover:underline decoration-1 underline-offset-2 mb-1">
-              {headline}
+            <h2 className="text-xl md:text-2xl font-normal text-[#1F1F1F] leading-tight group-hover:text-[#1A73E8] transition-colors duration-200 mb-1 flex items-center gap-2">
+              <span className="group-hover:underline decoration-1 underline-offset-2">{headline}</span>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#1A73E8]">➝</span>
             </h2>
 
              {/* Time */}
@@ -138,29 +171,29 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
   if (variant === 'compact') {
      return (
        <Link href={href}>
-         <article className="group relative py-3 flex gap-4 cursor-pointer hover:bg-[#F8F9FA] rounded-lg -mx-2 px-2 transition-colors">
+         <article className="group relative py-3 flex gap-4 cursor-pointer hover:bg-[#F8F9FA] -mx-2 px-2 transition-colors border-b border-[#E8EAED] last:border-b-0">
             <div className="flex-1 min-w-0 flex flex-col">
-               <div className="flex items-center gap-2 mb-1">
-                  <Image 
-                     src={`https://www.google.com/s2/favicons?domain=${sources[0]?.feed_url || 'google.com'}&sz=128`}
-                     alt=""
-                     width={12}
-                     height={12}
-                     className="rounded-sm opacity-80"
-                  />
-                  <span className="text-[11px] font-bold text-[#5F6368] uppercase truncate max-w-[120px]">
-                     {sourceLabel}
-                  </span>
+               {/* Topic Tags */}
+               <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                  {topicTags.slice(0, 1).map((topic, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#E8F0FE] text-[#1A73E8]"
+                    >
+                      {getTopicLabel(topic)}
+                    </span>
+                  ))}
                </div>
-               <h3 className="text-sm font-medium text-[#202124] leading-snug line-clamp-2 group-hover:text-[#1A73E8] group-hover:underline decoration-1 underline-offset-2">
-                  {headline}
+               <h3 className="text-sm font-medium text-[#202124] leading-snug line-clamp-2 group-hover:text-[#1A73E8] transition-colors duration-200 flex items-center gap-1.5">
+                  <span className="group-hover:underline decoration-1 underline-offset-2">{headline}</span>
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#1A73E8] text-xs">➝</span>
                </h3>
                <div className="text-[11px] text-[#5F6368] mt-1">
                   {formatTimeAgo(updatedAt)}
                </div>
             </div>
             
-            <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden relative bg-[#F1F3F4]">
+            <div className="w-16 h-16 flex-shrink-0 rounded-2xl overflow-hidden relative bg-[#F1F3F4]">
                <Image 
                   src={getImageUrl()} 
                   alt={headline}
@@ -184,23 +217,22 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
       <article className="group relative py-4 flex gap-4 cursor-pointer border-b border-[#E8EAED] last:border-b-0 hover:bg-[#F8F9FA] -mx-4 px-4 transition-colors">
         <div className="flex-1 min-w-0 flex flex-col justify-between">
           <div>
-            {/* Source */}
-            <div className="mb-1.5 flex items-center gap-2">
-               <Image 
-                  src={`https://www.google.com/s2/favicons?domain=${sources[0]?.feed_url || 'google.com'}&sz=128`}
-                  alt=""
-                  width={14}
-                  height={14}
-                  className="rounded-sm"
-               />
-              <span className="text-xs font-bold text-[#202124] uppercase">
-                {sourceLabel}
-              </span>
+            {/* Topic Tags */}
+            <div className="mb-1.5 flex items-center gap-2 flex-wrap">
+              {topicTags.map((topic, idx) => (
+                <span
+                  key={idx}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#E8F0FE] text-[#1A73E8]"
+                >
+                  {getTopicLabel(topic)}
+                </span>
+              ))}
             </div>
 
             {/* Headline */}
-            <h2 className="text-base font-medium text-[#202124] mb-1 leading-snug group-hover:text-[#1A73E8] group-hover:underline decoration-1 underline-offset-2">
-              {headline}
+            <h2 className="text-base font-medium text-[#202124] mb-1 leading-snug group-hover:text-[#1A73E8] transition-colors duration-200 flex items-center gap-2">
+              <span className="group-hover:underline decoration-1 underline-offset-2">{headline}</span>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#1A73E8]">➝</span>
             </h2>
           </div>
 
@@ -211,7 +243,7 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
         </div>
 
         {/* Image - Right side */}
-        <div className="w-24 h-24 flex-shrink-0 rounded-xl overflow-hidden relative bg-[#F1F3F4]">
+        <div className="w-24 h-24 flex-shrink-0 rounded-2xl overflow-hidden relative bg-[#F1F3F4]">
           <Image 
             src={getImageUrl()} 
             alt={headline}

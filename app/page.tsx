@@ -14,6 +14,15 @@ export const dynamic = 'force-dynamic';
 
 export default function HomePage() {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'si' | 'ta'>('en');
+
+  // Initialize language from URL/localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const { getLanguageFromURL } = require('@/lib/language');
+      const lang = getLanguageFromURL();
+      setCurrentLanguage(lang);
+    }
+  }, []);
   const [incidents, setIncidents] = useState<ClusterListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -164,7 +173,10 @@ export default function HomePage() {
     <div className="min-h-screen bg-[#F5F5F5]">
       <Navigation 
         currentLanguage={currentLanguage}
-        onLanguageChange={setCurrentLanguage}
+        onLanguageChange={(lang) => {
+          setLanguage(lang);
+          setCurrentLanguage(lang);
+        }}
       />
       
       {/* Google News Style Topic Navigation */}
@@ -242,6 +254,7 @@ export default function HomePage() {
                           language={currentLanguage}
                           variant="default"
                           imageUrl={incident.image_url || undefined}
+                          category={incident.category || undefined}
                         />
                       ))}
                     </div>
@@ -271,6 +284,7 @@ export default function HomePage() {
                                  sourceCount={incident.source_count || 0}
                                  language={currentLanguage}
                                  variant="compact"
+                                 category={incident.topic || incident.category || undefined}
                                />
                             ))}
                          </div>
@@ -295,6 +309,7 @@ export default function HomePage() {
                                  sourceCount={incident.source_count || 0}
                                  language={currentLanguage}
                                  variant="compact"
+                                 category={incident.topic || incident.category || undefined}
                                />
                             ))}
                          </div>

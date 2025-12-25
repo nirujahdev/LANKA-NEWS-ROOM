@@ -11,6 +11,7 @@ type ClusterRow = Database['public']['Tables']['clusters']['Row'] & {
   meta_title_ta?: string | null;
   meta_description_ta?: string | null;
   published_at?: string | null;
+  topic?: string | null; // Primary topic from OpenAI
 };
 type SummaryRow = Database['public']['Tables']['summaries']['Row'];
 type ArticleRow = Database['public']['Tables']['articles']['Row'] & {
@@ -124,6 +125,7 @@ export async function GET(req: Request) {
         headline: cluster.headline,
         status: cluster.status,
         category: cluster.category,
+        topic: cluster.topic || cluster.category || null, // Use topic field if available, fallback to category
         first_seen: cluster.first_seen_at,
         last_updated: cluster.updated_at,
         created_at: cluster.created_at,
