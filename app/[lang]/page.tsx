@@ -18,6 +18,7 @@ type Props = {
 export default function LanguageHomePage({ params }: { params: Promise<{ lang: 'en' | 'si' | 'ta' }> }) {
   const [resolvedParams, setResolvedParams] = useState<{ lang: 'en' | 'si' | 'ta' } | null>(null);
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'si' | 'ta'>('en');
+  const [paramsError, setParamsError] = useState(false);
   const [incidents, setIncidents] = useState<ClusterListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -29,11 +30,30 @@ export default function LanguageHomePage({ params }: { params: Promise<{ lang: '
 
   // Resolve params
   useEffect(() => {
-    params.then(p => {
-      setResolvedParams(p);
-      setCurrentLanguage(p.lang);
-      setLanguage(p.lang);
-    });
+    let cancelled = false;
+    
+    params
+      .then(p => {
+        if (cancelled) return;
+        setResolvedParams(p);
+        setCurrentLanguage(p.lang);
+        setLanguage(p.lang);
+        setParamsError(false);
+      })
+      .catch(err => {
+        if (cancelled) return;
+        console.error('Error resolving params:', err);
+        setParamsError(true);
+        // Fallback to 'en' if params resolution fails
+        const fallbackLang = { lang: 'en' as const };
+        setResolvedParams(fallbackLang);
+        setCurrentLanguage('en');
+        setLanguage('en');
+      });
+    
+    return () => {
+      cancelled = true;
+    };
   }, [params]);
 
   useEffect(() => {
@@ -91,10 +111,25 @@ export default function LanguageHomePage({ params }: { params: Promise<{ lang: '
     });
   }, [resolvedParams]);
 
-  if (!resolvedParams || loading) {
+  // Always render something - don't wait indefinitely
+  if (!resolvedParams) {
     return (
       <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center">
         <div className="text-[#5F6368]">Loading...</div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F5F5F5]">
+        <Navigation currentLanguage={currentLanguage} onLanguageChange={setCurrentLanguage} />
+        <TopicNavigation language={currentLanguage} />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-[#5F6368]">Loading news...</div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -107,10 +142,13 @@ export default function LanguageHomePage({ params }: { params: Promise<{ lang: '
     );
   }
 
+  // Ensure we have a valid language before rendering
+  const displayLanguage = resolvedParams?.lang || currentLanguage;
+
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
-      <Navigation currentLanguage={currentLanguage} onLanguageChange={setCurrentLanguage} />
-      <TopicNavigation language={currentLanguage} />
+      <Navigation currentLanguage={displayLanguage} onLanguageChange={setCurrentLanguage} />
+      <TopicNavigation language={displayLanguage} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex gap-6">
