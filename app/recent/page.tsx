@@ -64,20 +64,9 @@ export default function RecentPage() {
         }}
       />
       
-      {/* Top Tab Navigation (Sticky) */}
-      <TabNavigation
-        tabs={baseTabs}
-        activeTab={activeTab}
-        onTabChange={(tabId) => {
-          if (tabId === 'home') {
-            window.location.href = '/';
-          } else if (tabId === 'recent') {
-            // Already on recent page
-          } else {
-            window.location.href = `/lk/${currentLanguage}/${tabId}`;
-          }
-        }}
+      <TopicNavigation 
         language={currentLanguage}
+        showWeather={true}
       />
 
       <main className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
