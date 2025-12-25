@@ -59,8 +59,16 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
     : `${sourceCount} source${sourceCount !== 1 ? 's' : ''}`;
 
   const getImageUrl = () => {
-    // Use article image if available, otherwise fallback to category-based images
-    if (imageUrl) return imageUrl;
+    // Use article image if available and valid, otherwise fallback to category-based images
+    if (imageUrl && imageUrl.startsWith('http')) {
+      try {
+        // Validate URL
+        new URL(imageUrl);
+        return imageUrl;
+      } catch {
+        // Invalid URL, use fallback
+      }
+    }
     const lowerHeadline = headline.toLowerCase();
     if (lowerHeadline.includes('power') || lowerHeadline.includes('electricity') || lowerHeadline.includes('outage')) {
       return 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=800&q=80';
@@ -158,6 +166,11 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
                   alt={headline}
                   fill
                   className="object-cover"
+                  onError={(e) => {
+                    // Fallback to default image on error
+                    const target = e.target as HTMLImageElement;
+                    target.src = 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80';
+                  }}
                />
             </div>
          </article>
@@ -167,7 +180,7 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
 
   // Default List Variant (Top Stories list below featured)
   return (
-    <Link href={`/incident/${id}`}>
+    <Link href={href}>
       <article className="group relative py-4 flex gap-4 cursor-pointer border-b border-[#E8EAED] last:border-b-0 hover:bg-[#F8F9FA] -mx-4 px-4 transition-colors">
         <div className="flex-1 min-w-0 flex flex-col justify-between">
           <div>
@@ -204,6 +217,11 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
             alt={headline}
             fill
             className="object-cover group-hover:brightness-[1.02] transition-all duration-200"
+            onError={(e) => {
+              // Fallback to default image on error
+              const target = e.target as HTMLImageElement;
+              target.src = 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80';
+            }}
           />
         </div>
       </article>
