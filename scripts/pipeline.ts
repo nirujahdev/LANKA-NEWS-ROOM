@@ -478,37 +478,63 @@ RULES:
 - City: only if article mentions a specific city, otherwise null
 - Return ONLY valid JSON, no other text`;
 
-  const completion = await openai.chat.completions.create({
-    model: process.env.SUMMARY_MODEL || 'gpt-4o-mini',
-    messages: [
-      { role: 'system', content: 'You are a news processing engine. Return only valid JSON.' },
-      { role: 'user', content: prompt }
-    ],
-    temperature: 0.2,
-    max_tokens: 500,
-    response_format: { type: 'json_object' }
-  });
-
-  const responseText = completion.choices[0]?.message?.content?.trim();
-  if (!responseText) {
-    throw new Error('Empty response from OpenAI');
-  }
+  // Add timeout and better error handling
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
   try {
-    const parsed = JSON.parse(responseText);
+    const completion = await openai.chat.completions.create({
+      model: process.env.SUMMARY_MODEL || 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: 'You are a news processing engine. Return only valid JSON.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.2,
+      max_tokens: 500,
+      response_format: { type: 'json_object' },
+      timeout: 30000 // 30 second timeout
+    }, {
+      signal: controller.signal
+    });
     
-    // Validate and clean response
-    return {
-      summary: parsed.summary || article.title,
-      topics: Array.isArray(parsed.topics) ? parsed.topics.slice(0, 3) : ['other'],
-      seo_title: (parsed.seo_title || article.title).slice(0, 65),
-      seo_description: (parsed.seo_description || parsed.summary || '').slice(0, 160),
-      slug: parsed.slug || generateSlug(article.title),
-      language: ['en', 'si', 'ta'].includes(parsed.language) ? parsed.language : article.lang === 'si' ? 'si' : article.lang === 'ta' ? 'ta' : 'en',
-      city: parsed.city || null
-    };
-  } catch (error) {
-    throw new Error(`Failed to parse OpenAI response: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    clearTimeout(timeoutId);
+
+    const responseText = completion.choices[0]?.message?.content?.trim();
+    if (!responseText) {
+      throw new Error('Empty response from OpenAI');
+    }
+
+    try {
+      const parsed = JSON.parse(responseText);
+      
+      // Validate and clean response
+      return {
+        summary: parsed.summary || article.title,
+        topics: Array.isArray(parsed.topics) ? parsed.topics.slice(0, 3) : ['other'],
+        seo_title: (parsed.seo_title || article.title).slice(0, 65),
+        seo_description: (parsed.seo_description || parsed.summary || '').slice(0, 160),
+        slug: parsed.slug || generateSlug(article.title),
+        language: ['en', 'si', 'ta'].includes(parsed.language) ? parsed.language : article.lang === 'si' ? 'si' : article.lang === 'ta' ? 'ta' : 'en',
+        city: parsed.city || null
+      };
+    } catch (error) {
+      throw new Error(`Failed to parse OpenAI response: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    
+    // Provide better error messages
+    if (error.name === 'AbortError' || error.message?.includes('timeout')) {
+      throw new Error('OpenAI API timeout - request took too long');
+    } else if (error.status === 401) {
+      throw new Error('OpenAI API authentication failed - check API key');
+    } else if (error.status === 429) {
+      throw new Error('OpenAI API rate limit exceeded - too many requests');
+    } else if (error.message?.includes('Connection')) {
+      throw new Error('OpenAI API connection error - check network or API status');
+    } else {
+      throw new Error(`OpenAI API error: ${error.message || 'Unknown error'}`);
+    }
   }
 }
 
@@ -654,6 +680,8 @@ async function runPipeline(): Promise<Stats> {
     // Step 4: Process articles
     console.log('\n🤖 Processing articles with OpenAI...');
     let hasMore = true;
+    let consecutiveFailures = 0;
+    const MAX_CONSECUTIVE_FAILURES = 5; // Stop if 5 in a row fail
     
     while (hasMore) {
       const articles = await pickArticlesForProcessing(BATCH_SIZE);
@@ -666,26 +694,43 @@ async function runPipeline(): Promise<Stats> {
 
       console.log(`   Processing batch of ${articles.length} articles...`);
 
-      // Process articles in parallel (with rate limiting)
-      const processPromises = articles.map(async (article) => {
+      // Process articles sequentially to avoid overwhelming API and better error tracking
+      let batchSuccess = 0;
+      let batchFailed = 0;
+      
+      for (const article of articles) {
         try {
-          const openaiResult = await withRetry(() => processArticleWithOpenAI(article));
+          const openaiResult = await withRetry(() => processArticleWithOpenAI(article), 2, 3000); // 2 retries, 3s delay
           const clusterId = await createOrUpdateCluster(article, openaiResult);
           await markArticleProcessed(article.id, clusterId);
           stats.processed++;
+          batchSuccess++;
+          consecutiveFailures = 0; // Reset on success
           console.log(`   ✓ Processed: ${article.title.slice(0, 50)}...`);
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           await markArticleFailed(article.id, errorMessage);
           stats.failed++;
+          batchFailed++;
+          consecutiveFailures++;
           console.error(`   ❌ Failed: ${article.title.slice(0, 50)}... - ${errorMessage}`);
+          
+          // Circuit breaker: if too many consecutive failures, stop processing
+          if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+            console.error(`\n⚠️  Circuit breaker triggered: ${consecutiveFailures} consecutive failures. Stopping OpenAI processing.`);
+            console.error(`   This usually means OpenAI API is unavailable or API key is invalid.`);
+            console.error(`   Check OPENAI_API_KEY secret in GitHub Actions settings.`);
+            hasMore = false;
+            break;
+          }
         }
-      });
-
-      await Promise.all(processPromises);
+        
+        // Small delay between articles to avoid rate limits
+        await sleep(500);
+      }
 
       // Rate limiting: wait between batches
-      if (articles.length === BATCH_SIZE) {
+      if (articles.length === BATCH_SIZE && hasMore) {
         await sleep(1000); // 1 second between batches
       } else {
         hasMore = false;
