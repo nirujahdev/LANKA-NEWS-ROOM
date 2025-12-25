@@ -110,7 +110,7 @@ export default function LanguageHomePage({ params }: { params: Promise<{ lang: '
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
       <Navigation currentLanguage={currentLanguage} onLanguageChange={setCurrentLanguage} />
-      <TopicNavigation currentLanguage={currentLanguage} />
+      <TopicNavigation language={currentLanguage} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex gap-6">
