@@ -174,30 +174,6 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
             {/* Main Feed - Centered */}
             <div className="flex-1 min-w-0 max-w-3xl mx-auto">
               {newsFeedContent}
-
-              {/* Topic Cards Section - Show top topics with top 3 news */}
-              {!topicLoading && Object.keys(topicData).length > 0 && (
-                <div className="mt-12 mb-8">
-                  <h2 className="text-2xl font-semibold text-[#202124] mb-6">
-                    {currentLanguage === 'si' ? 'ඉහළ මාතෘකා' : currentLanguage === 'ta' ? 'முதன்மை தலைப்புகள்' : 'Top Topics'}
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {Object.entries(topicData).slice(0, 6).map(([topic, articles]) => {
-                      const normalizedTopic = normalizeTopicSlug(topic) || topic;
-                      const topicLabel = normalizedTopic.charAt(0).toUpperCase() + normalizedTopic.slice(1).replace(/-/g, ' ');
-                      return (
-                        <TopicNewsCard
-                          key={topic}
-                          topic={topicLabel}
-                          topicSlug={normalizedTopic}
-                          topArticles={articles.slice(0, 3)}
-                          language={currentLanguage}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Right Sidebar + Ad Space */}
@@ -212,6 +188,32 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
               </div>
             </aside>
           </div>
+
+          {/* Topic Cards Section - Full Width (No Ads) */}
+          {!topicLoading && Object.keys(topicData).length > 0 && (
+            <div className="mt-16 mb-8 w-full">
+              <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 className="text-2xl font-semibold text-[#202124] mb-6">
+                  {currentLanguage === 'si' ? 'ඉහළ මාතෘකා' : currentLanguage === 'ta' ? 'முதன்மை தலைப்புகள்' : 'Top Topics'}
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {Object.entries(topicData).slice(0, 8).map(([topic, articles]) => {
+                    const normalizedTopic = normalizeTopicSlug(topic) || topic;
+                    const topicLabel = normalizedTopic.charAt(0).toUpperCase() + normalizedTopic.slice(1).replace(/-/g, ' ');
+                    return (
+                      <TopicNewsCard
+                        key={topic}
+                        topic={topicLabel}
+                        topicSlug={normalizedTopic}
+                        topArticles={articles.slice(0, 3)}
+                        language={currentLanguage}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>

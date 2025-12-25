@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Star, Share2 } from 'lucide-react';
+import { Star, Share2, ArrowUpDown, TrendingUp, Calendar, Tag } from 'lucide-react';
 import { ClusterListItem } from '@/lib/api';
 import { formatTimeAgo, getImageUrl, getStoryUrl } from '@/lib/newsCardUtils';
 import { normalizeTopicSlug } from '@/lib/topics';
 import { getTopicUrl } from '@/lib/urls';
+
+type SortOption = 'trending' | 'date' | 'topic';
 
 interface TopicNewsCardProps {
   topic: string;
@@ -30,6 +32,7 @@ export default function TopicNewsCard({
 }: TopicNewsCardProps) {
   const [following, setFollowing] = useState(isFollowing);
   const [sharing, setSharing] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('trending');
 
   const handleFollow = async () => {
     const newState = !following;
@@ -90,6 +93,38 @@ export default function TopicNewsCard({
     return en;
   };
 
+  // Sort articles based on selected option
+  const sortedArticles = useMemo(() => {
+    const articles = [...topArticles];
+    
+    switch (sortBy) {
+      case 'date':
+        return articles.sort((a, b) => {
+          const dateA = new Date(a.last_updated).getTime();
+          const dateB = new Date(b.last_updated).getTime();
+          return dateB - dateA; // Newest first
+        });
+      
+      case 'topic':
+        return articles.sort((a, b) => {
+          const topicA = a.topic || '';
+          const topicB = b.topic || '';
+          return topicA.localeCompare(topicB);
+        });
+      
+      case 'trending':
+      default:
+        // Sort by source count (more sources = more trending) and recency
+        return articles.sort((a, b) => {
+          const sourceDiff = (b.source_count || 0) - (a.source_count || 0);
+          if (sourceDiff !== 0) return sourceDiff;
+          const dateA = new Date(a.last_updated).getTime();
+          const dateB = new Date(b.last_updated).getTime();
+          return dateB - dateA;
+        });
+    }
+  }, [topArticles, sortBy]);
+
   const displayImage = imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(topic)}&background=1A73E8&color=fff&size=128`;
 
   return (
@@ -146,13 +181,56 @@ export default function TopicNewsCard({
           </button>
         </div>
 
-        {/* Top 3 News Articles */}
+        {/* Sort Settings */}
         {topArticles.length > 0 && (
-          <div className="space-y-3 border-t border-[#E8EAED] pt-4">
-            <h4 className="text-sm font-medium text-[#202124] mb-3">
-              {getLabel('Top stories', 'ඉහළ කතා', 'முதன்மை செய்திகள்')}
-            </h4>
-            {topArticles.slice(0, 3).map((article) => {
+          <div className="border-t border-[#E8EAED] pt-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-medium text-[#202124]">
+                {getLabel('Top stories', 'ඉහළ කතා', 'முதன்மை செய்திகள்')}
+              </h4>
+              <div className="flex items-center gap-1 bg-[#F1F3F4] rounded-lg p-1">
+                <button
+                  onClick={() => setSortBy('trending')}
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    sortBy === 'trending'
+                      ? 'bg-white text-[#1A73E8] shadow-sm'
+                      : 'text-[#5F6368] hover:text-[#202124]'
+                  }`}
+                  title={getLabel('Trending', 'ප්‍රවණතා', 'பிரபலமான')}
+                >
+                  <TrendingUp className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => setSortBy('date')}
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    sortBy === 'date'
+                      ? 'bg-white text-[#1A73E8] shadow-sm'
+                      : 'text-[#5F6368] hover:text-[#202124]'
+                  }`}
+                  title={getLabel('Sort by date', 'දිනය අනුව', 'தேதி வாரியாக')}
+                >
+                  <Calendar className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => setSortBy('topic')}
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    sortBy === 'topic'
+                      ? 'bg-white text-[#1A73E8] shadow-sm'
+                      : 'text-[#5F6368] hover:text-[#202124]'
+                  }`}
+                  title={getLabel('Sort by topic', 'මාතෘකාව අනුව', 'தலைப்பு வாரியாக')}
+                >
+                  <Tag className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Top 3 News Articles */}
+        {sortedArticles.length > 0 && (
+          <div className="space-y-3">
+            {sortedArticles.slice(0, 3).map((article) => {
               const articleHref = getStoryUrl(language, article.slug, article.id);
               const articleImageUrl = getImageUrl({
                 id: article.id,

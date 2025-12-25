@@ -71,7 +71,7 @@ export default function MixedLayoutGrid({
         // If we have 2 items or this is the last item, render the grid
         if (gridGroup.length === 2 || i === articles.length - 1) {
           elements.push(
-            <div key={`grid-${i}`} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div key={`grid-${i}`} className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               {gridGroup.map(({ article, assignment, index }) => (
                 <GridNewsCard key={article.id} data={article} />
               ))}
@@ -83,7 +83,7 @@ export default function MixedLayoutGrid({
         // Render any pending grid items first
         if (gridGroup.length > 0) {
           elements.push(
-            <div key={`grid-${i}`} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div key={`grid-${i}`} className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               {gridGroup.map(({ article, assignment, index }) => (
                 <GridNewsCard key={article.id} data={article} />
               ))}
@@ -94,7 +94,7 @@ export default function MixedLayoutGrid({
 
         // Render current item
         elements.push(
-          <div key={article.id} className="mb-4">
+          <div key={article.id} className="mb-6">
             {renderCard(article, assignment, i)}
           </div>
         );
@@ -106,7 +106,7 @@ export default function MixedLayoutGrid({
     // Render any remaining grid items
     if (gridGroup.length > 0) {
       elements.push(
-        <div key={`grid-final`} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div key={`grid-final`} className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {gridGroup.map(({ article, assignment, index }) => (
             <GridNewsCard key={article.id} data={article} />
           ))}
@@ -118,7 +118,7 @@ export default function MixedLayoutGrid({
   };
 
   return (
-    <div className="space-y-0">
+    <div className="space-y-6">
       {renderLayout()}
     </div>
   );
