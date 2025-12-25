@@ -68,9 +68,9 @@ const TopicNavigationContent: React.FC<TopicNavigationProps> = ({
   };
 
   return (
-    <div className="bg-white">
+    <div className="bg-white border-b border-[#E8EAED]">
       {/* Topic Tabs - Centered and Scrollable on Mobile */}
-      <div className="border-b border-[#E8EAED]">
+      <div>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="flex overflow-x-auto scrollbar-hide -mb-px justify-center">
             <div className="flex min-w-max">
@@ -100,7 +100,7 @@ const TopicNavigationContent: React.FC<TopicNavigationProps> = ({
 
       {/* Weather Section - Only render if active (removed extra borders/padding) */}
       {showWeather && (
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-2 border-b border-[#E8EAED]">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-2">
           <div className="flex justify-end">
             <WeatherWidget />
           </div>

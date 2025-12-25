@@ -170,22 +170,29 @@ export default function HomePage() {
     async function fetchTopicData() {
       setTopicLoading(true);
       try {
-        const topics = ['politics', 'economy', 'technology', 'sports', 'science', 'health'] as CategoryType[];
-        const topicPromises = topics.map(async (topic) => {
+        const topics: Array<{ id: string; category: CategoryType }> = [
+          { id: 'politics', category: 'politics' },
+          { id: 'business', category: 'economy' },
+          { id: 'technology', category: 'technology' },
+          { id: 'sports', category: 'sports' },
+          { id: 'science', category: 'science' },
+          { id: 'health', category: 'health' }
+        ];
+        const topicPromises = topics.map(async ({ id, category }) => {
           try {
-            const data = await loadClusters(currentLanguage, null, topic);
-            return { topic, data: data.slice(0, 3) }; // Get top 3 for each topic
+            const data = await loadClusters(currentLanguage, null, category);
+            return { id, category, data: data.slice(0, 3) }; // Get top 3 for each topic
           } catch (err) {
-            console.error(`Error loading ${topic} clusters:`, err);
-            return { topic, data: [] };
+            console.error(`Error loading ${id} clusters:`, err);
+            return { id, category, data: [] };
           }
         });
 
         const results = await Promise.all(topicPromises);
         if (!cancelled) {
           const topicMap: Record<string, ClusterListItem[]> = {};
-          results.forEach(({ topic, data }) => {
-            if (topic) topicMap[topic] = data;
+          results.forEach(({ id, data }) => {
+            topicMap[id] = data;
           });
           setTopicData(topicMap);
         }
@@ -348,12 +355,12 @@ export default function HomePage() {
                    ) : (
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                        {[
-                         { id: 'politics', label: 'Politics', labelSi: 'දේශපාලනය', labelTa: 'அரசியல்', href: '/politics' },
-                         { id: 'economy', label: 'Business', labelSi: 'ව්‍යාපාර', labelTa: 'வணிகம்', href: '/business' },
-                         { id: 'technology', label: 'Technology', labelSi: 'තාක්ෂණය', labelTa: 'தொழில்நுட்பம்', href: '/technology' },
-                         { id: 'sports', label: 'Sports', labelSi: 'ක්‍රීඩා', labelTa: 'விளையாட்டு', href: '/sports' },
-                         { id: 'science', label: 'Science', labelSi: 'විද්‍යාව', labelTa: 'அறிவியல்', href: '/science' },
-                         { id: 'health', label: 'Health', labelSi: 'සෞඛ්‍ය', labelTa: 'சுகாதாரம்', href: '/health' }
+                         { id: 'politics', category: 'politics' as CategoryType, label: 'Politics', labelSi: 'දේශපාලනය', labelTa: 'அரசியல்', href: '/politics' },
+                         { id: 'business', category: 'economy' as CategoryType, label: 'Business', labelSi: 'ව්‍යාපාර', labelTa: 'வணிகம்', href: '/business' },
+                         { id: 'technology', category: 'technology' as CategoryType, label: 'Technology', labelSi: 'තාක්ෂණය', labelTa: 'தொழில்நுட்பம்', href: '/technology' },
+                         { id: 'sports', category: 'sports' as CategoryType, label: 'Sports', labelSi: 'ක්‍රීඩා', labelTa: 'விளையாட்டு', href: '/sports' },
+                         { id: 'science', category: 'science' as CategoryType, label: 'Science', labelSi: 'විද්‍යාව', labelTa: 'அறிவியல்', href: '/science' },
+                         { id: 'health', category: 'health' as CategoryType, label: 'Health', labelSi: 'සෞඛ්‍ය', labelTa: 'சுகாதாரம்', href: '/health' }
                        ].map((topic) => {
                          const topicLabel = currentLanguage === 'si' ? topic.labelSi : currentLanguage === 'ta' ? topic.labelTa : topic.label;
                          const topicItems = topicData[topic.id] || [];
