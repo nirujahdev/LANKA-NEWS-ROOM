@@ -37,18 +37,15 @@ function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 'ta' }) {
       supabase = getSupabaseClient();
     } catch (error) {
       console.error('Failed to get Supabase client:', error);
-      setError(true);
-      setLoading(false);
-      return;
+      // Don't block page loading - getSupabaseClient handles missing env vars gracefully
     }
 
+    // Check if Supabase is properly configured (but don't block if not)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Missing Supabase environment variables');
-      setError(true);
-      setLoading(false);
-      return;
+      console.warn('Missing Supabase environment variables - some features may not work');
+      // Continue loading - getSupabaseClient returns a placeholder client
     }
 
     // Check authentication
