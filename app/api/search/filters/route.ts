@@ -12,7 +12,8 @@ export async function GET(req: Request) {
     }
     
     // Get available filter options from database
-    const { data, error } = await supabaseAdmin.rpc('get_search_filter_options');
+    // Note: get_search_filter_options RPC exists but types need regeneration
+    const { data, error } = await (supabaseAdmin as any).rpc('get_search_filter_options');
     
     if (error) {
       console.error('Filter options error:', error);
