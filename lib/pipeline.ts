@@ -700,14 +700,14 @@ async function summarizeEligible(
       if (uniqueImages.length > 0) {
         try {
           imageUrl = await selectBestImage(uniqueImages, cluster.headline, summaryEn);
-          console.log(`[Pipeline] Selected best image from ${uniqueImages.length} options`);
+          console.log(`[Pipeline] Selected best image from ${uniqueImages.length} options for cluster ${cluster.id}`);
         } catch (error) {
           console.error('[Pipeline] Image selection failed, using first image:', error);
           imageUrl = uniqueImages[0].url;
         }
       } else {
         imageUrl = null;
-        console.warn('[Pipeline] No images found for cluster');
+        console.warn(`[Pipeline] No images found for cluster ${cluster.id}`);
       }
 
       // Generate SEO for other languages (simpler, just title/description)
