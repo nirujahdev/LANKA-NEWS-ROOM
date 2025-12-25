@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
-import TabNavigation from '@/components/TabNavigation';
+import TopicNavigation from '@/components/TopicNavigation';
 import IncidentCard from '@/components/IncidentCard';
 import Sidebar from '@/components/Sidebar';
 import { ClusterListItem, loadClusters, FeedType, CategoryType } from '@/lib/api';
@@ -11,20 +11,9 @@ import { getSupabaseClient } from '@/lib/supabaseClient';
 
 export const dynamic = 'force-dynamic';
 
-const baseTabs = [
-  { id: 'home', label: 'Home', labelSi: 'මුල් පිටුව', labelTa: 'முகப்பு' },
-  { id: 'recent', label: 'Recent', labelSi: 'මෑත', labelTa: 'சமீபத்திய' },
-  { id: 'sri-lanka', label: 'Sri Lanka', labelSi: 'ශ්‍රී ලංකාව', labelTa: 'இலங்கை' },
-  { id: 'politics', label: 'Politics', labelSi: 'දේශපාලනය', labelTa: 'அரசியல்' },
-  { id: 'economy', label: 'Economy', labelSi: 'ආර්ථිකය', labelTa: 'பொருளாதாரம்' },
-  { id: 'sports', label: 'Sports', labelSi: 'ක්‍රීඩා', labelTa: 'விளையாட்டு' },
-  { id: 'technology', label: 'Technology', labelSi: 'තාක්ෂණය', labelTa: 'தொழில்நுட்பம்' },
-  { id: 'health', label: 'Health', labelSi: 'සෞඛ්‍ය', labelTa: 'சுகாதாரம்' }
-];
 
 export default function HomePage() {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'si' | 'ta'>('en');
-  const [activeTab, setActiveTab] = useState('home');
   const [incidents, setIncidents] = useState<ClusterListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -108,11 +97,29 @@ export default function HomePage() {
       setLoading(true);
       setError(false);
       try {
-        // Map activeTab to feed or category
-        const feed: FeedType = activeTab === 'home' ? 'home' : activeTab === 'recent' ? 'recent' : null;
-        const category: CategoryType = ['politics', 'economy', 'sports', 'technology', 'health'].includes(activeTab)
-          ? (activeTab as 'politics' | 'economy' | 'sports' | 'technology' | 'health')
-          : null;
+        // Determine feed/category based on current pathname
+        const pathname = window.location.pathname;
+        let feed: FeedType = null;
+        let category: CategoryType = null;
+
+        if (pathname === '/' || pathname === '') {
+          feed = 'home';
+        } else if (pathname === '/recent') {
+          feed = 'recent';
+        } else if (pathname.startsWith('/politics')) {
+          category = 'politics';
+        } else if (pathname.startsWith('/economy') || pathname.startsWith('/business')) {
+          category = 'economy';
+        } else if (pathname.startsWith('/sports')) {
+          category = 'sports';
+        } else if (pathname.startsWith('/technology')) {
+          category = 'technology';
+        } else if (pathname.startsWith('/health')) {
+          category = 'health';
+        } else if (pathname.startsWith('/sri-lanka')) {
+          // Sri Lanka specific feed
+          feed = 'home';
+        }
         
         const data = await loadClusters(currentLanguage, feed, category);
         if (!cancelled) {
@@ -146,7 +153,7 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, [activeTab, currentLanguage]);
+  }, [currentLanguage]);
 
   const formatDate = () => {
     const now = new Date();
@@ -165,18 +172,10 @@ export default function HomePage() {
         onLanguageChange={setCurrentLanguage}
       />
       
-      {/* Top Tab Navigation (Sticky) */}
-      <TabNavigation
-        tabs={tabs}
-        activeTab={activeTab}
-        onTabChange={(tabId) => {
-          if (tabId === 'for-you') {
-            window.location.href = '/for-you';
-          } else {
-            setActiveTab(tabId);
-          }
-        }}
+      {/* Google News Style Topic Navigation */}
+      <TopicNavigation 
         language={currentLanguage}
+        showWeather={true}
       />
 
       <main className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -193,10 +192,7 @@ export default function HomePage() {
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                <h1 className="text-xl font-normal text-[#202124]">
-                 {activeTab === 'home' 
-                    ? (currentLanguage === 'si' ? 'ඔබගේ කෙටි සටහන' : currentLanguage === 'ta' ? 'உங்கள் சுருக்கம்' : 'Top stories')
-                    : tabs.find(t => t.id === activeTab)?.label || 'News'
-                 }
+                 {currentLanguage === 'si' ? 'ඔබගේ කෙටි සටහන' : currentLanguage === 'ta' ? 'உங்கள் சுருக்கம்' : 'Top stories'}
                </h1>
                 <Link href="/recent" className="text-sm font-medium text-[#1A73E8] hover:underline hidden sm:block">
                   More top stories

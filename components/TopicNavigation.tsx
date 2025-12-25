@@ -1,0 +1,118 @@
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import WeatherWidget from './WeatherWidget';
+
+interface Topic {
+  id: string;
+  label: string;
+  labelSi?: string;
+  labelTa?: string;
+  href: string;
+}
+
+interface TopicNavigationProps {
+  language?: 'en' | 'si' | 'ta';
+  showWeather?: boolean;
+}
+
+const topics: Topic[] = [
+  { id: 'home', label: 'Home', labelSi: 'මුල් පිටුව', labelTa: 'முகப்பு', href: '/' },
+  { id: 'for-you', label: 'For you', labelSi: 'ඔබ වෙනුවෙන්', labelTa: 'உங்களுக்காக', href: '/for-you' },
+  { id: 'following', label: 'Following', labelSi: 'අනුගමනය', labelTa: 'பின்தொடரும்', href: '/following' },
+  { id: 'sri-lanka', label: 'Sri Lanka', labelSi: 'ශ්‍රී ලංකාව', labelTa: 'இலங்கை', href: '/sri-lanka' },
+  { id: 'world', label: 'World', labelSi: 'ලෝකය', labelTa: 'உலகம்', href: '/world' },
+  { id: 'local', label: 'Local', labelSi: 'ප්‍රාදේශීය', labelTa: 'உள்ளூர்', href: '/local' },
+  { id: 'politics', label: 'Politics', labelSi: 'දේශපාලනය', labelTa: 'அரசியல்', href: '/politics' },
+  { id: 'business', label: 'Business', labelSi: 'ව්‍යාපාර', labelTa: 'வணிகம்', href: '/business' },
+  { id: 'technology', label: 'Technology', labelSi: 'තාක්ෂණය', labelTa: 'தொழில்நுட்பம்', href: '/technology' },
+  { id: 'entertainment', label: 'Entertainment', labelSi: 'විනෝදාස්වාදය', labelTa: 'பொழுதுபோக்கு', href: '/entertainment' },
+  { id: 'sports', label: 'Sports', labelSi: 'ක්‍රීඩා', labelTa: 'விளையாட்டு', href: '/sports' },
+  { id: 'science', label: 'Science', labelSi: 'විද්‍යාව', labelTa: 'அறிவியல்', href: '/science' },
+  { id: 'health', label: 'Health', labelSi: 'සෞඛ්‍ය', labelTa: 'சுகாதாரம்', href: '/health' }
+];
+
+const TopicNavigation: React.FC<TopicNavigationProps> = ({ 
+  language = 'en',
+  showWeather = true 
+}) => {
+  const pathname = usePathname();
+
+  const getLabel = (topic: Topic) => {
+    if (language === 'si' && topic.labelSi) return topic.labelSi;
+    if (language === 'ta' && topic.labelTa) return topic.labelTa;
+    return topic.label;
+  };
+
+  const formatDate = () => {
+    const now = new Date();
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+  };
+
+  const isActive = (href: string) => {
+    if (href === '/') {
+      return pathname === '/';
+    }
+    return pathname.startsWith(href);
+  };
+
+  return (
+    <div className="bg-white border-b border-[#E8EAED]">
+      {/* Topic Tabs - Scrollable on Mobile */}
+      <div className="border-b border-[#E8EAED]">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="flex overflow-x-auto scrollbar-hide -mb-px">
+            {topics.map((topic) => {
+              const active = isActive(topic.href);
+              return (
+                <Link
+                  key={topic.id}
+                  href={topic.href}
+                  className={`
+                    relative px-3 sm:px-4 py-3 text-sm font-normal whitespace-nowrap
+                    border-b-2 transition-colors duration-150
+                    ${active
+                      ? 'border-[#1A73E8] text-[#1A73E8]'
+                      : 'border-transparent text-[#5F6368] hover:text-[#202124]'
+                    }
+                  `}
+                >
+                  {getLabel(topic)}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Date and Weather Section */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+          {/* Left: Date */}
+          <div>
+            <h2 className="text-xl sm:text-2xl font-normal text-[#202124] mb-1">
+              Your briefing
+            </h2>
+            <p className="text-sm text-[#5F6368]">
+              {formatDate()}
+            </p>
+          </div>
+
+          {/* Right: Weather Widget */}
+          {showWeather && (
+            <div className="w-full sm:w-auto">
+              <WeatherWidget />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TopicNavigation;
+
