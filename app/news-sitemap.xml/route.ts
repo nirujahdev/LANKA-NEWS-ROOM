@@ -24,7 +24,14 @@ export async function GET() {
     .not('slug', 'is', null)
     .gte('published_at', twoDaysAgo.toISOString())
     .order('published_at', { ascending: false })
-    .limit(1000);
+    .limit(1000)
+    .returns<Array<{
+      slug: string;
+      headline: string;
+      published_at: string | null;
+      language: string | null;
+      category: string | null;
+    }>>();
 
   if (error || !clusters) {
     return new Response('Error generating news sitemap', { status: 500 });
