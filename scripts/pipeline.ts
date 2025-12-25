@@ -328,18 +328,35 @@ async function insertArticles(
   const validRows = rows.filter(r => r.hash && r.hash.trim().length > 0);
   if (validRows.length === 0) return { inserted: 0, deduped: 0 };
 
-  const { data, error } = await supabase
-    .from('articles')
-    .upsert(validRows, { onConflict: 'hash', ignoreDuplicates: true })
-    .select('id');
+  // Insert articles one by one to handle conflicts properly
+  // This is more reliable than bulk upsert with partial unique indexes
+  let inserted = 0;
+  let deduped = 0;
 
-  if (error) {
-    console.error(`  ❌ Insert error: ${error.message}`);
-    return { inserted: 0, deduped: validRows.length };
+  for (const row of validRows) {
+    const { data, error } = await supabase
+      .from('articles')
+      .upsert(row, { 
+        onConflict: 'hash',
+        ignoreDuplicates: true
+      })
+      .select('id')
+      .maybeSingle();
+
+    if (error) {
+      // If it's a duplicate, that's expected - count as deduped
+      if (error.message.includes('duplicate') || error.message.includes('unique')) {
+        deduped++;
+      } else {
+        console.error(`  ⚠️  Insert error for article: ${error.message}`);
+        deduped++; // Count as deduped to avoid inflating stats
+      }
+    } else if (data) {
+      inserted++;
+    } else {
+      deduped++; // No data returned = duplicate
+    }
   }
-
-  const inserted = data?.length || 0;
-  const deduped = validRows.length - inserted;
   
   return { inserted, deduped };
 }
