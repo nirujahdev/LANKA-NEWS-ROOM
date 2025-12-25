@@ -58,7 +58,12 @@ async function getClusterBySlug(slug: string) {
       sources (name, feed_url)
     `)
     .eq('cluster_id', cluster.id)
-    .order('published_at', { ascending: false });
+    .order('published_at', { ascending: false })
+    .returns<Array<{
+      id: string;
+      image_url: string | null;
+      [key: string]: any;
+    }>>();
 
   return {
     cluster,
@@ -98,7 +103,8 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const taUrl = `${baseUrl}/news/${params.slug}?lang=ta`;
 
   // Get first article image if cluster doesn't have one
-  const imageUrl = cluster.image_url || data.articles?.[0]?.image_url;
+  const firstArticle = data.articles?.[0] as { image_url?: string | null } | undefined;
+  const imageUrl = cluster.image_url || firstArticle?.image_url || null;
 
   return {
     title: metaTitle,
@@ -171,7 +177,8 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
     lang === 'ta' ? cluster.meta_description_ta || summary?.summary_ta :
     cluster.meta_description_en || summary?.summary_en;
 
-  const imageUrl = cluster.image_url || articles?.[0]?.image_url;
+  const firstArticle = articles?.[0] as { image_url?: string | null } | undefined;
+  const imageUrl = cluster.image_url || firstArticle?.image_url || null;
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
