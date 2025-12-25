@@ -491,10 +491,10 @@ RULES:
       ],
       temperature: 0.2,
       max_tokens: 500,
-      response_format: { type: 'json_object' },
-      timeout: 30000 // 30 second timeout
+      response_format: { type: 'json_object' }
     }, {
-      signal: controller.signal
+      signal: controller.signal,
+      timeout: 30000 // 30 second timeout in options
     });
     
     clearTimeout(timeoutId);
