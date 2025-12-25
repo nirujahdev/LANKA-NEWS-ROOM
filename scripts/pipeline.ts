@@ -267,7 +267,7 @@ async function pickArticlesForProcessing(limit: number): Promise<Article[]> {
       .select('id, source_id, title, url, content_text, content_excerpt, published_at, lang')
       .eq('status', 'new')
       .limit(limit);
-    return data || [];
+    return (data as Article[]) || [];
   }
 
   // Atomically mark articles as 'processing'
@@ -291,11 +291,14 @@ async function pickArticlesForProcessing(limit: number): Promise<Article[]> {
         .in('id', ids);
     }
 
-    return articles || [];
+    return (articles as Article[]) || [];
   }
 
   if (error) throw new Error(`Failed to pick articles: ${error.message}`);
-  return data || [];
+  
+  // Ensure we always return an array
+  if (!data) return [];
+  return Array.isArray(data) ? (data as Article[]) : [data as Article];
 }
 
 async function markArticleProcessed(articleId: string, clusterId: string): Promise<void> {
