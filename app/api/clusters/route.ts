@@ -50,9 +50,10 @@ export async function GET(req: Request) {
       .eq('status', 'published')
       .gte('expires_at', new Date().toISOString()); // Only show non-expired clusters
 
-    // Apply category filter
+    // Apply category filter - check both category and topic fields
     if (category && category !== 'home' && category !== 'recent') {
-      query = query.eq('category', category);
+      // Use OR condition to match either category or topic field
+      query = query.or(`category.eq.${category},topic.eq.${category}`);
     }
 
     // Apply time filter
