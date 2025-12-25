@@ -33,12 +33,12 @@ const clientEnvSchema = z.object({
   RETRY_MAX_ATTEMPTS: z.coerce.number().default(3)
 });
 
-// Parse based on environment
+// Parse based on environment - use safeParse to avoid throwing errors
 let parsed: z.infer<typeof serverEnvSchema>;
 
 if (isClient) {
-  // On client, only validate safe variables
-  parsed = clientEnvSchema.parse({
+  // On client, only validate safe variables with defaults
+  const clientResult = clientEnvSchema.safeParse({
     SUMMARY_MODEL: process.env.SUMMARY_MODEL,
     SUMMARY_TRANSLATE_MODEL: process.env.SUMMARY_TRANSLATE_MODEL,
     SIMILARITY_THRESHOLD: process.env.SIMILARITY_THRESHOLD,
@@ -48,7 +48,22 @@ if (isClient) {
     LOCK_TTL_MINUTES: process.env.LOCK_TTL_MINUTES,
     CACHE_TTL_SECONDS: process.env.CACHE_TTL_SECONDS,
     RETRY_MAX_ATTEMPTS: process.env.RETRY_MAX_ATTEMPTS
-  }) as any; // Type assertion needed due to schema difference
+  });
+  
+  // Use defaults if parsing fails (client doesn't have these env vars)
+  parsed = clientResult.success 
+    ? (clientResult.data as any)
+    : {
+        SUMMARY_MODEL: 'gpt-4o-mini',
+        SUMMARY_TRANSLATE_MODEL: 'gpt-4o-mini',
+        SIMILARITY_THRESHOLD: 0.65,
+        WINDOW_HOURS: 24,
+        MAX_SUMMARY_ARTICLES: 8,
+        RSS_CONCURRENCY: 4,
+        LOCK_TTL_MINUTES: 10,
+        CACHE_TTL_SECONDS: 300,
+        RETRY_MAX_ATTEMPTS: 3
+      } as any;
 } else {
   // On server, validate all variables
   parsed = serverEnvSchema.parse({
