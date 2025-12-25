@@ -46,10 +46,19 @@ export async function loadClusters(
 
   const res = await fetch(`/api/clusters?${params.toString()}`, { cache: 'no-store' });
   if (!res.ok) {
-    throw new Error('Failed to fetch clusters');
+    const errorText = await res.text();
+    let errorMessage = 'Failed to fetch clusters';
+    try {
+      const errorJson = JSON.parse(errorText);
+      errorMessage = errorJson.error || errorMessage;
+    } catch {
+      // If not JSON, use the text or default message
+      errorMessage = errorText || errorMessage;
+    }
+    throw new Error(errorMessage);
   }
   const json = await res.json();
-  const clusters = json.clusters as ClusterListItem[];
+  const clusters = (json.clusters || []) as ClusterListItem[];
   
   // Cache for 5 minutes
   cache.set(cacheKey, clusters, 300);

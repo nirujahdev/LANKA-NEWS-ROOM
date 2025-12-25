@@ -56,7 +56,7 @@ export async function GET(req: Request) {
       .from('clusters')
       .select('*')
       .eq('status', 'published')
-      .gte('expires_at', new Date().toISOString()); // Only show non-expired clusters
+      .or('expires_at.is.null,expires_at.gte.' + new Date().toISOString()); // Show clusters that haven't expired or have no expiry
 
     // Apply category filter - check both category and topic fields
     if (category && category !== 'home' && category !== 'recent') {

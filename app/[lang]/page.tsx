@@ -64,14 +64,21 @@ function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 'ta' }) {
     // Load clusters
     loadClusters(lang, null, null)
       .then(data => {
-        setIncidents(data);
-        setLatestUpdates(data.slice(0, 10));
+        setIncidents(data || []);
+        setLatestUpdates((data || []).slice(0, 10));
         setLoading(false);
+        setError(false);
       })
       .catch(err => {
         console.error('Error loading clusters:', err);
-        setError(true);
+        // Don't set error immediately - try to show empty state instead
+        setIncidents([]);
+        setLatestUpdates([]);
         setLoading(false);
+        // Only set error if it's a real failure, not just empty results
+        if (err.message && !err.message.includes('Failed to fetch')) {
+          setError(true);
+        }
       });
 
     // Load topic data
