@@ -121,6 +121,38 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
     );
   }
 
+  // Convert incidents to NewsCardData format and assign layouts
+  const newsFeedContent = useMemo(() => {
+    // Convert incidents to NewsCardData format
+    const newsCards: NewsCardData[] = incidents.map(incident => ({
+      id: incident.id,
+      slug: incident.slug,
+      headline: incident.headline,
+      summary: incident.summary || null,
+      sources: incident.sources,
+      updatedAt: incident.last_updated,
+      sourceCount: incident.source_count || 0,
+      language: currentLanguage,
+      imageUrl: incident.image_url || null,
+      category: incident.topic || incident.category || null,
+      topics: incident.topic ? [incident.topic] : []
+    }));
+
+    // Assign layouts dynamically
+    const assignments: LayoutAssignment[] = newsCards.map((card, index) => {
+      const isRecent = card.updatedAt ? 
+        (Date.now() - new Date(card.updatedAt).getTime()) < 24 * 60 * 60 * 1000 : false;
+      return assignLayout(index, card.sourceCount, isRecent);
+    });
+
+    return (
+      <MixedLayoutGrid 
+        articles={newsCards}
+        assignments={assignments}
+      />
+    );
+  }, [incidents, currentLanguage]);
+
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
       <Navigation currentLanguage={currentLanguage} onLanguageChange={setLanguage} />
@@ -140,36 +172,7 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
 
             {/* Main Feed - Centered */}
             <div className="flex-1 min-w-0 max-w-3xl mx-auto">
-              {useMemo(() => {
-                // Convert incidents to NewsCardData format
-                const newsCards: NewsCardData[] = incidents.map(incident => ({
-                  id: incident.id,
-                  slug: incident.slug,
-                  headline: incident.headline,
-                  summary: incident.summary || null,
-                  sources: incident.sources,
-                  updatedAt: incident.last_updated,
-                  sourceCount: incident.source_count || 0,
-                  language: currentLanguage,
-                  imageUrl: incident.image_url || null,
-                  category: incident.topic || incident.category || null,
-                  topics: incident.topic ? [incident.topic] : []
-                }));
-
-                // Assign layouts dynamically
-                const assignments: LayoutAssignment[] = newsCards.map((card, index) => {
-                  const isRecent = card.updatedAt ? 
-                    (Date.now() - new Date(card.updatedAt).getTime()) < 24 * 60 * 60 * 1000 : false;
-                  return assignLayout(index, card.sourceCount, isRecent);
-                });
-
-                return (
-                  <MixedLayoutGrid 
-                    articles={newsCards}
-                    assignments={assignments}
-                  />
-                );
-              }, [incidents, currentLanguage])}
+              {newsFeedContent}
 
               {/* Topic Cards Section - Show top topics with top 3 news */}
               {!topicLoading && Object.keys(topicData).length > 0 && (

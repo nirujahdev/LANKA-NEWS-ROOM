@@ -46,6 +46,35 @@ export default function RecentPageContent() {
     };
   }, [currentLanguage]);
 
+  // Convert incidents to NewsCardData format and assign layouts
+  const newsFeedContent = useMemo(() => {
+    const newsCards: NewsCardData[] = incidents.map(incident => ({
+      id: incident.id,
+      slug: incident.slug,
+      headline: incident.headline,
+      summary: incident.summary || null,
+      sources: incident.sources,
+      updatedAt: incident.last_updated,
+      sourceCount: incident.source_count || 0,
+      language: currentLanguage,
+      imageUrl: incident.image_url || null,
+      category: incident.topic || incident.category || null,
+      topics: incident.topic ? [incident.topic] : []
+    }));
+
+    const assignments: LayoutAssignment[] = newsCards.map((card, index) => {
+      const isRecent = true; // All items on recent page are recent
+      return assignLayout(index, card.sourceCount, isRecent);
+    });
+
+    return (
+      <MixedLayoutGrid 
+        articles={newsCards}
+        assignments={assignments}
+      />
+    );
+  }, [incidents, currentLanguage]);
+
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
       <Navigation 
@@ -83,33 +112,7 @@ export default function RecentPageContent() {
               </div>
             )}
 
-            {!loading && !error && incidents.length > 0 && useMemo(() => {
-              const newsCards: NewsCardData[] = incidents.map(incident => ({
-                id: incident.id,
-                slug: incident.slug,
-                headline: incident.headline,
-                summary: incident.summary || null,
-                sources: incident.sources,
-                updatedAt: incident.last_updated,
-                sourceCount: incident.source_count || 0,
-                language: currentLanguage,
-                imageUrl: incident.image_url || null,
-                category: incident.topic || incident.category || null,
-                topics: incident.topic ? [incident.topic] : []
-              }));
-
-              const assignments: LayoutAssignment[] = newsCards.map((card, index) => {
-                const isRecent = true; // All items on recent page are recent
-                return assignLayout(index, card.sourceCount, isRecent);
-              });
-
-              return (
-                <MixedLayoutGrid 
-                  articles={newsCards}
-                  assignments={assignments}
-                />
-              );
-            }, [incidents, currentLanguage, loading, error])}
+            {!loading && !error && incidents.length > 0 && newsFeedContent}
             
             {!loading && !error && incidents.length === 0 && (
               <div className="bg-white rounded-xl p-12 text-center text-[#5F6368] shadow-sm border border-[#E8EAED]">

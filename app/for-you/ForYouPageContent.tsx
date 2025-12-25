@@ -132,6 +132,44 @@ export default function ForYouPageContent() {
     fetchUserData();
   }, [router]);
 
+  // Convert incidents to NewsCardData format and assign layouts
+  const newsFeedContent = useMemo(() => {
+    const newsCards: NewsCardData[] = incidents.map(incident => ({
+      id: incident.id,
+      slug: incident.slug,
+      headline: incident.headline,
+      summary: incident.summary || null,
+      sources: incident.sources,
+      updatedAt: incident.last_updated,
+      sourceCount: incident.source_count || 0,
+      language: currentLanguage,
+      imageUrl: incident.image_url || null,
+      category: incident.topic || incident.category || null,
+      topics: incident.topic ? [incident.topic] : []
+    }));
+
+    const assignments: LayoutAssignment[] = newsCards.map((card, index) => {
+      // First article gets featured
+      if (index === 0) {
+        return { layout: 'featured' };
+      }
+      // Next 2-3 get grid
+      if (index >= 1 && index <= 3) {
+        return { layout: 'grid', span: 1 };
+      }
+      // Rest use dynamic assignment
+      const isRecent = card.updatedAt ? 
+        (Date.now() - new Date(card.updatedAt).getTime()) < 24 * 60 * 60 * 1000 : false;
+      return assignLayout(index, card.sourceCount, isRecent);
+    });
+
+    return (
+      <MixedLayoutGrid 
+        articles={newsCards}
+        assignments={assignments}
+      />
+    );
+  }, [incidents, currentLanguage]);
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
@@ -169,43 +207,7 @@ export default function ForYouPageContent() {
                </div>
             )}
 
-            {!loading && !error && incidents.length > 0 && useMemo(() => {
-              const newsCards: NewsCardData[] = incidents.map(incident => ({
-                id: incident.id,
-                slug: incident.slug,
-                headline: incident.headline,
-                summary: incident.summary || null,
-                sources: incident.sources,
-                updatedAt: incident.last_updated,
-                sourceCount: incident.source_count || 0,
-                language: currentLanguage,
-                imageUrl: incident.image_url || null,
-                category: incident.topic || incident.category || null,
-                topics: incident.topic ? [incident.topic] : []
-              }));
-
-              const assignments: LayoutAssignment[] = newsCards.map((card, index) => {
-                // First article gets featured
-                if (index === 0) {
-                  return { layout: 'featured' };
-                }
-                // Next 2-3 get grid
-                if (index >= 1 && index <= 3) {
-                  return { layout: 'grid', span: 1 };
-                }
-                // Rest use dynamic assignment
-                const isRecent = card.updatedAt ? 
-                  (Date.now() - new Date(card.updatedAt).getTime()) < 24 * 60 * 60 * 1000 : false;
-                return assignLayout(index, card.sourceCount, isRecent);
-              });
-
-              return (
-                <MixedLayoutGrid 
-                  articles={newsCards}
-                  assignments={assignments}
-                />
-              );
-            }, [incidents, currentLanguage, loading, error])}
+            {!loading && !error && incidents.length > 0 && newsFeedContent}
             
             {!loading && !error && incidents.length === 0 && (
                <div className="bg-white rounded-xl p-12 text-center text-[#5F6368] shadow-sm border border-[#E8EAED]">
