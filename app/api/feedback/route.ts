@@ -64,7 +64,8 @@ export async function GET(req: Request) {
       .eq('user_id', userId || null);
     
     // Get aggregate counts
-    const { data: cluster } = await supabaseAdmin
+    // Note: like_count, report_count, helpful_count columns exist but types need regeneration
+    const { data: cluster } = await (supabaseAdmin as any)
       .from('clusters')
       .select('like_count, report_count, helpful_count')
       .eq('id', clusterId)
@@ -73,9 +74,9 @@ export async function GET(req: Request) {
     return NextResponse.json({
       userFeedback: userFeedback || [],
       counts: {
-        likes: cluster?.like_count || 0,
-        reports: cluster?.report_count || 0,
-        helpful: cluster?.helpful_count || 0
+        likes: (cluster as any)?.like_count || 0,
+        reports: (cluster as any)?.report_count || 0,
+        helpful: (cluster as any)?.helpful_count || 0
       }
     });
   } catch (error: any) {
