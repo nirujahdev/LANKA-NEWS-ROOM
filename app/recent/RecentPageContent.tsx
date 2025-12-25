@@ -47,6 +47,7 @@ export default function RecentPageContent() {
   }, [currentLanguage]);
 
   // Convert incidents to NewsCardData format and assign layouts
+  // MUST be called before any early returns to follow React hooks rules
   const newsFeedContent = useMemo(() => {
     const newsCards: NewsCardData[] = incidents.map(incident => ({
       id: incident.id,

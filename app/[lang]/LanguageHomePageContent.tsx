@@ -93,35 +93,8 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
     });
   }, [currentLanguage]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#F5F5F5]">
-        <Navigation currentLanguage={currentLanguage} onLanguageChange={setLanguage} />
-        <TopicNavigation language={currentLanguage} />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-center py-12">
-            <div className="text-[#5F6368]">Loading news...</div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[#F5F5F5]">
-        <Navigation currentLanguage={currentLanguage} onLanguageChange={setLanguage} />
-        <TopicNavigation language={currentLanguage} />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-center py-12">
-            <div className="text-[#5F6368]">Error loading news. Please try refreshing the page.</div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
   // Convert incidents to NewsCardData format and assign layouts
+  // MUST be called before any early returns to follow React hooks rules
   const newsFeedContent = useMemo(() => {
     // Convert incidents to NewsCardData format
     const newsCards: NewsCardData[] = incidents.map(incident => ({
@@ -152,6 +125,34 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
       />
     );
   }, [incidents, currentLanguage]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F5F5F5]">
+        <Navigation currentLanguage={currentLanguage} onLanguageChange={setLanguage} />
+        <TopicNavigation language={currentLanguage} />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-[#5F6368]">Loading news...</div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#F5F5F5]">
+        <Navigation currentLanguage={currentLanguage} onLanguageChange={setLanguage} />
+        <TopicNavigation language={currentLanguage} />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-[#5F6368]">Error loading news. Please try refreshing the page.</div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
