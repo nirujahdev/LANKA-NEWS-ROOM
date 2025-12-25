@@ -181,12 +181,10 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
       notFound();
     }
 
-    // Handle case where summary might be null
-    if (!data.summary) {
-      console.warn(`Cluster ${data.cluster.id} has no summary`);
-    }
-
     const { cluster, summary, articles } = data;
+    
+    // Allow page to render even without summary (cluster might be processing)
+    // Summary will be empty string if not available
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
   const canonicalUrl = `${baseUrl}/news/${params.slug}`;
