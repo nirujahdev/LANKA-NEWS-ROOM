@@ -180,10 +180,12 @@ export default function HomePage() {
         ];
         const topicPromises = topics.map(async ({ id, category }) => {
           try {
+            console.log(`[Frontend] Fetching ${id} with category=${category}`);
             const data = await loadClusters(currentLanguage, null, category);
+            console.log(`[Frontend] Received ${data.length} clusters for ${id}`);
             return { id, category, data: data.slice(0, 3) }; // Get top 3 for each topic
           } catch (err) {
-            console.error(`Error loading ${id} clusters:`, err);
+            console.error(`[Frontend] Error loading ${id} clusters:`, err);
             return { id, category, data: [] };
           }
         });

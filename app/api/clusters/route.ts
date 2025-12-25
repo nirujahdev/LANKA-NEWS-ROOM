@@ -52,9 +52,10 @@ export async function GET(req: Request) {
 
     // Apply category filter - check both category and topic fields
     if (category && category !== 'home' && category !== 'recent') {
-      // Filter by category field (topic field may not exist in all clusters)
-      // We'll match clusters where category equals the requested category
-      query = query.eq('category', category);
+      // Use OR condition to match either category or topic field
+      // This ensures flexibility in how topics are stored
+      query = query.or(`category.eq.${category},topic.eq.${category}`);
+      console.log(`[API] Filtering by category: ${category} (checking both category and topic fields)`);
     }
 
     // Apply time filter
@@ -67,6 +68,8 @@ export async function GET(req: Request) {
     query = query.order(orderBy, { ascending: false }).limit(limit);
 
     const { data: clusters, error } = await query.returns<ClusterRow[]>();
+    
+    console.log(`[API] Found ${clusters?.length || 0} clusters for category=${category}, feed=${feed}, lang=${lang}`);
 
     if (error) {
       console.error('Error fetching clusters:', error);
