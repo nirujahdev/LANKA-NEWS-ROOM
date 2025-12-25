@@ -633,6 +633,8 @@ async function runPipeline(): Promise<Stats> {
     failed: 0
   };
 
+  const startTime = Date.now(); // Track total pipeline runtime
+
   console.log('🚀 Starting pipeline...');
   if (DRY_RUN) {
     console.log('⚠️  DRY RUN MODE - No database writes will be performed');
@@ -689,7 +691,7 @@ async function runPipeline(): Promise<Stats> {
     
     while (hasMore) {
       // Time-based exit: stop if we're approaching timeout
-      const elapsed = Date.now() - startTime;
+      const elapsed = Date.now() - processingStartTime;
       if (elapsed > MAX_PROCESSING_TIME_MS) {
         console.log(`\n⏰ Time limit reached (${Math.round(elapsed / 1000 / 60)} minutes). Stopping processing.`);
         console.log(`   Processed ${totalProcessed} articles in this run. Remaining articles will be processed in next run.`);
@@ -713,7 +715,7 @@ async function runPipeline(): Promise<Stats> {
         break;
       }
 
-      console.log(`   Processing batch of ${articles.length} articles... (${totalProcessed}/${MAX_ARTICLES_PER_RUN} processed, ${Math.round((Date.now() - startTime) / 1000 / 60)}min elapsed)`);
+      console.log(`   Processing batch of ${articles.length} articles... (${totalProcessed}/${MAX_ARTICLES_PER_RUN} processed, ${Math.round((Date.now() - processingStartTime) / 1000 / 60)}min elapsed)`);
 
       // Process articles sequentially to avoid overwhelming API and better error tracking
       let batchSuccess = 0;
@@ -721,7 +723,7 @@ async function runPipeline(): Promise<Stats> {
       
       for (const article of articles) {
         // Check time limit before each article
-        if (Date.now() - startTime > MAX_PROCESSING_TIME_MS) {
+        if (Date.now() - processingStartTime > MAX_PROCESSING_TIME_MS) {
           console.log(`\n⏰ Time limit reached. Stopping batch processing.`);
           hasMore = false;
           break;
@@ -767,6 +769,7 @@ async function runPipeline(): Promise<Stats> {
     }
 
     // Summary
+    const elapsedMinutes = Math.round((Date.now() - startTime) / 1000 / 60);
     console.log('\n📊 Pipeline Summary:');
     console.log(`   Fetched: ${stats.fetched}`);
     console.log(`   Inserted: ${stats.inserted}`);
@@ -774,6 +777,7 @@ async function runPipeline(): Promise<Stats> {
     console.log(`   Picked for processing: ${stats.pickedForProcessing}`);
     console.log(`   Processed: ${stats.processed}`);
     console.log(`   Failed: ${stats.failed}`);
+    console.log(`   Runtime: ${elapsedMinutes} minutes`);
 
     if (DRY_RUN) {
       console.log('\n⚠️  DRY RUN - No changes were made to the database');
