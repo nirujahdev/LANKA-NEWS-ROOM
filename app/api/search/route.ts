@@ -48,7 +48,8 @@ export async function GET(req: Request) {
     }
     
     // Use enhanced search function with filters
-    const { data, error } = await supabaseAdmin.rpc('search_clusters', {
+    // Note: search_clusters RPC exists but types may need regeneration
+    const { data, error } = await (supabaseAdmin as any).rpc('search_clusters', {
       search_query: query || null,
       lang_code: lang,
       topic_filter: topics || null,
