@@ -5,7 +5,7 @@ import { fetchRssFeed } from './rss';
 import { detectLanguage } from './language';
 import { makeArticleHash } from './hash';
 import { extractEntities, normalizeTitle, similarityScore, generateSlug } from './text';
-import { summarizeEnglish, translateSummary, generateSEOMetadata } from './openaiClient';
+import { summarizeEnglish, translateSummary, generateSEOMetadata, generateComprehensiveSEO } from './openaiClient';
 import { categorizeCluster } from './categorize';
 import { updateLastSuccessfulRun } from './pipelineEarlyExit';
 
@@ -379,14 +379,32 @@ async function summarizeEligible(
     const summarySi = await translateSummary(summaryEn, 'si');
     const summaryTa = await translateSummary(summaryEn, 'ta');
 
-    // Generate SEO metadata for all languages (with error handling)
-    let seoEn, seoSi, seoTa;
+    // Generate comprehensive SEO metadata with topic/city/entity extraction
+    let seoEn, seoSi, seoTa, topic, city, primaryEntity, eventType, imageUrl;
     try {
-      [seoEn, seoSi, seoTa] = await Promise.all([
-        generateSEOMetadata(summaryEn, cluster.headline, 'en').catch(() => ({
-          title: cluster.headline.slice(0, 60),
-          description: summaryEn.slice(0, 160)
-        })),
+      // Generate comprehensive SEO for English (includes topic, city, entities)
+      const comprehensiveSEO = await generateComprehensiveSEO(
+        summaryEn,
+        cluster.headline,
+        articles || [],
+        'en'
+      );
+
+      seoEn = {
+        title: comprehensiveSEO.seo_title,
+        description: comprehensiveSEO.meta_description
+      };
+
+      topic = comprehensiveSEO.topic;
+      city = comprehensiveSEO.city;
+      primaryEntity = comprehensiveSEO.primary_entity;
+      eventType = comprehensiveSEO.event_type;
+
+      // Get image from first article with image
+      imageUrl = articles?.find(a => a.image_url)?.image_url || null;
+
+      // Generate SEO for other languages (simpler, just title/description)
+      [seoSi, seoTa] = await Promise.all([
         generateSEOMetadata(summarySi, cluster.headline, 'si').catch(() => ({
           title: cluster.headline.slice(0, 60),
           description: summarySi.slice(0, 160)
@@ -402,6 +420,11 @@ async function summarizeEligible(
       seoEn = { title: cluster.headline.slice(0, 60), description: summaryEn.slice(0, 160) };
       seoSi = { title: cluster.headline.slice(0, 60), description: summarySi.slice(0, 160) };
       seoTa = { title: cluster.headline.slice(0, 60), description: summaryTa.slice(0, 160) };
+      topic = 'other';
+      city = null;
+      primaryEntity = null;
+      eventType = null;
+      imageUrl = articles?.find(a => a.image_url)?.image_url || null;
     }
 
     // Generate slug from English meta title (stable, don't regenerate if exists)
@@ -455,7 +478,7 @@ async function summarizeEligible(
       { onConflict: 'cluster_id' }
     );
 
-    // Update cluster with SEO metadata and publish
+    // Update cluster with comprehensive SEO metadata and publish
     const updateResult = await supabaseAdmin.from('clusters').update({
       status: 'published',
       meta_title_en: seoEn.title,
@@ -465,7 +488,13 @@ async function summarizeEligible(
       meta_title_ta: seoTa.title,
       meta_description_ta: seoTa.description,
       slug: slug,
-      published_at: publishedAt
+      published_at: publishedAt,
+      topic: topic,
+      city: city,
+      primary_entity: primaryEntity,
+      event_type: eventType,
+      image_url: imageUrl,
+      language: 'en' // Primary language (can be enhanced later)
     }).eq('id', cluster.id);
 
     if (updateResult.error) {

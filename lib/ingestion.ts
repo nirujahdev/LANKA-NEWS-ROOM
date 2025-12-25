@@ -25,6 +25,8 @@ type ArticleData = {
   url: string;
   content: string | null;
   published_at: string | null;
+  guid: string | null;
+  image_url: string | null;
 };
 
 /**
@@ -103,7 +105,7 @@ export async function runIngestionPipeline() {
     articlesFetched: 0,
     articlesInserted: 0,
     articlesRejected: 0,
-    errors: [] as Array<{ source: string; error: string }>
+    errors: [] as Array<{ sourceId: string; source: string; stage: string; error: string }>
   };
 
   // STEP 1: Load allowlisted sources from database
@@ -127,7 +129,9 @@ export async function runIngestionPipeline() {
     // Validate source has required fields
     if (!source.feed_url || !source.base_domain) {
       stats.errors.push({
+        sourceId: source.id,
         source: source.name,
+        stage: 'validation',
         error: 'Missing feed_url or base_domain'
       });
       continue;
@@ -158,7 +162,9 @@ export async function runIngestionPipeline() {
           title: item.title || 'Untitled',
           url: item.url,
           content: stripHtml(item.content || item.contentSnippet),
-          published_at: item.publishedAt || null
+          published_at: item.publishedAt || null,
+          guid: item.guid || null,
+          image_url: item.imageUrl || null
         };
 
         articlesToInsert.push(articleData);
@@ -186,7 +192,9 @@ export async function runIngestionPipeline() {
 
         if (insertError) {
           stats.errors.push({
+            sourceId: source.id,
             source: source.name,
+            stage: 'insert',
             error: `Insert failed: ${insertError.message}`
           });
         } else {
@@ -198,7 +206,9 @@ export async function runIngestionPipeline() {
     } catch (error: any) {
       // Fail safely: log error but continue with other sources
       stats.errors.push({
+        sourceId: source.id,
         source: source.name,
+        stage: 'fetch',
         error: error?.message || 'Unknown error'
       });
       // Continue processing other sources

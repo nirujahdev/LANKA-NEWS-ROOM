@@ -11,7 +11,14 @@ export type NormalizedItem = {
   imageUrl: string | null;
 };
 
-const parser = new Parser();
+// Configure parser with custom headers to avoid 403 errors
+const parser = new Parser({
+  timeout: 10000, // 10 second timeout
+  headers: {
+    'User-Agent': 'Mozilla/5.0 (compatible; LankaNewsRoom/1.0; +https://lankanewsroom.xyz)',
+    'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+  }
+});
 
 /**
  * Safely fetches and parses an RSS feed.

@@ -233,3 +233,170 @@ function validateAndCleanDescription(description: string, language: 'en' | 'si' 
   return cleaned.slice(0, 160);
 }
 
+/**
+ * Generate comprehensive SEO pack including title, description, slug, topic, city, entities
+ * This follows Google's best practices for news SEO and programmatic SEO
+ */
+export async function generateComprehensiveSEO(
+  summary: string,
+  headline: string,
+  articles: Array<{ title: string; content_excerpt?: string | null }>,
+  language: 'en' | 'si' | 'ta'
+): Promise<{
+  seo_title: string;
+  meta_description: string;
+  slug: string;
+  og_title: string;
+  og_description: string;
+  topic: string;
+  city: string | null;
+  primary_entity: string | null;
+  event_type: string | null;
+}> {
+  const langLabel = language === 'en' ? 'English' : language === 'si' ? 'Sinhala' : 'Tamil';
+  const countryRef = language === 'en' ? 'Sri Lanka' : language === 'si' ? 'ශ්‍රී ලංකා' : 'இலங்கை';
+
+  // Build context from articles
+  const context = articles
+    .slice(0, 6)
+    .map((a, i) => `Source ${i + 1}: ${a.title}${a.content_excerpt ? '\n' + a.content_excerpt.slice(0, 200) : ''}`)
+    .join('\n\n');
+
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    {
+      role: 'system',
+      content: `You are an SEO editor for a Sri Lanka news website.
+
+Your task: Extract structured SEO data from news articles.
+
+RULES:
+1. seo_title: 50-65 chars, clear, include "${countryRef}" if relevant, format: "[Event] – ${countryRef} | Lanka News Room"
+2. meta_description: 150-160 chars, natural, includes main entity + impact
+3. slug: lowercase, hyphen-separated, 4-9 words, no stopwords (a, the, is, etc.)
+4. og_title: can be slightly longer than seo_title (up to 70 chars)
+5. og_description: same as meta_description
+6. topic: ONE of [politics, economy, sports, crime, education, health, environment, technology, culture, other]
+7. city: ONE of [colombo, kandy, galle, jaffna, trincomalee, batticaloa, matara, negombo, anuradhapura, other] or null
+8. primary_entity: main person/organization mentioned (or null)
+9. event_type: ONE of [election, court, accident, protest, announcement, budget, policy, crime, disaster, sports_event, other] or null
+
+CRITICAL:
+- Must match summary facts ONLY
+- No quotes, no emojis
+- No "Breaking:" unless truly breaking
+- If language is ta/si, write in that language
+- Return ONLY valid JSON
+
+OUTPUT JSON format:
+{
+  "seo_title": "...",
+  "meta_description": "...",
+  "slug": "...",
+  "og_title": "...",
+  "og_description": "...",
+  "topic": "...",
+  "city": "..." or null,
+  "primary_entity": "..." or null,
+  "event_type": "..." or null
+}`
+    },
+    {
+      role: 'user',
+      content: `Language: ${langLabel}
+Headline: ${headline}
+Summary: ${summary}
+
+Sources:
+${context}
+
+Generate comprehensive SEO pack in ${langLabel} following the rules above.`
+    }
+  ];
+
+  const completion = await client.chat.completions.create({
+    model: env.SUMMARY_MODEL,
+    messages,
+    temperature: 0.3,
+    max_tokens: 400,
+    response_format: { type: 'json_object' }
+  });
+
+  try {
+    const result = JSON.parse(completion.choices[0]?.message?.content?.trim() || '{}');
+    
+    return {
+      seo_title: validateAndCleanTitle(result.seo_title || headline, language),
+      meta_description: validateAndCleanDescription(result.meta_description || summary, language),
+      slug: cleanSlug(result.slug || headline),
+      og_title: result.og_title || validateAndCleanTitle(result.seo_title || headline, language),
+      og_description: result.og_description || validateAndCleanDescription(result.meta_description || summary, language),
+      topic: validateTopic(result.topic),
+      city: validateCity(result.city),
+      primary_entity: result.primary_entity || null,
+      event_type: validateEventType(result.event_type)
+    };
+  } catch (error) {
+    console.error('Error parsing comprehensive SEO:', error);
+    // Fallback
+    return {
+      seo_title: validateAndCleanTitle(headline, language),
+      meta_description: validateAndCleanDescription(summary, language),
+      slug: cleanSlug(headline),
+      og_title: validateAndCleanTitle(headline, language),
+      og_description: validateAndCleanDescription(summary, language),
+      topic: 'other',
+      city: null,
+      primary_entity: null,
+      event_type: null
+    };
+  }
+}
+
+/**
+ * Clean and validate slug
+ */
+function cleanSlug(text: string): string {
+  // Common stopwords to remove
+  const stopwords = ['a', 'an', 'the', 'is', 'are', 'was', 'were', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'];
+  
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove special chars
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .split('-')
+    .filter(word => !stopwords.includes(word)) // Remove stopwords
+    .slice(0, 9) // Max 9 words
+    .join('-')
+    .slice(0, 100); // Max 100 chars
+}
+
+/**
+ * Validate topic against allowed list
+ */
+function validateTopic(topic: string | null | undefined): string {
+  const validTopics = ['politics', 'economy', 'sports', 'crime', 'education', 'health', 'environment', 'technology', 'culture', 'other'];
+  if (!topic) return 'other';
+  const normalized = topic.toLowerCase().trim();
+  return validTopics.includes(normalized) ? normalized : 'other';
+}
+
+/**
+ * Validate city against allowed list
+ */
+function validateCity(city: string | null | undefined): string | null {
+  if (!city) return null;
+  const validCities = ['colombo', 'kandy', 'galle', 'jaffna', 'trincomalee', 'batticaloa', 'matara', 'negombo', 'anuradhapura', 'other'];
+  const normalized = city.toLowerCase().trim();
+  return validCities.includes(normalized) ? normalized : null;
+}
+
+/**
+ * Validate event type against allowed list
+ */
+function validateEventType(eventType: string | null | undefined): string | null {
+  if (!eventType) return null;
+  const validTypes = ['election', 'court', 'accident', 'protest', 'announcement', 'budget', 'policy', 'crime', 'disaster', 'sports_event', 'other'];
+  const normalized = eventType.toLowerCase().trim();
+  return validTypes.includes(normalized) ? normalized : null;
+}
+

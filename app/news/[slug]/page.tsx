@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import NavigationWrapper from '@/components/NavigationWrapper';
 import IncidentDetail from '@/components/IncidentDetail';
+import NewsArticleSchema from '@/components/NewsArticleSchema';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 300; // Revalidate every 5 minutes
@@ -38,6 +39,8 @@ async function getClusterBySlug(slug: string) {
       first_seen_at?: string | null;
       source_count?: number | null;
       category?: string | null;
+      image_url?: string | null;
+      language?: string | null;
       summaries?: Array<{
         summary_en?: string | null;
         summary_si?: string | null;
@@ -94,15 +97,19 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const siUrl = `${baseUrl}/news/${params.slug}?lang=si`;
   const taUrl = `${baseUrl}/news/${params.slug}?lang=ta`;
 
+  // Get first article image if cluster doesn't have one
+  const imageUrl = cluster.image_url || data.articles?.[0]?.image_url;
+
   return {
     title: metaTitle,
     description: metaDescription || 'Latest news from Sri Lanka',
     alternates: {
       canonical: canonicalUrl,
       languages: {
-        'en': enUrl,
-        'si': siUrl,
-        'ta': taUrl
+        'en-LK': enUrl,
+        'si-LK': siUrl,
+        'ta-LK': taUrl,
+        'x-default': enUrl
       }
     },
     openGraph: {
@@ -114,7 +121,17 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
       siteName: 'Lanka News Room',
       publishedTime: cluster.published_at || cluster.created_at || undefined,
       modifiedTime: cluster.updated_at || undefined,
-      section: cluster.category || undefined
+      section: cluster.category || undefined,
+      ...(imageUrl && {
+        images: [
+          {
+            url: imageUrl,
+            width: 1200,
+            height: 630,
+            alt: metaTitle
+          }
+        ]
+      })
     },
     twitter: {
       card: 'summary_large_image',
@@ -146,12 +163,30 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
   const { cluster, summary, articles } = data;
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
-  const enUrl = `${baseUrl}/news/${params.slug}`;
-  const siUrl = `${baseUrl}/news/${params.slug}?lang=si`;
-  const taUrl = `${baseUrl}/news/${params.slug}?lang=ta`;
+  const canonicalUrl = `${baseUrl}/news/${params.slug}`;
+  
+  // Get metadata for JSON-LD
+  const metaDescription =
+    lang === 'si' ? cluster.meta_description_si || summary?.summary_si :
+    lang === 'ta' ? cluster.meta_description_ta || summary?.summary_ta :
+    cluster.meta_description_en || summary?.summary_en;
+
+  const imageUrl = cluster.image_url || articles?.[0]?.image_url;
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
+      {/* JSON-LD Structured Data for Google News */}
+      <NewsArticleSchema
+        headline={cluster.headline}
+        description={metaDescription || cluster.headline}
+        datePublished={cluster.published_at || cluster.created_at || new Date().toISOString()}
+        dateModified={cluster.updated_at}
+        imageUrl={imageUrl}
+        category={cluster.category}
+        url={canonicalUrl}
+        language={lang}
+      />
+      
       <NavigationWrapper currentLanguage={lang} />
       
       {/* Mobile-first responsive container */}
