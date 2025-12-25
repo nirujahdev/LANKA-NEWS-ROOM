@@ -9,9 +9,69 @@ const montserrat = Montserrat({
   variable: '--font-montserrat',
 });
 
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
+
 export const metadata: Metadata = {
-  title: 'Lanka News Room - Multi-Source News Summarizer',
-  description: 'Trusted, neutral news summaries from multiple Sri Lankan sources in English, Sinhala, and Tamil',
+  metadataBase: new URL(baseUrl),
+  title: {
+    default: 'Lanka News Room - Latest Sri Lanka News | Multi-Source News Aggregator',
+    template: '%s | Lanka News Room'
+  },
+  description: 'Get the latest news from Sri Lanka. Trusted, neutral news summaries from multiple verified sources in English, Sinhala, and Tamil. Breaking news, politics, economy, sports, and more.',
+  keywords: ['Sri Lanka news', 'Lanka news', 'Sri Lankan news', 'news aggregator', 'Sinhala news', 'Tamil news', 'English news Sri Lanka', 'breaking news Sri Lanka', 'Colombo news', 'Kandy news'],
+  authors: [{ name: 'Lanka News Room Editorial Team' }],
+  creator: 'Lanka News Room',
+  publisher: 'Lanka News Room',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  alternates: {
+    canonical: baseUrl,
+    languages: {
+      'en-LK': baseUrl,
+      'si-LK': `${baseUrl}?lang=si`,
+      'ta-LK': `${baseUrl}?lang=ta`,
+      'x-default': baseUrl,
+    },
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_LK',
+    url: baseUrl,
+    siteName: 'Lanka News Room',
+    title: 'Lanka News Room - Latest Sri Lanka News | Multi-Source News Aggregator',
+    description: 'Get the latest news from Sri Lanka. Trusted, neutral news summaries from multiple verified sources in English, Sinhala, and Tamil.',
+    images: [
+      {
+        url: `${baseUrl}/og-image.jpg`,
+        width: 1200,
+        height: 630,
+        alt: 'Lanka News Room - Sri Lanka News Aggregator',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Lanka News Room - Latest Sri Lanka News',
+    description: 'Trusted, neutral news summaries from multiple verified sources in English, Sinhala, and Tamil.',
+    images: [`${baseUrl}/og-image.jpg`],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+  },
 };
 
 export default function RootLayout({
@@ -19,8 +79,65 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
+  
+  // JSON-LD structured data for homepage
+  const organizationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'NewsMediaOrganization',
+    name: 'Lanka News Room',
+    url: baseUrl,
+    logo: `${baseUrl}/logo.png`,
+    description: 'Multi-source news aggregator providing trusted, neutral news summaries from Sri Lanka',
+    foundingLocation: {
+      '@type': 'Country',
+      name: 'Sri Lanka'
+    },
+    areaServed: {
+      '@type': 'Country',
+      name: 'Sri Lanka'
+    },
+    inLanguage: ['en-LK', 'si-LK', 'ta-LK'],
+    sameAs: [
+      // Add social media links if available
+    ]
+  };
+
+  const websiteSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Lanka News Room',
+    url: baseUrl,
+    description: 'Latest news from Sri Lanka. Trusted, neutral news summaries from multiple verified sources.',
+    inLanguage: ['en-LK', 'si-LK', 'ta-LK'],
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${baseUrl}/search?q={search_term_string}`
+      },
+      'query-input': 'required name=search_term_string'
+    }
+  };
+
   return (
     <html lang="en" className={montserrat.variable}>
+      <head>
+        {/* JSON-LD Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
+        {/* Additional meta tags */}
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#1A73E8" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+      </head>
       <body className="font-montserrat antialiased bg-white text-[#1E293B]">
         <SignInPromptManager>
           {children}

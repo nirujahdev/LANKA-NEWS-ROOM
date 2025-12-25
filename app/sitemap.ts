@@ -41,7 +41,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: baseUrl,
       lastModified: new Date(),
       changeFrequency: 'hourly',
-      priority: 1
+      priority: 1,
+      alternates: {
+        languages: {
+          'en-LK': baseUrl,
+          'si-LK': `${baseUrl}?lang=si`,
+          'ta-LK': `${baseUrl}?lang=ta`,
+          'x-default': baseUrl
+        }
+      }
     },
     {
       url: `${baseUrl}/for-you`,
@@ -50,6 +58,49 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8
     }
   ];
+
+  // Add programmatic SEO pages (topics)
+  const topics = ['politics', 'economy', 'sports', 'crime', 'education', 'health', 'environment', 'technology', 'culture'];
+  const languages = ['en', 'si', 'ta'];
+  for (const topic of topics) {
+    for (const lang of languages) {
+      entries.push({
+        url: `${baseUrl}/lk/${lang}/${topic}`,
+        lastModified: new Date(),
+        changeFrequency: 'hourly',
+        priority: 0.8,
+        alternates: {
+          languages: {
+            'en-LK': `${baseUrl}/lk/en/${topic}`,
+            'si-LK': `${baseUrl}/lk/si/${topic}`,
+            'ta-LK': `${baseUrl}/lk/ta/${topic}`,
+            'x-default': `${baseUrl}/lk/en/${topic}`
+          }
+        }
+      });
+    }
+  }
+
+  // Add programmatic SEO pages (cities)
+  const cities = ['colombo', 'kandy', 'galle', 'jaffna', 'trincomalee', 'batticaloa', 'matara', 'negombo', 'anuradhapura'];
+  for (const city of cities) {
+    for (const lang of languages) {
+      entries.push({
+        url: `${baseUrl}/lk/${lang}/city/${city}`,
+        lastModified: new Date(),
+        changeFrequency: 'hourly',
+        priority: 0.7,
+        alternates: {
+          languages: {
+            'en-LK': `${baseUrl}/lk/en/city/${city}`,
+            'si-LK': `${baseUrl}/lk/si/city/${city}`,
+            'ta-LK': `${baseUrl}/lk/ta/city/${city}`,
+            'x-default': `${baseUrl}/lk/en/city/${city}`
+          }
+        }
+      });
+    }
+  }
 
   // Add news articles with language variants
   for (const cluster of clusters) {
@@ -69,9 +120,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
       alternates: {
         languages: {
-          en: `${baseUrl}/news/${cluster.slug}?lang=en`,
-          si: `${baseUrl}/news/${cluster.slug}?lang=si`,
-          ta: `${baseUrl}/news/${cluster.slug}?lang=ta`
+          'en-LK': `${baseUrl}/news/${cluster.slug}?lang=en`,
+          'si-LK': `${baseUrl}/news/${cluster.slug}?lang=si`,
+          'ta-LK': `${baseUrl}/news/${cluster.slug}?lang=ta`,
+          'x-default': `${baseUrl}/news/${cluster.slug}?lang=en`
         }
       }
     });
