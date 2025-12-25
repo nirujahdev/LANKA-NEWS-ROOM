@@ -173,8 +173,54 @@ async function withRetry<T>(
 
 async function fetchRssFeed(feedUrl: string): Promise<RSSItem[]> {
   try {
-    // Try to fetch with better error handling
-    const feed = await rssParser.parseURL(feedUrl);
+    // Fetch raw response first to check status and content
+    const response = await fetch(feedUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/rss+xml, application/xml, text/xml, application/atom+xml, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://www.google.com/',
+        'Cache-Control': 'no-cache'
+      },
+      signal: AbortSignal.timeout(15000)
+    });
+
+    // Check HTTP status
+    if (!response.ok) {
+      throw new Error(`Status code ${response.status}`);
+    }
+
+    // Get raw text
+    let rawText = await response.text();
+    
+    // Strip BOM (Byte Order Mark) - common issue with XML feeds
+    if (rawText.charCodeAt(0) === 0xFEFF) {
+      rawText = rawText.slice(1);
+    }
+    
+    // Remove any leading whitespace or garbage before XML declaration
+    rawText = rawText.trim();
+    
+    // Check if we got HTML instead of XML (common with blocked/wrong URLs)
+    if (rawText.toLowerCase().startsWith('<!doctype html') || 
+        rawText.toLowerCase().startsWith('<html')) {
+      throw new Error('html_instead_of_xml - Received HTML page instead of RSS feed');
+    }
+    
+    // Check if it looks like XML/RSS
+    if (!rawText.startsWith('<?xml') && !rawText.startsWith('<rss') && !rawText.startsWith('<feed')) {
+      // Try to find where the XML actually starts
+      const xmlStart = rawText.search(/<\?xml|<rss|<feed/i);
+      if (xmlStart > 0) {
+        console.warn(`  ⚠️  Stripped ${xmlStart} bytes of garbage before XML`);
+        rawText = rawText.substring(xmlStart);
+      } else {
+        throw new Error('invalid_format - Content does not appear to be XML/RSS');
+      }
+    }
+    
+    // Parse the cleaned XML
+    const feed = await rssParser.parseString(rawText);
     
     if (!feed || !feed.items || feed.items.length === 0) {
       console.warn(`  ⚠️  Feed ${feedUrl} returned no items`);
@@ -221,15 +267,19 @@ async function fetchRssFeed(feedUrl: string): Promise<RSSItem[]> {
     
     // Check for specific error types
     if (errorMsg.includes('403') || statusCode === 403) {
-      throw new Error(`Status code 403 - Feed blocked by server. URL: ${feedUrl}`);
+      throw new Error(`Status code 403`);
     } else if (errorMsg.includes('404') || statusCode === 404) {
-      throw new Error(`Status code 404 - Feed not found. URL: ${feedUrl}`);
-    } else if (errorMsg.includes('XML') || errorMsg.includes('parse') || errorMsg.includes('Non-whitespace')) {
-      throw new Error(`XML parsing error - Invalid feed format. URL: ${feedUrl}. Error: ${errorMsg}`);
-    } else if (errorMsg.includes('timeout') || errorMsg.includes('ETIMEDOUT')) {
-      throw new Error(`Timeout - Feed took too long to respond. URL: ${feedUrl}`);
+      throw new Error(`Status code 404`);
+    } else if (errorMsg.includes('html_instead_of_xml')) {
+      throw new Error(`HTML instead of XML`);
+    } else if (errorMsg.includes('invalid_format')) {
+      throw new Error(`Invalid format`);
+    } else if (errorMsg.includes('timeout') || errorMsg.includes('ETIMEDOUT') || errorMsg.includes('aborted')) {
+      throw new Error(`Timeout`);
+    } else if (errorMsg.includes('Status code')) {
+      throw new Error(errorMsg);
     } else {
-      throw new Error(`Failed to fetch RSS feed ${feedUrl}: ${errorMsg}`);
+      throw new Error(`Parse error: ${errorMsg.slice(0, 100)}`);
     }
   }
 }
