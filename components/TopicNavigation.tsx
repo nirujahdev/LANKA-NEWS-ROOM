@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import WeatherWidget from './WeatherWidget';
@@ -32,7 +32,7 @@ const topics: Topic[] = [
   { id: 'health', label: 'Health', labelSi: 'සෞඛ්‍ය', labelTa: 'சுகாதாரம்', href: '/health' }
 ];
 
-const TopicNavigation: React.FC<TopicNavigationProps> = ({ 
+const TopicNavigationContent: React.FC<TopicNavigationProps> = ({ 
   language = 'en',
   showWeather = true 
 }) => {
@@ -107,6 +107,33 @@ const TopicNavigation: React.FC<TopicNavigationProps> = ({
         </div>
       )}
     </div>
+  );
+};
+
+const TopicNavigation: React.FC<TopicNavigationProps> = (props) => {
+  return (
+    <Suspense fallback={
+      <div className="bg-white border-b border-[#E8EAED]">
+        <div className="border-b border-[#E8EAED]">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+            <div className="flex overflow-x-auto scrollbar-hide -mb-px justify-center">
+              <div className="flex min-w-max">
+                {topics.map((topic) => (
+                  <div
+                    key={topic.id}
+                    className="relative px-3 sm:px-4 py-3 text-sm font-normal whitespace-nowrap border-b-2 border-transparent text-[#5F6368]"
+                  >
+                    {props.language === 'si' && topic.labelSi ? topic.labelSi : props.language === 'ta' && topic.labelTa ? topic.labelTa : topic.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <TopicNavigationContent {...props} />
+    </Suspense>
   );
 };
 
