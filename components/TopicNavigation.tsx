@@ -68,7 +68,7 @@ const TopicNavigationContent: React.FC<TopicNavigationProps> = ({
   };
 
   return (
-    <div className="bg-white border-b border-[#E8EAED]">
+    <div className="bg-white">
       {/* Topic Tabs - Centered and Scrollable on Mobile */}
       <div className="border-b border-[#E8EAED]">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
@@ -82,7 +82,7 @@ const TopicNavigationContent: React.FC<TopicNavigationProps> = ({
                     href={getHref(topic.href)}
                     className={`
                       relative px-3 sm:px-4 py-3 text-sm font-normal whitespace-nowrap
-                      border-b-2 transition-colors duration-150
+                      border-b-[3px] transition-colors duration-150
                       ${active
                         ? 'border-[#1A73E8] text-[#1A73E8]'
                         : 'border-transparent text-[#5F6368] hover:text-[#202124]'
@@ -98,9 +98,9 @@ const TopicNavigationContent: React.FC<TopicNavigationProps> = ({
         </div>
       </div>
 
-      {/* Weather Section */}
+      {/* Weather Section - Only render if active (removed extra borders/padding) */}
       {showWeather && (
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-2">
           <div className="flex justify-end">
             <WeatherWidget />
           </div>
@@ -114,19 +114,17 @@ const TopicNavigation: React.FC<TopicNavigationProps> = (props) => {
   return (
     <Suspense fallback={
       <div className="bg-white border-b border-[#E8EAED]">
-        <div className="border-b border-[#E8EAED]">
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-            <div className="flex overflow-x-auto scrollbar-hide -mb-px justify-center">
-              <div className="flex min-w-max">
-                {topics.map((topic) => (
-                  <div
-                    key={topic.id}
-                    className="relative px-3 sm:px-4 py-3 text-sm font-normal whitespace-nowrap border-b-2 border-transparent text-[#5F6368]"
-                  >
-                    {props.language === 'si' && topic.labelSi ? topic.labelSi : props.language === 'ta' && topic.labelTa ? topic.labelTa : topic.label}
-                  </div>
-                ))}
-              </div>
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="flex overflow-x-auto scrollbar-hide -mb-px justify-center">
+            <div className="flex min-w-max">
+              {topics.map((topic) => (
+                <div
+                  key={topic.id}
+                  className="relative px-3 sm:px-4 py-3 text-sm font-normal whitespace-nowrap border-b-[3px] border-transparent text-[#5F6368]"
+                >
+                  {props.language === 'si' && topic.labelSi ? topic.labelSi : props.language === 'ta' && topic.labelTa ? topic.labelTa : topic.label}
+                </div>
+              ))}
             </div>
           </div>
         </div>

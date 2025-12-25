@@ -172,8 +172,8 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
   // Compact variant for "Your topics" and Sidebars
   if (variant === 'compact') {
      return (
-       <Link href={href}>
-         <article className="group relative flex gap-3 cursor-pointer transition-colors">
+       <Link href={href} className="block group">
+         <article className="relative flex gap-3 cursor-pointer transition-colors">
             <div className="flex-1 min-w-0 flex flex-col">
                {/* Topic Tags */}
                {topicTags.length > 0 && (
@@ -217,8 +217,8 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
 
   // Default List Variant (Top Stories list below featured)
   return (
-    <Link href={href}>
-      <article className="group relative py-4 flex gap-4 cursor-pointer border-b border-[#E8EAED] last:border-b-0 hover:bg-[#F8F9FA] -mx-4 px-4 transition-colors rounded-2xl">
+    <Link href={href} className="block group">
+      <article className="relative py-4 flex gap-4 cursor-pointer hover:bg-[#F8F9FA] -mx-4 px-4 transition-colors rounded-2xl">
         <div className="flex-1 min-w-0 flex flex-col justify-between">
           <div>
             {/* Topic Tags */}

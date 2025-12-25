@@ -11,6 +11,8 @@ type SidebarUpdate = {
   updatedAt?: string | null;
   sourceCount: number;
   summary?: string; // Optional if not used
+  category?: string | null;
+  topic?: string | null;
 };
 
 interface SidebarProps {
@@ -44,20 +46,24 @@ const Sidebar: React.FC<SidebarProps> = ({ latestUpdates = [], language = 'en' }
           </button>
         </div>
         
-        <div className="divide-y divide-[#E8EAED]">
-          {latestUpdates.slice(0, 5).map((update) => (
-            <div key={update.id} className="px-5 py-3">
-              <IncidentCard
-                id={update.id}
-                slug={update.slug}
-                headline={update.headline}
-                summary={update.summary || ''}
-                sources={update.sources}
-                updatedAt={update.updatedAt}
-                sourceCount={update.sourceCount}
-                language={language}
-                variant="compact"
-              />
+        <div>
+          {latestUpdates.slice(0, 5).map((update, index) => (
+            <div key={update.id}>
+              {index > 0 && <hr className="border-t border-[#E8EAED] mx-5" />}
+              <div className="px-5 py-3">
+                <IncidentCard
+                  id={update.id}
+                  slug={update.slug}
+                  headline={update.headline}
+                  summary={update.summary || ''}
+                  sources={update.sources}
+                  updatedAt={update.updatedAt}
+                  sourceCount={update.sourceCount}
+                  language={language}
+                  variant="compact"
+                  category={update.topic || update.category}
+                />
+              </div>
             </div>
           ))}
         </div>

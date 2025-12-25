@@ -136,7 +136,9 @@ export default function HomePage() {
             headline: item.headline,
             sources: item.sources,
             updatedAt: item.last_updated,
-            sourceCount: item.source_count || 0
+            sourceCount: item.source_count || 0,
+            category: item.topic || item.category,
+            topic: item.topic
           }));
           setLatestUpdates(updates);
         }
@@ -242,21 +244,23 @@ export default function HomePage() {
                   {/* Top Stories List */}
                   {topStories.length > 0 && (
                     <div className="border-t border-[#E8EAED] pt-2">
-                      {topStories.map((incident) => (
-                        <IncidentCard
-                          key={incident.id}
-                          id={incident.id}
-                          slug={incident.slug}
-                          headline={incident.headline}
-                          summary={incident.summary || ''}
-                          sources={incident.sources}
-                          updatedAt={incident.last_updated}
-                          sourceCount={incident.source_count || 0}
-                          language={currentLanguage}
-                          variant="default"
-                          imageUrl={incident.image_url || undefined}
-                          category={incident.topic || incident.category || undefined}
-                        />
+                      {topStories.map((incident, index) => (
+                        <div key={incident.id}>
+                          {index > 0 && <hr className="border-t border-[#E8EAED] mx-4" />}
+                          <IncidentCard
+                            id={incident.id}
+                            slug={incident.slug}
+                            headline={incident.headline}
+                            summary={incident.summary || ''}
+                            sources={incident.sources}
+                            updatedAt={incident.last_updated}
+                            sourceCount={incident.source_count || 0}
+                            language={currentLanguage}
+                            variant="default"
+                            imageUrl={incident.image_url || undefined}
+                            category={incident.topic || incident.category || undefined}
+                          />
+                        </div>
                       ))}
                     </div>
                   )}
@@ -267,51 +271,59 @@ export default function HomePage() {
                    <h2 className="text-xl font-normal text-[#202124] mb-4">Your topics</h2>
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Example Topic: Sri Lanka */}
-                      <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] p-4">
-                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="font-medium text-[#202124]">Sri Lanka</h3>
-                            <span className="text-xs text-[#1A73E8] font-medium cursor-pointer hover:underline">More</span>
+                      <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] flex flex-col h-full">
+                         <div className="px-4 py-3 flex items-center justify-between border-b border-[#E8EAED]">
+                            <h3 className="font-medium text-[#1A73E8] uppercase tracking-wide text-xs">Sri Lanka</h3>
+                            <Link href="/sri-lanka" className="text-xs text-[#5F6368] hover:text-[#1A73E8]">More</Link>
                          </div>
-                         <div className="space-y-4">
-                            {incidents.slice(4, 7).map(incident => (
-                               <IncidentCard
-                                 key={incident.id}
-                                 id={incident.id}
-                                 slug={incident.slug}
-                                 headline={incident.headline}
-                                 summary={incident.summary || ''}
-                                 sources={incident.sources}
-                                 updatedAt={incident.last_updated}
-                                 sourceCount={incident.source_count || 0}
-                                 language={currentLanguage}
-                                 variant="compact"
-                                 category={incident.topic || incident.category || undefined}
-                               />
+                         <div className="p-0">
+                            {incidents.slice(4, 7).map((incident, idx) => (
+                               <div key={incident.id}>
+                                 {idx > 0 && <hr className="border-t border-[#E8EAED] mx-4" />}
+                                 <div className="px-4 py-3">
+                                   <IncidentCard
+                                     id={incident.id}
+                                     slug={incident.slug}
+                                     headline={incident.headline}
+                                     summary={incident.summary || ''}
+                                     sources={incident.sources}
+                                     updatedAt={incident.last_updated}
+                                     sourceCount={incident.source_count || 0}
+                                     language={currentLanguage}
+                                     variant="compact"
+                                     category={incident.topic || incident.category || undefined}
+                                   />
+                                 </div>
+                               </div>
                             ))}
                          </div>
                       </div>
 
                        {/* Example Topic: Technology */}
-                       <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] p-4">
-                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="font-medium text-[#202124]">Technology</h3>
-                            <span className="text-xs text-[#1A73E8] font-medium cursor-pointer hover:underline">More</span>
+                       <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] flex flex-col h-full">
+                         <div className="px-4 py-3 flex items-center justify-between border-b border-[#E8EAED]">
+                            <h3 className="font-medium text-[#1A73E8] uppercase tracking-wide text-xs">Technology</h3>
+                            <Link href="/technology" className="text-xs text-[#5F6368] hover:text-[#1A73E8]">More</Link>
                          </div>
-                         <div className="space-y-4">
-                            {incidents.slice(7, 10).map(incident => (
-                               <IncidentCard
-                                 key={incident.id}
-                                 id={incident.id}
-                                 slug={incident.slug}
-                                 headline={incident.headline}
-                                 summary={incident.summary || ''}
-                                 sources={incident.sources}
-                                 updatedAt={incident.last_updated}
-                                 sourceCount={incident.source_count || 0}
-                                 language={currentLanguage}
-                                 variant="compact"
-                                 category={incident.topic || incident.category || undefined}
-                               />
+                         <div className="p-0">
+                            {incidents.slice(7, 10).map((incident, idx) => (
+                               <div key={incident.id}>
+                                 {idx > 0 && <hr className="border-t border-[#E8EAED] mx-4" />}
+                                 <div className="px-4 py-3">
+                                   <IncidentCard
+                                     id={incident.id}
+                                     slug={incident.slug}
+                                     headline={incident.headline}
+                                     summary={incident.summary || ''}
+                                     sources={incident.sources}
+                                     updatedAt={incident.last_updated}
+                                     sourceCount={incident.source_count || 0}
+                                     language={currentLanguage}
+                                     variant="compact"
+                                     category={incident.topic || incident.category || undefined}
+                                   />
+                                 </div>
+                               </div>
                             ))}
                          </div>
                       </div>
