@@ -46,8 +46,12 @@ const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 const rssParser = new Parser({
   timeout: 10000,
   headers: {
-    'User-Agent': 'Mozilla/5.0 (compatible; LankaNewsRoom/1.0; +https://lankanewsroom.xyz)',
-    'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'Referer': 'https://www.google.com/'
   }
 });
 
