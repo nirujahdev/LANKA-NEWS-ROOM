@@ -15,10 +15,9 @@ type Props = {
   params: Promise<{ lang: 'en' | 'si' | 'ta' }>;
 };
 
-export default function LanguageHomePage({ params }: { params: Promise<{ lang: 'en' | 'si' | 'ta' }> }) {
-  const [resolvedParams, setResolvedParams] = useState<{ lang: 'en' | 'si' | 'ta' } | null>(null);
-  const [currentLanguage, setCurrentLanguage] = useState<'en' | 'si' | 'ta'>('en');
-  const [paramsError, setParamsError] = useState(false);
+// Client component that receives resolved lang
+function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 'ta' }) {
+  const [currentLanguage, setCurrentLanguage] = useState<'en' | 'si' | 'ta'>(lang);
   const [incidents, setIncidents] = useState<ClusterListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -28,60 +27,42 @@ export default function LanguageHomePage({ params }: { params: Promise<{ lang: '
   const [topicData, setTopicData] = useState<Record<string, ClusterListItem[]>>({});
   const [topicLoading, setTopicLoading] = useState(true);
 
-  // Resolve params
   useEffect(() => {
-    let cancelled = false;
-    
-    params
-      .then(p => {
-        if (cancelled) return;
-        setResolvedParams(p);
-        setCurrentLanguage(p.lang);
-        setLanguage(p.lang);
-        setParamsError(false);
-      })
-      .catch(err => {
-        if (cancelled) return;
-        console.error('Error resolving params:', err);
-        setParamsError(true);
-        // Fallback to 'en' if params resolution fails
-        const fallbackLang = { lang: 'en' as const };
-        setResolvedParams(fallbackLang);
-        setCurrentLanguage('en');
-        setLanguage('en');
-      });
-    
-    return () => {
-      cancelled = true;
-    };
-  }, [params]);
-
-  useEffect(() => {
-    if (!resolvedParams) return;
-    
     // Only run on client side
     if (typeof window === 'undefined') return;
+
+    // Set language immediately
+    setLanguage(lang);
+    setCurrentLanguage(lang);
 
     let supabase: ReturnType<typeof getSupabaseClient>;
     try {
       supabase = getSupabaseClient();
     } catch (error) {
+      console.error('Failed to get Supabase client:', error);
+      setError(true);
+      setLoading(false);
       return;
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Missing Supabase environment variables');
+      setError(true);
+      setLoading(false);
       return;
     }
 
     // Check authentication
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAuthenticated(!!session);
+    }).catch(err => {
+      console.error('Auth check failed:', err);
     });
 
     // Load clusters
-    loadClusters(resolvedParams.lang, null, null)
+    loadClusters(lang, null, null)
       .then(data => {
         setIncidents(data);
         setLatestUpdates(data.slice(0, 10));
@@ -97,7 +78,7 @@ export default function LanguageHomePage({ params }: { params: Promise<{ lang: '
     const topics = ['politics', 'economy', 'sports', 'crime', 'education', 'health'];
     Promise.all(
       topics.map(topic =>
-        loadClusters(resolvedParams.lang, null, topic as CategoryType)
+        loadClusters(lang, null, topic as CategoryType)
           .then(data => ({ topic, data }))
           .catch(() => ({ topic, data: [] }))
       )
@@ -109,16 +90,7 @@ export default function LanguageHomePage({ params }: { params: Promise<{ lang: '
       setTopicData(topicMap);
       setTopicLoading(false);
     });
-  }, [resolvedParams]);
-
-  // Always render something - don't wait indefinitely
-  if (!resolvedParams) {
-    return (
-      <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center">
-        <div className="text-[#5F6368]">Loading...</div>
-      </div>
-    );
-  }
+  }, [lang]);
 
   if (loading) {
     return (
@@ -136,19 +108,22 @@ export default function LanguageHomePage({ params }: { params: Promise<{ lang: '
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center">
-        <div className="text-[#5F6368]">Error loading news</div>
+      <div className="min-h-screen bg-[#F5F5F5]">
+        <Navigation currentLanguage={currentLanguage} onLanguageChange={setCurrentLanguage} />
+        <TopicNavigation language={currentLanguage} />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-[#5F6368]">Error loading news. Please try refreshing the page.</div>
+          </div>
+        </main>
       </div>
     );
   }
 
-  // Ensure we have a valid language before rendering
-  const displayLanguage = resolvedParams?.lang || currentLanguage;
-
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
-      <Navigation currentLanguage={displayLanguage} onLanguageChange={setCurrentLanguage} />
-      <TopicNavigation language={displayLanguage} />
+      <Navigation currentLanguage={currentLanguage} onLanguageChange={setCurrentLanguage} />
+      <TopicNavigation language={currentLanguage} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex gap-6">
@@ -183,5 +158,13 @@ export default function LanguageHomePage({ params }: { params: Promise<{ lang: '
       </main>
     </div>
   );
+}
+
+// Server component wrapper that resolves params
+export default async function LanguageHomePage({ params }: Props) {
+  const resolvedParams = await params;
+  const lang = resolvedParams.lang;
+
+  return <LanguageHomePageContent lang={lang} />;
 }
 
