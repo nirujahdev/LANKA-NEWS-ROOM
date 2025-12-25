@@ -276,7 +276,6 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
                 firstSeen={cluster.first_seen_at}
                 sourceCount={cluster.source_count || 0}
                 currentLanguage={lang}
-                onLanguageChange={() => {}} // Server component
               />
             </div>
           </main>
