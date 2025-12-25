@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
-import Script from 'next/script';
 import { Montserrat } from 'next/font/google';
 import './globals.css';
 import SignInPromptManager from '@/components/SignInPromptManager';
+import GoogleCMP from '@/components/GoogleCMP';
+import ConditionalAdSense from '@/components/ConditionalAdSense';
 
 const montserrat = Montserrat({
   subsets: ['latin'],
@@ -141,12 +142,12 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className="font-montserrat antialiased bg-white text-[#1E293B]">
-        {/* Google AdSense */}
-        <Script
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8312977389353751"
-          strategy="afterInteractive"
-          crossOrigin="anonymous"
-        />
+        {/* Google CMP - Must load before ads */}
+        <GoogleCMP />
+        
+        {/* Google AdSense - Conditionally loaded after consent for EEA/UK/CH users */}
+        <ConditionalAdSense />
+        
         <SignInPromptManager>
           {children}
         </SignInPromptManager>
