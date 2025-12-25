@@ -14,12 +14,12 @@ export default function MixedNewsCard({ mainArticle, relatedArticles }: MixedNew
   const mainImageUrl = getImageUrl(mainArticle);
 
   return (
-    <div className="bg-white rounded-[40%] border border-[#E8EAED] overflow-hidden">
+    <div className="bg-white rounded-xl border border-[#E8EAED] overflow-hidden">
       {/* Main Article - Top */}
       <Link href={mainHref} className="block group">
         <div className="flex flex-col md:flex-row gap-4 p-4 border-b border-[#E8EAED] hover:bg-[#F8F9FA] transition-colors">
           {/* Main Image */}
-          <div className="relative w-full md:w-1/3 aspect-video md:aspect-square rounded-[40%] overflow-hidden flex-shrink-0">
+          <div className="relative w-full md:w-1/3 aspect-video md:aspect-square rounded-xl overflow-hidden flex-shrink-0">
             <Image 
               src={mainImageUrl} 
               alt={mainArticle.headline}
@@ -72,7 +72,7 @@ export default function MixedNewsCard({ mainArticle, relatedArticles }: MixedNew
               <Link key={article.id} href={articleHref} className="block group">
                 <div className="flex gap-3 hover:bg-[#F8F9FA] p-2 rounded-lg transition-colors">
                   {/* Small Image */}
-                  <div className="w-16 h-16 flex-shrink-0 rounded-[40%] overflow-hidden relative bg-[#F1F3F4]">
+                  <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden relative bg-[#F1F3F4]">
                     <Image 
                       src={articleImageUrl} 
                       alt={article.headline}

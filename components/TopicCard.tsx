@@ -94,11 +94,11 @@ export default function TopicCard({
   const displayImage = imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(topic)}&background=1A73E8&color=fff&size=128`;
 
   return (
-    <div className="bg-white rounded-[40%] shadow-sm border border-[#E8EAED] overflow-hidden">
+    <div className="bg-white rounded-xl shadow-sm border border-[#E8EAED] overflow-hidden">
       <div className="p-4">
         {/* Topic Image/Icon */}
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 rounded-[40%] overflow-hidden bg-[#F1F3F4] flex items-center justify-center flex-shrink-0">
+          <div className="w-16 h-16 rounded-xl overflow-hidden bg-[#F1F3F4] flex items-center justify-center flex-shrink-0">
             {imageUrl ? (
               <Image
                 src={imageUrl}
@@ -130,7 +130,7 @@ export default function TopicCard({
         <div className="flex gap-2">
           <button
             onClick={handleFollow}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-[40%] transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors ${
               following
                 ? 'bg-[#E8F0FE] text-[#1A73E8]'
                 : 'bg-[#F1F3F4] text-[#5F6368] hover:bg-[#E8EAED]'
@@ -143,7 +143,7 @@ export default function TopicCard({
           </button>
           <button
             onClick={handleShare}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-[40%] bg-[#F1F3F4] text-[#5F6368] hover:bg-[#E8EAED] transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#F1F3F4] text-[#5F6368] hover:bg-[#E8EAED] transition-colors"
           >
             <Share2 className="w-4 h-4" />
             <span className="text-sm font-medium">

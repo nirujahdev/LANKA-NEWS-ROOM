@@ -14,9 +14,9 @@ export default function WidgetNewsCard({ data }: WidgetNewsCardProps) {
 
   return (
     <Link href={href} className="block group">
-      <article className="bg-white rounded-[40%] border border-[#E8EAED] overflow-hidden cursor-pointer hover:shadow-sm transition-all duration-200">
+      <article className="bg-white rounded-xl border border-[#E8EAED] overflow-hidden cursor-pointer hover:shadow-sm transition-all duration-200">
         {/* Image - Top (smaller) */}
-        <div className="relative w-full aspect-[16/9] overflow-hidden">
+        <div className="relative w-full aspect-[16/9] overflow-hidden rounded-t-xl">
           <Image 
             src={imageUrl} 
             alt={data.headline}

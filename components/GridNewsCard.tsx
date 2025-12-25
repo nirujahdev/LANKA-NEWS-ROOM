@@ -14,9 +14,9 @@ export default function GridNewsCard({ data }: GridNewsCardProps) {
 
   return (
     <Link href={href} className="block group h-full">
-      <article className="bg-white rounded-[40%] border border-[#E8EAED] overflow-hidden cursor-pointer hover:shadow-md transition-all duration-200 h-full flex flex-col">
+      <article className="bg-white rounded-xl border border-[#E8EAED] overflow-hidden cursor-pointer hover:shadow-md transition-all duration-200 h-full flex flex-col">
         {/* Image - Top */}
-        <div className="relative w-full aspect-[4/3] overflow-hidden">
+        <div className="relative w-full aspect-[4/3] overflow-hidden rounded-t-xl">
           <Image 
             src={imageUrl} 
             alt={data.headline}

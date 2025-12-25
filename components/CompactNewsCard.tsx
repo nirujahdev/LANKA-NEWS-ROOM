@@ -37,7 +37,7 @@ export default function CompactNewsCard({ data }: CompactNewsCardProps) {
         </div>
         
         {/* Tiny Image */}
-        <div className="w-16 h-16 flex-shrink-0 rounded-[40%] overflow-hidden relative bg-[#F1F3F4]">
+        <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden relative bg-[#F1F3F4]">
           <Image 
             src={imageUrl} 
             alt={data.headline}

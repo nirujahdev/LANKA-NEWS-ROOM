@@ -14,7 +14,7 @@ export default function ListNewsCard({ data }: ListNewsCardProps) {
 
   return (
     <Link href={href} className="block group">
-      <article className="relative bg-white rounded-[40%] border border-[#E8EAED] p-4 sm:p-5 cursor-pointer hover:shadow-sm transition-all duration-200">
+      <article className="relative bg-white rounded-xl border border-[#E8EAED] p-4 sm:p-5 cursor-pointer hover:shadow-sm transition-all duration-200">
         <div className="flex gap-4">
           <div className="flex-1 min-w-0 flex flex-col justify-between">
             <div>
@@ -44,7 +44,7 @@ export default function ListNewsCard({ data }: ListNewsCardProps) {
           </div>
 
           {/* Image - Right side */}
-          <div className="w-24 h-24 flex-shrink-0 rounded-[40%] overflow-hidden relative bg-[#F1F3F4]">
+          <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden relative bg-[#F1F3F4]">
             <Image 
               src={imageUrl} 
               alt={data.headline}

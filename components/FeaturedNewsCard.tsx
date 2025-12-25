@@ -14,9 +14,9 @@ export default function FeaturedNewsCard({ data }: FeaturedNewsCardProps) {
 
   return (
     <Link href={href} className="block group mb-6">
-      <article className="flex flex-col md:flex-row gap-6">
+      <article className="flex flex-col md:flex-row gap-6 bg-white rounded-xl p-4 border border-[#E8EAED]">
         {/* Image - Left Side (2/3 width on desktop) */}
-        <div className="relative w-full md:w-2/3 aspect-video md:aspect-[16/9] rounded-[40%] overflow-hidden mb-1 md:mb-0 order-first">
+        <div className="relative w-full md:w-2/3 aspect-video md:aspect-[16/9] rounded-xl overflow-hidden mb-1 md:mb-0 order-first">
           <Image 
             src={imageUrl} 
             alt={data.headline}
