@@ -24,7 +24,7 @@ const Navigation: React.FC<NavigationProps> = ({
   ];
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-[#E8EAED]">
+    <nav className="sticky top-0 z-50 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Navigation Bar */}
         <div className="flex items-center justify-between h-14 md:h-16">

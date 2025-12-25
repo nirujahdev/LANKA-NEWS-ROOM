@@ -29,6 +29,8 @@ export default function HomePage() {
   const [latestUpdates, setLatestUpdates] = useState<any[]>([]);
   const [userCity, setUserCity] = useState('Colombo');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [topicData, setTopicData] = useState<Record<string, ClusterListItem[]>>({});
+  const [topicLoading, setTopicLoading] = useState(true);
 
   useEffect(() => {
     // Only run on client side
@@ -161,6 +163,68 @@ export default function HomePage() {
     };
   }, [currentLanguage]);
 
+  // Fetch topic-specific data for "Your topics" section
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchTopicData() {
+      setTopicLoading(true);
+      try {
+        const topics = ['politics', 'economy', 'technology', 'sports', 'science', 'health'] as CategoryType[];
+        const topicPromises = topics.map(async (topic) => {
+          try {
+            const data = await loadClusters(currentLanguage, null, topic);
+            return { topic, data: data.slice(0, 3) }; // Get top 3 for each topic
+          } catch (err) {
+            console.error(`Error loading ${topic} clusters:`, err);
+            return { topic, data: [] };
+          }
+        });
+
+        const results = await Promise.all(topicPromises);
+        if (!cancelled) {
+          const topicMap: Record<string, ClusterListItem[]> = {};
+          results.forEach(({ topic, data }) => {
+            if (topic) topicMap[topic] = data;
+          });
+          setTopicData(topicMap);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Error loading topic data:', err);
+        }
+      } finally {
+        if (!cancelled) {
+          setTopicLoading(false);
+        }
+      }
+    }
+
+    fetchTopicData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentLanguage]);
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Error loading clusters:', err);
+          setError(true);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentLanguage]);
+
   const formatDate = () => {
     const now = new Date();
     const options: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric' };
@@ -266,68 +330,73 @@ export default function HomePage() {
                   )}
                 </div>
 
-                {/* "Your topics" Section */}
+                {/* "Your topics" Section - 3x2 Grid */}
                 <div className="mb-6">
                    <h2 className="text-xl font-normal text-[#202124] mb-4">Your topics</h2>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Example Topic: Sri Lanka */}
-                      <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] flex flex-col h-full">
-                         <div className="px-4 py-3 flex items-center justify-between border-b border-[#E8EAED]">
-                            <h3 className="font-medium text-[#1A73E8] uppercase tracking-wide text-xs">Sri Lanka</h3>
-                            <Link href="/sri-lanka" className="text-xs text-[#5F6368] hover:text-[#1A73E8]">More</Link>
+                   {topicLoading ? (
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                       {[1, 2, 3, 4, 5, 6].map((i) => (
+                         <div key={i} className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] h-64 animate-pulse">
+                           <div className="px-4 py-3 border-b border-[#E8EAED] bg-gray-100 h-12"></div>
+                           <div className="p-4 space-y-3">
+                             <div className="h-4 bg-gray-100 rounded"></div>
+                             <div className="h-4 bg-gray-100 rounded w-3/4"></div>
+                           </div>
                          </div>
-                         <div className="p-0">
-                            {incidents.slice(4, 7).map((incident, idx) => (
-                               <div key={incident.id}>
-                                 {idx > 0 && <hr className="border-t border-[#E8EAED] mx-4" />}
-                                 <div className="px-4 py-3">
-                                   <IncidentCard
-                                     id={incident.id}
-                                     slug={incident.slug}
-                                     headline={incident.headline}
-                                     summary={incident.summary || ''}
-                                     sources={incident.sources}
-                                     updatedAt={incident.last_updated}
-                                     sourceCount={incident.source_count || 0}
-                                     language={currentLanguage}
-                                     variant="compact"
-                                     category={incident.topic || incident.category || undefined}
-                                   />
+                       ))}
+                     </div>
+                   ) : (
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                       {[
+                         { id: 'politics', label: 'Politics', labelSi: 'දේශපාලනය', labelTa: 'அரசியல்', href: '/politics' },
+                         { id: 'economy', label: 'Business', labelSi: 'ව්‍යාපාර', labelTa: 'வணிகம்', href: '/business' },
+                         { id: 'technology', label: 'Technology', labelSi: 'තාක්ෂණය', labelTa: 'தொழில்நுட்பம்', href: '/technology' },
+                         { id: 'sports', label: 'Sports', labelSi: 'ක්‍රීඩා', labelTa: 'விளையாட்டு', href: '/sports' },
+                         { id: 'science', label: 'Science', labelSi: 'විද්‍යාව', labelTa: 'அறிவியல்', href: '/science' },
+                         { id: 'health', label: 'Health', labelSi: 'සෞඛ්‍ය', labelTa: 'சுகாதாரம்', href: '/health' }
+                       ].map((topic) => {
+                         const topicLabel = currentLanguage === 'si' ? topic.labelSi : currentLanguage === 'ta' ? topic.labelTa : topic.label;
+                         const topicItems = topicData[topic.id] || [];
+                         
+                         return (
+                           <div key={topic.id} className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] flex flex-col h-full">
+                             <div className="px-4 py-3 flex items-center justify-between border-b border-[#E8EAED]">
+                               <h3 className="font-medium text-[#1A73E8] uppercase tracking-wide text-xs">{topicLabel}</h3>
+                               <Link href={topic.href} className="text-xs text-[#5F6368] hover:text-[#1A73E8]">More</Link>
+                             </div>
+                             <div className="p-0 flex-1">
+                               {topicItems.length > 0 ? (
+                                 topicItems.map((incident, idx) => (
+                                   <div key={incident.id}>
+                                     {idx > 0 && <hr className="border-t border-[#E8EAED] mx-4" />}
+                                     <div className="px-4 py-3">
+                                       <IncidentCard
+                                         id={incident.id}
+                                         slug={incident.slug}
+                                         headline={incident.headline}
+                                         summary={incident.summary || ''}
+                                         sources={incident.sources}
+                                         updatedAt={incident.last_updated}
+                                         sourceCount={incident.source_count || 0}
+                                         language={currentLanguage}
+                                         variant="compact"
+                                         category={incident.topic || incident.category || undefined}
+                                         imageUrl={incident.image_url || undefined}
+                                       />
+                                     </div>
+                                   </div>
+                                 ))
+                               ) : (
+                                 <div className="px-4 py-8 text-center text-sm text-[#5F6368]">
+                                   No articles available
                                  </div>
-                               </div>
-                            ))}
-                         </div>
-                      </div>
-
-                       {/* Example Topic: Technology */}
-                       <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] flex flex-col h-full">
-                         <div className="px-4 py-3 flex items-center justify-between border-b border-[#E8EAED]">
-                            <h3 className="font-medium text-[#1A73E8] uppercase tracking-wide text-xs">Technology</h3>
-                            <Link href="/technology" className="text-xs text-[#5F6368] hover:text-[#1A73E8]">More</Link>
-                         </div>
-                         <div className="p-0">
-                            {incidents.slice(7, 10).map((incident, idx) => (
-                               <div key={incident.id}>
-                                 {idx > 0 && <hr className="border-t border-[#E8EAED] mx-4" />}
-                                 <div className="px-4 py-3">
-                                   <IncidentCard
-                                     id={incident.id}
-                                     slug={incident.slug}
-                                     headline={incident.headline}
-                                     summary={incident.summary || ''}
-                                     sources={incident.sources}
-                                     updatedAt={incident.last_updated}
-                                     sourceCount={incident.source_count || 0}
-                                     language={currentLanguage}
-                                     variant="compact"
-                                     category={incident.topic || incident.category || undefined}
-                                   />
-                                 </div>
-                               </div>
-                            ))}
-                         </div>
-                      </div>
-                   </div>
+                               )}
+                             </div>
+                           </div>
+                         );
+                       })}
+                     </div>
+                   )}
                 </div>
 
               </>

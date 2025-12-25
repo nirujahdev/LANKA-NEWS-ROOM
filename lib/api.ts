@@ -16,7 +16,7 @@ export type ClusterListItem = {
 };
 
 export type FeedType = 'home' | 'recent' | null;
-export type CategoryType = 'politics' | 'economy' | 'sports' | 'technology' | 'health' | 'education' | null;
+export type CategoryType = 'politics' | 'economy' | 'sports' | 'technology' | 'health' | 'education' | 'science' | null;
 
 /**
  * Load clusters with optional feed type and category filter
