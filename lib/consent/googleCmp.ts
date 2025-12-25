@@ -15,7 +15,7 @@
  * - NEXT_PUBLIC_GOOGLE_FUNDING_CHOICES_PUBLISHER_ID: Your Funding Choices Publisher ID from AdSense
  */
 
-import type { ConsentState } from './types';
+import type { ConsentState as ConsentStateObject } from './types';
 
 // EEA countries + UK + Switzerland (ISO 3166-1 alpha-2 codes)
 const CONSENT_REQUIRED_REGIONS = new Set([
@@ -53,8 +53,8 @@ const CONSENT_REQUIRED_REGIONS = new Set([
 // Google Funding Choices Publisher ID (replace with your actual ID from AdSense)
 const FUNDING_CHOICES_PUBLISHER_ID = process.env.NEXT_PUBLIC_GOOGLE_FUNDING_CHOICES_PUBLISHER_ID || '';
 
-// Consent state type
-export type ConsentState = 'granted' | 'denied' | 'pending';
+// Consent value type (granted/denied/pending)
+export type ConsentValue = 'granted' | 'denied' | 'pending';
 
 // Region detection result
 interface RegionInfo {
@@ -137,7 +137,7 @@ export function initializeConsentMode(requiresConsent: boolean): void {
 /**
  * Update consent state after user interaction
  */
-export function updateConsentState(consent: ConsentState): void {
+export function updateConsentState(consent: ConsentValue): void {
   if (typeof window === 'undefined') return;
 
   const consentValue = consent === 'granted' ? 'granted' : 'denied';
@@ -225,14 +225,14 @@ export async function initializeGoogleCMP(): Promise<void> {
         window.googlefc.adsbygoogle = window.googlefc.adsbygoogle || [];
         window.googlefc.adsbygoogle.push({
           'event': 'consent',
-          'callback': (consent: ConsentState) => {
-            const consentState: ConsentState = 
+          'callback': (consent: ConsentStateObject) => {
+            const consentValue: ConsentValue = 
               consent.ad_storage === 'granted' ? 'granted' : 'denied';
-            updateConsentState(consentState);
+            updateConsentState(consentValue);
             
             // Trigger custom event for ad loading
             window.dispatchEvent(new CustomEvent('consent-updated', { 
-              detail: { consent: consentState } 
+              detail: { consent: consentValue } 
             }));
           }
         });
