@@ -91,51 +91,58 @@ export async function GET(req: Request) {
       console.error('Error fetching articles:', articlesError);
     }
 
-  const summariesByCluster = new Map((summaries || []).map((s) => [s.cluster_id, s]));
-  const sourcesByCluster = new Map<string, { name: string; feed_url: string }[]>();
-  const imagesByCluster = new Map<string, string | null>();
+    const summariesByCluster = new Map((summaries || []).map((s) => [s.cluster_id, s]));
+    const sourcesByCluster = new Map<string, { name: string; feed_url: string }[]>();
+    const imagesByCluster = new Map<string, string | null>();
 
-  for (const art of articles || []) {
-    const src = art.sources;
-    if (!art.cluster_id) continue; // Skip if no cluster_id
-    
-    // Collect sources
-    if (src) {
-      const list = sourcesByCluster.get(art.cluster_id) || [];
-      if (!list.find((s) => s.feed_url === src.feed_url)) {
-        list.push(src);
+    for (const art of articles || []) {
+      const src = art.sources;
+      if (!art.cluster_id) continue; // Skip if no cluster_id
+      
+      // Collect sources
+      if (src) {
+        const list = sourcesByCluster.get(art.cluster_id) || [];
+        if (!list.find((s) => s.feed_url === src.feed_url)) {
+          list.push(src);
+        }
+        sourcesByCluster.set(art.cluster_id, list);
       }
-      sourcesByCluster.set(art.cluster_id, list);
+      
+      // Collect first available image
+      if (art.image_url && !imagesByCluster.has(art.cluster_id)) {
+        imagesByCluster.set(art.cluster_id, art.image_url);
+      }
     }
-    
-    // Collect first available image
-    if (art.image_url && !imagesByCluster.has(art.cluster_id)) {
-      imagesByCluster.set(art.cluster_id, art.image_url);
-    }
+
+    const payload = (clusters || []).map((cluster) => {
+      const summary = summariesByCluster.get(cluster.id);
+      const summaryText =
+        lang === 'si' ? summary?.summary_si : lang === 'ta' ? summary?.summary_ta : summary?.summary_en;
+      return {
+        id: cluster.id,
+        slug: cluster.slug, // Add slug for SEO-friendly URLs
+        headline: cluster.headline,
+        status: cluster.status,
+        category: cluster.category,
+        first_seen: cluster.first_seen_at,
+        last_updated: cluster.updated_at,
+        created_at: cluster.created_at,
+        source_count: cluster.source_count,
+        summary: summaryText,
+        summary_version: summary?.version,
+        sources: sourcesByCluster.get(cluster.id) || [],
+        image_url: imagesByCluster.get(cluster.id) || null
+      };
+    });
+
+    return NextResponse.json({ clusters: payload });
+  } catch (error) {
+    console.error('Error in GET /api/clusters:', error);
+    return NextResponse.json(
+      { error: 'Internal server error', clusters: [] },
+      { status: 500 }
+    );
   }
-
-  const payload = (clusters || []).map((cluster) => {
-    const summary = summariesByCluster.get(cluster.id);
-    const summaryText =
-      lang === 'si' ? summary?.summary_si : lang === 'ta' ? summary?.summary_ta : summary?.summary_en;
-    return {
-      id: cluster.id,
-      slug: cluster.slug, // Add slug for SEO-friendly URLs
-      headline: cluster.headline,
-      status: cluster.status,
-      category: cluster.category,
-      first_seen: cluster.first_seen_at,
-      last_updated: cluster.updated_at,
-      created_at: cluster.created_at,
-      source_count: cluster.source_count,
-      summary: summaryText,
-      summary_version: summary?.version,
-      sources: sourcesByCluster.get(cluster.id) || [],
-      image_url: imagesByCluster.get(cluster.id) || null
-    };
-  });
-
-  return NextResponse.json({ clusters: payload });
 }
 
 export const runtime = 'edge';

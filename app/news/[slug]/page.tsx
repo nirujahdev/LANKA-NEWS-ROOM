@@ -120,56 +120,63 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     const firstArticle = data.articles?.[0] as { image_url?: string | null } | undefined;
     const imageUrl = cluster.image_url || firstArticle?.image_url || null;
 
-  return {
-    title: metaTitle,
-    description: metaDescription || 'Latest news from Sri Lanka',
-    alternates: {
-      canonical: canonicalUrl,
-      languages: {
-        'en-LK': enUrl,
-        'si-LK': siUrl,
-        'ta-LK': taUrl,
-        'x-default': enUrl
-      }
-    },
-    openGraph: {
+    return {
       title: metaTitle,
-      description: metaDescription || '',
-      type: 'article',
-      locale: lang === 'si' ? 'si_LK' : lang === 'ta' ? 'ta_LK' : 'en_LK',
-      url: canonicalUrl,
-      siteName: 'Lanka News Room',
-      publishedTime: cluster.published_at || cluster.created_at || undefined,
-      modifiedTime: cluster.updated_at || undefined,
-      section: cluster.category || undefined,
-      ...(imageUrl && {
-        images: [
-          {
-            url: imageUrl,
-            width: 1200,
-            height: 630,
-            alt: metaTitle
-          }
-        ]
-      })
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: metaTitle,
-      description: metaDescription || ''
-    },
-    robots: {
-      index: true,
-      follow: true,
-      googleBot: {
+      description: metaDescription || 'Latest news from Sri Lanka',
+      alternates: {
+        canonical: canonicalUrl,
+        languages: {
+          'en-LK': enUrl,
+          'si-LK': siUrl,
+          'ta-LK': taUrl,
+          'x-default': enUrl
+        }
+      },
+      openGraph: {
+        title: metaTitle,
+        description: metaDescription || '',
+        type: 'article',
+        locale: lang === 'si' ? 'si_LK' : lang === 'ta' ? 'ta_LK' : 'en_LK',
+        url: canonicalUrl,
+        siteName: 'Lanka News Room',
+        publishedTime: cluster.published_at || cluster.created_at || undefined,
+        modifiedTime: cluster.updated_at || undefined,
+        section: cluster.category || undefined,
+        ...(imageUrl && {
+          images: [
+            {
+              url: imageUrl,
+              width: 1200,
+              height: 630,
+              alt: metaTitle
+            }
+          ]
+        })
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: metaTitle,
+        description: metaDescription || ''
+      },
+      robots: {
         index: true,
         follow: true,
-        'max-video-preview': -1,
-        'max-image-preview': 'large',
-        'max-snippet': -1
+        googleBot: {
+          index: true,
+          follow: true,
+          'max-video-preview': -1,
+          'max-image-preview': 'large',
+          'max-snippet': -1
+        }
       }
-    }
-  };
+    };
+  } catch (error) {
+    console.error('Error generating metadata:', error);
+    return {
+      title: 'News | Lanka News Room',
+      description: 'Latest news from Sri Lanka'
+    };
+  }
 }
 
 export default async function NewsDetailPage({ params, searchParams }: Props) {
@@ -186,19 +193,19 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
     // Allow page to render even without summary (cluster might be processing)
     // Summary will be empty string if not available
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
-  const canonicalUrl = `${baseUrl}/news/${params.slug}`;
-  
-  // Get metadata for JSON-LD
-  const metaDescription =
-    lang === 'si' ? cluster.meta_description_si || summary?.summary_si :
-    lang === 'ta' ? cluster.meta_description_ta || summary?.summary_ta :
-    cluster.meta_description_en || summary?.summary_en;
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
+    const canonicalUrl = `${baseUrl}/news/${params.slug}`;
+    
+    // Get metadata for JSON-LD
+    const metaDescription =
+      lang === 'si' ? cluster.meta_description_si || summary?.summary_si :
+      lang === 'ta' ? cluster.meta_description_ta || summary?.summary_ta :
+      cluster.meta_description_en || summary?.summary_en;
 
-  const firstArticle = articles?.[0] as { image_url?: string | null } | undefined;
-  const imageUrl = cluster.image_url || firstArticle?.image_url || null;
+    const firstArticle = articles?.[0] as { image_url?: string | null } | undefined;
+    const imageUrl = cluster.image_url || firstArticle?.image_url || null;
 
-  return (
+    return (
     <div className="min-h-screen bg-[#F5F5F5]">
       {/* JSON-LD Structured Data for Google News */}
       <NewsArticleSchema
