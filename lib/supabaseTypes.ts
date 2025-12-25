@@ -20,13 +20,17 @@ export type Database = {
           content_excerpt: string | null
           content_text: string | null
           created_at: string | null
+          error_message: string | null
           fetched_at: string | null
           guid: string | null
           hash: string | null
           id: string
+          image_url: string | null
           lang: Database["public"]["Enums"]["lang_code"] | null
+          processed_at: string | null
           published_at: string | null
           source_id: string
+          status: string | null
           title: string
           url: string
         }
@@ -35,13 +39,17 @@ export type Database = {
           content_excerpt?: string | null
           content_text?: string | null
           created_at?: string | null
+          error_message?: string | null
           fetched_at?: string | null
           guid?: string | null
           hash?: string | null
           id?: string
+          image_url?: string | null
           lang?: Database["public"]["Enums"]["lang_code"] | null
+          processed_at?: string | null
           published_at?: string | null
           source_id: string
+          status?: string | null
           title: string
           url: string
         }
@@ -50,13 +58,17 @@ export type Database = {
           content_excerpt?: string | null
           content_text?: string | null
           created_at?: string | null
+          error_message?: string | null
           fetched_at?: string | null
           guid?: string | null
           hash?: string | null
           id?: string
+          image_url?: string | null
           lang?: Database["public"]["Enums"]["lang_code"] | null
+          processed_at?: string | null
           published_at?: string | null
           source_id?: string
+          status?: string | null
           title?: string
           url?: string
         }
@@ -117,40 +129,97 @@ export type Database = {
         Row: {
           article_count: number | null
           category: string | null
+          city: string | null
           created_at: string | null
+          event_type: string | null
           expires_at: string | null
           first_seen_at: string | null
           headline: string
+          helpful_count: number | null
           id: string
+          image_url: string | null
+          keywords: string[] | null
+          language: string | null
+          last_checked_at: string | null
           last_seen_at: string | null
+          like_count: number | null
+          meta_description_en: string | null
+          meta_description_si: string | null
+          meta_description_ta: string | null
+          meta_title_en: string | null
+          meta_title_si: string | null
+          meta_title_ta: string | null
+          primary_entity: string | null
+          published_at: string | null
+          report_count: number | null
+          slug: string | null
           source_count: number | null
           status: Database["public"]["Enums"]["cluster_status"] | null
+          topic: string | null
           updated_at: string | null
         }
         Insert: {
           article_count?: number | null
           category?: string | null
+          city?: string | null
           created_at?: string | null
+          event_type?: string | null
           expires_at?: string | null
           first_seen_at?: string | null
           headline: string
+          helpful_count?: number | null
           id?: string
+          image_url?: string | null
+          keywords?: string[] | null
+          language?: string | null
+          last_checked_at?: string | null
           last_seen_at?: string | null
+          like_count?: number | null
+          meta_description_en?: string | null
+          meta_description_si?: string | null
+          meta_description_ta?: string | null
+          meta_title_en?: string | null
+          meta_title_si?: string | null
+          meta_title_ta?: string | null
+          primary_entity?: string | null
+          published_at?: string | null
+          report_count?: number | null
+          slug?: string | null
           source_count?: number | null
           status?: Database["public"]["Enums"]["cluster_status"] | null
+          topic?: string | null
           updated_at?: string | null
         }
         Update: {
           article_count?: number | null
           category?: string | null
+          city?: string | null
           created_at?: string | null
+          event_type?: string | null
           expires_at?: string | null
           first_seen_at?: string | null
           headline?: string
+          helpful_count?: number | null
           id?: string
+          image_url?: string | null
+          keywords?: string[] | null
+          language?: string | null
+          last_checked_at?: string | null
           last_seen_at?: string | null
+          like_count?: number | null
+          meta_description_en?: string | null
+          meta_description_si?: string | null
+          meta_description_ta?: string | null
+          meta_title_en?: string | null
+          meta_title_si?: string | null
+          meta_title_ta?: string | null
+          primary_entity?: string | null
+          published_at?: string | null
+          report_count?: number | null
+          slug?: string | null
           source_count?: number | null
           status?: Database["public"]["Enums"]["cluster_status"] | null
+          topic?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -257,6 +326,80 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          city: string
+          created_at: string | null
+          email: string | null
+          id: string
+          language: string
+          name: string
+        }
+        Insert: {
+          city: string
+          created_at?: string | null
+          email?: string | null
+          id: string
+          language: string
+          name: string
+        }
+        Update: {
+          city?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          language?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      source_health: {
+        Row: {
+          created_at: string | null
+          error_type: string | null
+          feed_url: string
+          http_status: number | null
+          id: string
+          items_found: number | null
+          last_checked_at: string | null
+          last_success_at: string | null
+          source_id: string | null
+          source_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          error_type?: string | null
+          feed_url: string
+          http_status?: number | null
+          id?: string
+          items_found?: number | null
+          last_checked_at?: string | null
+          last_success_at?: string | null
+          source_id?: string | null
+          source_name: string
+        }
+        Update: {
+          created_at?: string | null
+          error_type?: string | null
+          feed_url?: string
+          http_status?: number | null
+          id?: string
+          items_found?: number | null
+          last_checked_at?: string | null
+          last_success_at?: string | null
+          source_id?: string | null
+          source_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "source_health_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sources: {
         Row: {
           active: boolean | null
@@ -296,8 +439,14 @@ export type Database = {
       summaries: {
         Row: {
           cluster_id: string
+          confirmed_vs_differs_en: string | null
+          confirmed_vs_differs_si: string | null
+          confirmed_vs_differs_ta: string | null
           created_at: string | null
           id: string
+          key_facts_en: string[] | null
+          key_facts_si: string[] | null
+          key_facts_ta: string[] | null
           model: string | null
           prompt_version: string | null
           summary_en: string | null
@@ -308,8 +457,14 @@ export type Database = {
         }
         Insert: {
           cluster_id: string
+          confirmed_vs_differs_en?: string | null
+          confirmed_vs_differs_si?: string | null
+          confirmed_vs_differs_ta?: string | null
           created_at?: string | null
           id?: string
+          key_facts_en?: string[] | null
+          key_facts_si?: string[] | null
+          key_facts_ta?: string[] | null
           model?: string | null
           prompt_version?: string | null
           summary_en?: string | null
@@ -320,8 +475,14 @@ export type Database = {
         }
         Update: {
           cluster_id?: string
+          confirmed_vs_differs_en?: string | null
+          confirmed_vs_differs_si?: string | null
+          confirmed_vs_differs_ta?: string | null
           created_at?: string | null
           id?: string
+          key_facts_en?: string[] | null
+          key_facts_si?: string[] | null
+          key_facts_ta?: string[] | null
           model?: string | null
           prompt_version?: string | null
           summary_en?: string | null
@@ -340,66 +501,61 @@ export type Database = {
           },
         ]
       }
-      profiles: {
+      user_feedback: {
         Row: {
+          cluster_id: string
+          comment: string | null
+          created_at: string
+          feedback_type: string
           id: string
-          email: string | null
-          name: string
-          language: string
-          city: string
-          created_at: string | null
+          reason: string | null
+          user_id: string | null
         }
         Insert: {
-          id: string
-          email?: string | null
-          name: string
-          language: string
-          city: string
-          created_at?: string | null
+          cluster_id: string
+          comment?: string | null
+          created_at?: string
+          feedback_type: string
+          id?: string
+          reason?: string | null
+          user_id?: string | null
         }
         Update: {
+          cluster_id?: string
+          comment?: string | null
+          created_at?: string
+          feedback_type?: string
           id?: string
-          email?: string | null
-          name?: string
-          language?: string
-          city?: string
-          created_at?: string | null
+          reason?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "profiles_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "users"
+            foreignKeyName: "user_feedback_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "clusters"
             referencedColumns: ["id"]
           },
         ]
       }
       user_preferences: {
         Row: {
-          user_id: string
           favourite_topics: string[]
           updated_at: string | null
+          user_id: string
         }
         Insert: {
-          user_id: string
           favourite_topics: string[]
           updated_at?: string | null
+          user_id: string
         }
         Update: {
-          user_id?: string
           favourite_topics?: string[]
           updated_at?: string | null
+          user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_preferences_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
@@ -409,6 +565,55 @@ export type Database = {
       acquire_pipeline_lock: {
         Args: { current_ts: string; lock_name: string; lock_until: string }
         Returns: boolean
+      }
+      get_search_filter_options: {
+        Args: never
+        Returns: {
+          cities: string[]
+          date_max: string
+          date_min: string
+          event_types: string[]
+          topics: string[]
+        }[]
+      }
+      pick_articles_for_processing: {
+        Args: { batch_limit: number }
+        Returns: {
+          content_excerpt: string
+          content_text: string
+          id: string
+          lang: string
+          published_at: string
+          source_id: string
+          title: string
+          url: string
+        }[]
+      }
+      search_clusters: {
+        Args: {
+          city_filter?: string
+          date_from?: string
+          date_to?: string
+          event_type_filter?: string
+          lang_code?: string
+          result_limit?: number
+          search_query: string
+          topic_filter?: string[]
+        }
+        Returns: {
+          category: string
+          city: string
+          event_type: string
+          headline: string
+          id: string
+          image_url: string
+          published_at: string
+          rank: number
+          slug: string
+          source_count: number
+          summary: string
+          topic: string
+        }[]
       }
     }
     Enums: {

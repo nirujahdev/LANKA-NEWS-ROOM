@@ -48,15 +48,14 @@ export async function GET(req: Request) {
     }
     
     // Use enhanced search function with filters
-    // Note: search_clusters RPC exists but types may need regeneration
-    const { data, error } = await (supabaseAdmin as any).rpc('search_clusters', {
-      search_query: query || null,
+    const { data, error } = await supabaseAdmin.rpc('search_clusters', {
+      search_query: query || '',
       lang_code: lang,
-      topic_filter: topics || null,
-      date_from: dateFrom ? new Date(dateFrom).toISOString() : null,
-      date_to: dateTo ? new Date(dateTo).toISOString() : null,
-      city_filter: city || null,
-      event_type_filter: eventType || null,
+      topic_filter: topics || undefined,
+      date_from: dateFrom ? new Date(dateFrom).toISOString() : undefined,
+      date_to: dateTo ? new Date(dateTo).toISOString() : undefined,
+      city_filter: city || undefined,
+      event_type_filter: eventType || undefined,
       result_limit: limit
     });
     

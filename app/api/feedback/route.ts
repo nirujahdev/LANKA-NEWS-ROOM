@@ -16,8 +16,7 @@ export async function POST(req: Request) {
     }
     
     // Insert feedback (userId can be null for anonymous)
-    // Note: user_feedback table exists but types need regeneration
-    const { data: feedback, error: insertError } = await (supabaseAdmin as any)
+    const { data: feedback, error: insertError } = await supabaseAdmin
       .from('user_feedback')
       .upsert({
         cluster_id: clusterId,
@@ -56,16 +55,17 @@ export async function GET(req: Request) {
     }
     
     // Get user feedback for this cluster
-    // Note: user_feedback table exists but types need regeneration
-    const { data: userFeedback } = await (supabaseAdmin as any)
+    const query = supabaseAdmin
       .from('user_feedback')
       .select('feedback_type')
-      .eq('cluster_id', clusterId)
-      .eq('user_id', userId || null);
+      .eq('cluster_id', clusterId);
+    
+    const { data: userFeedback } = userId 
+      ? await query.eq('user_id', userId)
+      : await query.is('user_id', null);
     
     // Get aggregate counts
-    // Note: like_count, report_count, helpful_count columns exist but types need regeneration
-    const { data: cluster } = await (supabaseAdmin as any)
+    const { data: cluster } = await supabaseAdmin
       .from('clusters')
       .select('like_count, report_count, helpful_count')
       .eq('id', clusterId)
@@ -74,9 +74,9 @@ export async function GET(req: Request) {
     return NextResponse.json({
       userFeedback: userFeedback || [],
       counts: {
-        likes: (cluster as any)?.like_count || 0,
-        reports: (cluster as any)?.report_count || 0,
-        helpful: (cluster as any)?.helpful_count || 0
+        likes: cluster?.like_count || 0,
+        reports: cluster?.report_count || 0,
+        helpful: cluster?.helpful_count || 0
       }
     });
   } catch (error: any) {

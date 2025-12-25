@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Logo from './Logo';
+import SearchBar from './SearchBar';
 import { Search, Menu, X, HelpCircle, Settings, User } from 'lucide-react';
 import Link from 'next/link';
 

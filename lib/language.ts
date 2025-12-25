@@ -54,7 +54,7 @@ export async function detectLanguage(
   }
   
   // If source hint exists and simple detection is uncertain, trust the hint
-  if (sourceHint && sourceHint !== 'unk') {
+  if (sourceHint) {
     return sourceHint;
   }
   

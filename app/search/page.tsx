@@ -208,7 +208,7 @@ function SearchResultsContent() {
                   sources: r.sources,
                   updatedAt: r.last_updated,
                   sourceCount: r.source_count || 0,
-                  summary: r.summary,
+                  summary: r.summary ?? undefined,
                   category: r.category,
                   topic: r.topic
                 }))}

@@ -12,8 +12,7 @@ export async function GET(req: Request) {
     }
     
     // Get available filter options from database
-    // Note: get_search_filter_options RPC exists but types need regeneration
-    const { data, error } = await (supabaseAdmin as any).rpc('get_search_filter_options');
+    const { data, error } = await supabaseAdmin.rpc('get_search_filter_options');
     
     if (error) {
       console.error('Filter options error:', error);
@@ -27,12 +26,15 @@ export async function GET(req: Request) {
       });
     }
     
+    // RPC returns an array, get first element
+    const firstResult = Array.isArray(data) && data.length > 0 ? data[0] : null;
+    
     const result = {
-      topics: (data?.topics || []).filter((t: string) => t).sort(),
-      cities: (data?.cities || []).filter((c: string) => c).sort(),
-      eventTypes: (data?.event_types || []).filter((e: string) => e).sort(),
-      dateMin: data?.date_min || new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
-      dateMax: data?.date_max || new Date().toISOString()
+      topics: (firstResult?.topics || []).filter((t: string) => t).sort(),
+      cities: (firstResult?.cities || []).filter((c: string) => c).sort(),
+      eventTypes: (firstResult?.event_types || []).filter((e: string) => e).sort(),
+      dateMin: firstResult?.date_min || new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+      dateMax: firstResult?.date_max || new Date().toISOString()
     };
     
     // Cache for 1 hour (3600 seconds)
