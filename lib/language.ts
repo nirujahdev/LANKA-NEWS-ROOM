@@ -5,6 +5,27 @@
  * Stores language preference in localStorage and reads from URL params
  */
 
+/**
+ * Detect language from text content (simple heuristic)
+ * Used by pipeline for server-side processing
+ */
+export function detectLanguage(text: string | null | undefined): 'en' | 'si' | 'ta' | 'unk' {
+  if (!text) return 'unk';
+  
+  const lowerText = text.toLowerCase();
+  
+  // Sinhala Unicode range: U+0D80–U+0DFF
+  const sinhalaRegex = /[\u0D80-\u0DFF]/;
+  // Tamil Unicode range: U+0B80–U+0BFF
+  const tamilRegex = /[\u0B80-\u0BFF]/;
+  
+  if (sinhalaRegex.test(lowerText)) return 'si';
+  if (tamilRegex.test(lowerText)) return 'ta';
+  
+  // Default to English if no Sinhala/Tamil detected
+  return 'en';
+}
+
 export function getLanguageFromURL(): 'en' | 'si' | 'ta' {
   if (typeof window === 'undefined') return 'en';
   

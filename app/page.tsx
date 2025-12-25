@@ -8,6 +8,7 @@ import IncidentCard from '@/components/IncidentCard';
 import Sidebar from '@/components/Sidebar';
 import { ClusterListItem, loadClusters, FeedType, CategoryType } from '@/lib/api';
 import { getSupabaseClient } from '@/lib/supabaseClient';
+import { getLanguageFromURL, setLanguage } from '@/lib/language';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,6 @@ export default function HomePage() {
   // Initialize language from URL/localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const { getLanguageFromURL } = require('@/lib/language');
       const lang = getLanguageFromURL();
       setCurrentLanguage(lang);
     }
