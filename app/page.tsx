@@ -235,6 +235,7 @@ export default function HomePage() {
                       language={currentLanguage}
                       variant="featured"
                       imageUrl={featuredIncident.image_url || undefined}
+                      category={featuredIncident.topic || featuredIncident.category || undefined}
                     />
                   )}
 
@@ -254,7 +255,7 @@ export default function HomePage() {
                           language={currentLanguage}
                           variant="default"
                           imageUrl={incident.image_url || undefined}
-                          category={incident.category || undefined}
+                          category={incident.topic || incident.category || undefined}
                         />
                       ))}
                     </div>

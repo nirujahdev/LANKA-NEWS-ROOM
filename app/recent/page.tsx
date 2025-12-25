@@ -22,6 +22,15 @@ const baseTabs = [
 
 export default function RecentPage() {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'si' | 'ta'>('en');
+
+  // Initialize language from URL/localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const { getLanguageFromURL } = require('@/lib/language');
+      const lang = getLanguageFromURL();
+      setCurrentLanguage(lang);
+    }
+  }, []);
   const [activeTab, setActiveTab] = useState('recent');
   const [incidents, setIncidents] = useState<ClusterListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +70,10 @@ export default function RecentPage() {
     <div className="min-h-screen bg-[#F5F5F5]">
       <Navigation 
         currentLanguage={currentLanguage}
-        onLanguageChange={setCurrentLanguage}
+        onLanguageChange={(lang) => {
+          setLanguage(lang);
+          setCurrentLanguage(lang);
+        }}
       />
       
       {/* Top Tab Navigation (Sticky) */}

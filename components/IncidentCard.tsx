@@ -27,7 +27,9 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
   sourceCount,
   language = 'en',
   variant = 'default',
-  imageUrl
+  imageUrl,
+  category,
+  topics = []
 }) => {
   // Use slug for SEO-friendly URLs, fallback to ID for backward compatibility
   const href = slug ? `/news/${slug}${language !== 'en' ? `?lang=${language}` : ''}` : `/incident/${id}`;
@@ -214,7 +216,7 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
   // Default List Variant (Top Stories list below featured)
   return (
     <Link href={href}>
-      <article className="group relative py-4 flex gap-4 cursor-pointer border-b border-[#E8EAED] last:border-b-0 hover:bg-[#F8F9FA] -mx-4 px-4 transition-colors">
+      <article className="group relative py-4 flex gap-4 cursor-pointer border-b border-[#E8EAED] last:border-b-0 hover:bg-[#F8F9FA] -mx-4 px-4 transition-colors rounded-2xl">
         <div className="flex-1 min-w-0 flex flex-col justify-between">
           <div>
             {/* Topic Tags */}
