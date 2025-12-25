@@ -37,19 +37,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   const entries: MetadataRoute.Sitemap = [
+    // Home pages for each language
     {
-      url: baseUrl,
+      url: `${baseUrl}/en`,
       lastModified: new Date(),
       changeFrequency: 'hourly',
       priority: 1,
       alternates: {
         languages: {
-          'en-LK': baseUrl,
-          'si-LK': `${baseUrl}?lang=si`,
-          'ta-LK': `${baseUrl}?lang=ta`,
-          'x-default': baseUrl
+          'en-LK': `${baseUrl}/en`,
+          'si-LK': `${baseUrl}/si`,
+          'ta-LK': `${baseUrl}/ta`,
+          'x-default': `${baseUrl}/en`
         }
       }
+    },
+    {
+      url: `${baseUrl}/si`,
+      lastModified: new Date(),
+      changeFrequency: 'hourly',
+      priority: 1
+    },
+    {
+      url: `${baseUrl}/ta`,
+      lastModified: new Date(),
+      changeFrequency: 'hourly',
+      priority: 1
     },
     {
       url: `${baseUrl}/for-you`,
@@ -65,16 +78,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const topic of topics) {
     for (const lang of languages) {
       entries.push({
-        url: `${baseUrl}/lk/${lang}/${topic}`,
+        url: `${baseUrl}/${lang}/topic/${topic}`,
         lastModified: new Date(),
         changeFrequency: 'hourly',
         priority: 0.8,
         alternates: {
           languages: {
-            'en-LK': `${baseUrl}/lk/en/${topic}`,
-            'si-LK': `${baseUrl}/lk/si/${topic}`,
-            'ta-LK': `${baseUrl}/lk/ta/${topic}`,
-            'x-default': `${baseUrl}/lk/en/${topic}`
+            'en-LK': `${baseUrl}/en/topic/${topic}`,
+            'si-LK': `${baseUrl}/si/topic/${topic}`,
+            'ta-LK': `${baseUrl}/ta/topic/${topic}`,
+            'x-default': `${baseUrl}/en/topic/${topic}`
           }
         }
       });
@@ -112,18 +125,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ? new Date(cluster.published_at)
       : new Date();
 
-    // English (canonical)
+    // Add entries for all three languages
     entries.push({
-      url: `${baseUrl}/news/${cluster.slug}`,
+      url: `${baseUrl}/en/story/${cluster.slug}`,
       lastModified,
       changeFrequency: 'daily',
       priority: 0.7,
       alternates: {
         languages: {
-          'en-LK': `${baseUrl}/news/${cluster.slug}?lang=en`,
-          'si-LK': `${baseUrl}/news/${cluster.slug}?lang=si`,
-          'ta-LK': `${baseUrl}/news/${cluster.slug}?lang=ta`,
-          'x-default': `${baseUrl}/news/${cluster.slug}?lang=en`
+          'en-LK': `${baseUrl}/en/story/${cluster.slug}`,
+          'si-LK': `${baseUrl}/si/story/${cluster.slug}`,
+          'ta-LK': `${baseUrl}/ta/story/${cluster.slug}`,
+          'x-default': `${baseUrl}/en/story/${cluster.slug}`
         }
       }
     });

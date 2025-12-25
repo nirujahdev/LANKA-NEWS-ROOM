@@ -4,6 +4,8 @@ import './globals.css';
 import SignInPromptManager from '@/components/SignInPromptManager';
 import GoogleCMP from '@/components/GoogleCMP';
 import ConditionalAdSense from '@/components/ConditionalAdSense';
+import GoogleAnalytics from '@/components/GoogleAnalytics';
+import Footer from '@/components/Footer';
 
 const montserrat = Montserrat({
   subsets: ['latin'],
@@ -141,7 +143,10 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
-      <body className="font-montserrat antialiased bg-white text-[#1E293B]">
+      <body className="font-montserrat antialiased bg-white text-[#1E293B] flex flex-col min-h-screen">
+        {/* Google Analytics - Loads with consent mode support */}
+        <GoogleAnalytics />
+        
         {/* Google CMP - Must load before ads */}
         <GoogleCMP />
         
@@ -149,7 +154,10 @@ export default function RootLayout({
         <ConditionalAdSense />
         
         <SignInPromptManager>
-          {children}
+          <div className="flex-1">
+            {children}
+          </div>
+          <Footer />
         </SignInPromptManager>
       </body>
     </html>

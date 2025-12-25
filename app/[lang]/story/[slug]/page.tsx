@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import NavigationWrapper from '@/components/NavigationWrapper';
 import IncidentDetail from '@/components/IncidentDetail';
 import NewsArticleSchema from '@/components/NewsArticleSchema';
+import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 import TopicCard from '@/components/TopicCard';
 import RelatedTopics from '@/components/RelatedTopics';
 
@@ -11,8 +12,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 300; // Revalidate every 5 minutes
 
 type Props = {
-  params: Promise<{ slug: string }>;
-  searchParams: Promise<{ lang?: 'en' | 'si' | 'ta' }>;
+  params: Promise<{ lang: 'en' | 'si' | 'ta'; slug: string }>;
 };
 
 async function getClusterBySlug(slug: string) {
@@ -20,8 +20,6 @@ async function getClusterBySlug(slug: string) {
     // Check if Supabase is configured
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error('❌ Supabase credentials not configured');
-      console.error('   SUPABASE_URL:', process.env.SUPABASE_URL ? '✓' : '✗');
-      console.error('   SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✓' : '✗');
       return null;
     }
 
@@ -30,7 +28,17 @@ async function getClusterBySlug(slug: string) {
       .from('clusters')
       .select(`
         *,
-        summaries (*)
+        summaries (
+          summary_en,
+          summary_si,
+          summary_ta,
+          key_facts_en,
+          key_facts_si,
+          key_facts_ta,
+          confirmed_vs_differs_en,
+          confirmed_vs_differs_si,
+          confirmed_vs_differs_ta
+        )
       `)
       .eq('slug', slug)
       .eq('status', 'published')
@@ -51,20 +59,26 @@ async function getClusterBySlug(slug: string) {
         first_seen_at?: string | null;
         source_count?: number | null;
         category?: string | null;
+        topic?: string | null;
         image_url?: string | null;
         language?: string | null;
+        keywords?: string[] | null;
+        last_checked_at?: string | null;
         summaries?: Array<{
           summary_en?: string | null;
           summary_si?: string | null;
           summary_ta?: string | null;
+          key_facts_en?: string[] | null;
+          key_facts_si?: string[] | null;
+          key_facts_ta?: string[] | null;
+          confirmed_vs_differs_en?: string | null;
+          confirmed_vs_differs_si?: string | null;
+          confirmed_vs_differs_ta?: string | null;
         }>;
       }>();
 
     if (error) {
       console.error('❌ Error fetching cluster:', error);
-      console.error('   Error code:', error.code);
-      console.error('   Error message:', error.message);
-      console.error('   Error details:', error.details);
       return null;
     }
 
@@ -92,9 +106,6 @@ async function getClusterBySlug(slug: string) {
 
     if (articlesError) {
       console.error('⚠️  Error fetching articles:', articlesError);
-      // Continue with empty articles array
-    } else {
-      console.log(`✅ Found ${articles?.length || 0} articles for cluster`);
     }
 
     return {
@@ -108,12 +119,11 @@ async function getClusterBySlug(slug: string) {
   }
 }
 
-export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const resolvedParams = await params;
-    const resolvedSearchParams = await searchParams;
-    const lang = resolvedSearchParams.lang || 'en';
-    const data = await getClusterBySlug(resolvedParams.slug);
+    const { lang, slug } = resolvedParams;
+    const data = await getClusterBySlug(slug);
 
     if (!data || !data.cluster) {
       return {
@@ -136,10 +146,13 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
       lang === 'ta' ? cluster.meta_description_ta || summary?.summary_ta :
       cluster.meta_description_en || summary?.summary_en;
 
-    const canonicalUrl = `${baseUrl}/news/${resolvedParams.slug}`;
-    const enUrl = `${baseUrl}/news/${resolvedParams.slug}?lang=en`;
-    const siUrl = `${baseUrl}/news/${resolvedParams.slug}?lang=si`;
-    const taUrl = `${baseUrl}/news/${resolvedParams.slug}?lang=ta`;
+    // Build language URLs with new structure
+    const enUrl = `${baseUrl}/en/story/${slug}`;
+    const siUrl = `${baseUrl}/si/story/${slug}`;
+    const taUrl = `${baseUrl}/ta/story/${slug}`;
+    
+    // Current language URL (canonical)
+    const canonicalUrl = lang === 'si' ? siUrl : lang === 'ta' ? taUrl : enUrl;
 
     // Get first article image if cluster doesn't have one
     const firstArticle = data.articles?.[0] as { image_url?: string | null } | undefined;
@@ -165,7 +178,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
         url: canonicalUrl,
         siteName: 'Lanka News Room',
         publishedTime: cluster.published_at || cluster.created_at || undefined,
-        modifiedTime: cluster.updated_at || undefined,
+        modifiedTime: cluster.last_checked_at || cluster.updated_at || undefined,
         section: cluster.category || undefined,
         ...(imageUrl && {
           images: [
@@ -204,12 +217,11 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   }
 }
 
-export default async function NewsDetailPage({ params, searchParams }: Props) {
+export default async function StoryPage({ params }: Props) {
   try {
     const resolvedParams = await params;
-    const resolvedSearchParams = await searchParams;
-    const lang = resolvedSearchParams.lang || 'en';
-    const data = await getClusterBySlug(resolvedParams.slug);
+    const { lang, slug } = resolvedParams;
+    const data = await getClusterBySlug(slug);
 
     if (!data || !data.cluster) {
       notFound();
@@ -217,11 +229,8 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
 
     const { cluster, summary, articles } = data;
     
-    // Allow page to render even without summary (cluster might be processing)
-    // Summary will be empty string if not available
-
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
-    const canonicalUrl = `${baseUrl}/news/${resolvedParams.slug}`;
+    const canonicalUrl = `${baseUrl}/${lang}/story/${slug}`;
     
     // Get metadata for JSON-LD
     const metaDescription =
@@ -232,6 +241,29 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
     const firstArticle = articles?.[0] as { image_url?: string | null } | undefined;
     const imageUrl = cluster.image_url || firstArticle?.image_url || null;
 
+    // Get language-specific key facts and confirmed vs differs
+    const keyFacts = 
+      lang === 'si' ? summary?.key_facts_si || null :
+      lang === 'ta' ? summary?.key_facts_ta || null :
+      summary?.key_facts_en || null;
+
+    const confirmedVsDiffers =
+      lang === 'si' ? summary?.confirmed_vs_differs_si || null :
+      lang === 'ta' ? summary?.confirmed_vs_differs_ta || null :
+      summary?.confirmed_vs_differs_en || null;
+
+    // Build breadcrumb items
+    const breadcrumbItems = [
+      { name: lang === 'si' ? 'මුල් පිටුව' : lang === 'ta' ? 'முகப்பு' : 'Home', url: `/${lang}` },
+      {
+        name: cluster.topic 
+          ? (lang === 'si' ? cluster.topic : lang === 'ta' ? cluster.topic : cluster.topic)
+          : (lang === 'si' ? 'පුවත්' : lang === 'ta' ? 'செய்திகள்' : 'News'),
+        url: cluster.topic ? `/${lang}/topic/${cluster.topic}` : `/${lang}`
+      },
+      { name: cluster.headline, url: `/${lang}/story/${slug}` }
+    ];
+
     return (
     <div className="min-h-screen bg-[#F5F5F5]">
       {/* JSON-LD Structured Data for Google News */}
@@ -239,12 +271,17 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
         headline={cluster.headline}
         description={metaDescription || cluster.headline}
         datePublished={cluster.published_at || cluster.created_at || new Date().toISOString()}
-        dateModified={cluster.updated_at || undefined}
+        dateModified={cluster.last_checked_at || cluster.updated_at || undefined}
         imageUrl={imageUrl || undefined}
         category={cluster.category || undefined}
+        topic={cluster.topic || undefined}
+        keywords={cluster.keywords || undefined}
         url={canonicalUrl}
         language={lang}
       />
+      
+      {/* Breadcrumb Schema */}
+      <BreadcrumbSchema items={breadcrumbItems} />
       
       <NavigationWrapper currentLanguage={lang} />
       
@@ -279,6 +316,9 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
                 firstSeen={cluster.first_seen_at}
                 sourceCount={cluster.source_count || 0}
                 currentLanguage={lang}
+                keyFacts={keyFacts || undefined}
+                confirmedVsDiffers={confirmedVsDiffers || undefined}
+                lastCheckedAt={cluster.last_checked_at}
               />
             </div>
           </main>
@@ -314,7 +354,7 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
     </div>
   );
   } catch (error) {
-    console.error('Error rendering NewsDetailPage:', error);
+    console.error('Error rendering StoryPage:', error);
     notFound();
   }
 }

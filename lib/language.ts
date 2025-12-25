@@ -1,5 +1,8 @@
 'use client';
 
+import OpenAI from 'openai';
+import { env } from './env';
+
 /**
  * Language persistence utility
  * Stores language preference in localStorage and reads from URL params
@@ -9,7 +12,7 @@
  * Detect language from text content (simple heuristic)
  * Used by pipeline for server-side processing
  */
-export function detectLanguage(text: string | null | undefined): 'en' | 'si' | 'ta' | 'unk' {
+export function detectLanguageSimple(text: string | null | undefined): 'en' | 'si' | 'ta' | 'unk' {
   if (!text) return 'unk';
   
   const lowerText = text.toLowerCase();
@@ -25,6 +28,72 @@ export function detectLanguage(text: string | null | undefined): 'en' | 'si' | '
   // Default to English if no Sinhala/Tamil detected
   return 'en';
 }
+
+/**
+ * Detect language using AI with source metadata hint
+ * More accurate than simple Unicode detection
+ * @param text - Text content to analyze
+ * @param sourceHint - Optional language hint from source metadata
+ * @returns Detected language code
+ */
+export async function detectLanguage(
+  text: string,
+  sourceHint?: 'en' | 'si' | 'ta' | null
+): Promise<'en' | 'si' | 'ta'> {
+  // First try simple detection
+  const simpleDetection = detectLanguageSimple(text);
+  
+  // If source hint matches simple detection, trust it
+  if (sourceHint && simpleDetection !== 'unk' && sourceHint === simpleDetection) {
+    return sourceHint;
+  }
+  
+  // If simple detection is confident (not 'unk'), use it
+  if (simpleDetection !== 'unk') {
+    return simpleDetection;
+  }
+  
+  // If source hint exists and simple detection is uncertain, trust the hint
+  if (sourceHint && sourceHint !== 'unk') {
+    return sourceHint;
+  }
+  
+  // Fall back to AI detection for uncertain cases
+  try {
+    const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+    const completion = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a language detection system. Identify if the text is in English (en), Sinhala (si), or Tamil (ta).
+Return ONLY the language code: en, si, or ta.`
+        },
+        {
+          role: 'user',
+          content: `Detect language of this text:\n\n${text.slice(0, 500)}`
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 10
+    });
+    
+    const detected = completion.choices[0]?.message?.content?.trim().toLowerCase();
+    if (detected === 'en' || detected === 'si' || detected === 'ta') {
+      return detected;
+    }
+  } catch (error) {
+    console.error('AI language detection failed:', error);
+  }
+  
+  // Final fallback: use source hint or default to English
+  return sourceHint || 'en';
+}
+
+/**
+ * Backward compatibility: export simple detection for client-side
+ */
+export { detectLanguageSimple as detectLanguageClient };
 
 export function getLanguageFromURL(): 'en' | 'si' | 'ta' {
   if (typeof window === 'undefined') return 'en';

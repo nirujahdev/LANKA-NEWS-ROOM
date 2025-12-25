@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import IncidentCard from './IncidentCard';
+import RelatedTopics from './RelatedTopics';
 
 type SidebarUpdate = {
   id: string;
@@ -18,21 +19,35 @@ type SidebarUpdate = {
 interface SidebarProps {
   latestUpdates?: SidebarUpdate[];
   language?: 'en' | 'si' | 'ta';
+  currentTopic?: string;
+  showRelatedTopics?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ latestUpdates = [], language = 'en' }) => {
+const Sidebar: React.FC<SidebarProps> = ({ 
+  latestUpdates = [], 
+  language = 'en',
+  currentTopic,
+  showRelatedTopics = true
+}) => {
   const getLabel = (en: string, si?: string, ta?: string) => {
     if (language === 'si' && si) return si;
     if (language === 'ta' && ta) return ta;
     return en;
   };
 
-  if (latestUpdates.length === 0) return null;
-
   return (
-    <aside className="w-full">
+    <aside className="w-full space-y-6">
+      {/* Related Topics Widget */}
+      {showRelatedTopics && (
+        <RelatedTopics
+          currentTopic={currentTopic}
+          language={language}
+        />
+      )}
+
       {/* Sidebar Section - Personalized Picks */}
-      <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED]">
+      {latestUpdates.length > 0 && (
+        <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED]">
         {/* Header */}
         <div className="px-5 py-4 border-b border-[#E8EAED] flex items-center justify-between">
           <h2 className="text-lg font-normal text-[#1A73E8]">
@@ -74,6 +89,7 @@ const Sidebar: React.FC<SidebarProps> = ({ latestUpdates = [], language = 'en' }
           </Link>
         </div>
       </div>
+      )}
     </aside>
   );
 };

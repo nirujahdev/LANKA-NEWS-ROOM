@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { env } from './env';
+import { withRetry } from './retry';
 
 const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
@@ -35,13 +36,24 @@ Output style:
     }
   ];
 
-  const completion = await client.chat.completions.create({
-    model: env.SUMMARY_MODEL,
-    messages,
-    temperature: 0.2,
-    max_tokens: 400
-  });
-  return completion.choices[0]?.message?.content?.trim() || '';
+  return withRetry(
+    async () => {
+      const completion = await client.chat.completions.create({
+        model: env.SUMMARY_MODEL,
+        messages,
+        temperature: 0.2,
+        max_tokens: 400
+      });
+      return completion.choices[0]?.message?.content?.trim() || '';
+    },
+    {
+      maxRetries: 3,
+      delayMs: 2000,
+      onRetry: (error, attempt) => {
+        console.warn(`[OpenAI] Retry ${attempt}/3 for summarizeEnglish: ${error.message}`);
+      }
+    }
+  );
 }
 
 export async function translateSummary(summaryEn: string, target: 'si' | 'ta') {
@@ -59,12 +71,203 @@ Rules:
     },
     { role: 'user', content: summaryEn }
   ];
+  return withRetry(
+    async () => {
+      const completion = await client.chat.completions.create({
+        model: env.SUMMARY_TRANSLATE_MODEL,
+        messages,
+        temperature: 0.2,
+        max_tokens: 400
+      });
+      return completion.choices[0]?.message?.content?.trim() || '';
+    },
+    {
+      maxRetries: 3,
+      delayMs: 2000,
+      onRetry: (error, attempt) => {
+        console.warn(`[OpenAI] Retry ${attempt}/3 for translateSummary: ${error.message}`);
+      }
+    }
+  );
+}
+
+/**
+ * Summarize articles in their source language
+ * @param sources - Array of article sources with content
+ * @param sourceLang - Detected source language
+ * @param previous - Previous summary for updates
+ * @returns Summary in source language
+ */
+export async function summarizeInSourceLanguage(
+  sources: { title: string; content: string; weight?: number; publishedAt?: string }[],
+  sourceLang: 'en' | 'si' | 'ta',
+  previous?: string | null
+): Promise<string> {
+  const langLabel = sourceLang === 'en' ? 'English' : sourceLang === 'si' ? 'Sinhala' : 'Tamil';
+  
+  const sourceText = sources
+    .map((s, idx) => {
+      const date = s.publishedAt ? new Date(s.publishedAt).toLocaleDateString() : 'Date unknown';
+      const weight = s.weight ? `[Priority: ${s.weight.toFixed(1)}]` : '';
+      return `Source ${idx + 1} ${weight} - Published: ${date}
+Title: ${s.title}
+Content: ${s.content}`;
+    })
+    .join('\n\n---\n\n');
+
+  const prior = previous 
+    ? `Previous summary (for context only - update if new facts emerge):\n${previous}\n\n` 
+    : '';
+
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    {
+      role: 'system',
+      content: `You are a professional news summarization engine for Sri Lankan news aggregation.
+
+CORE PRINCIPLES:
+- Journalistic neutrality: No opinions, no bias, no sensationalism
+- Multi-source verification: Prioritize facts confirmed by multiple sources
+- Factual accuracy: Every number, name, date, and location must appear in at least one source
+- Chronological clarity: Present events in time order when relevant
+- Context preservation: Maintain important context (who, what, when, where, why, how)
+
+QUALITY STANDARDS:
+- Summary length: 100-150 words
+- Structure: 1 lead sentence + 3-5 supporting sentences
+- Tone: Calm, factual, professional
+- Tense: Past tense, third person
+- Language: Write in ${langLabel}
+- Style: Clear, simple, accessible
+
+VERIFICATION RULES:
+- If sources disagree: Explicitly state "reports vary" and present both versions
+- If information is uncertain: Use phrases like "according to sources" or "reports indicate"
+- If numbers differ: State the range or most commonly cited figure
+- If names/entities differ: Use the most frequently mentioned version
+
+OUTPUT FORMAT:
+- Lead sentence: Most important fact (who/what/when)
+- Supporting sentences: Key details, context, and implications
+- No emojis, no ALL CAPS, no exclamation marks
+- No assumptions beyond what sources provide`
+    },
+    {
+      role: 'user',
+      content: `${prior}Summarize the following news reports into ONE comprehensive, neutral news brief in ${langLabel}.
+
+INSTRUCTIONS:
+1. Combine all sources into a single coherent narrative
+2. Include only verified facts present in the sources
+3. If a fact appears in only one source, mention it but note the source
+4. If information conflicts, clearly state the discrepancy
+5. Maintain chronological order when relevant
+6. Include key numbers, dates, locations, and entities
+7. Keep summary between 100-150 words
+
+SOURCES (ordered by recency and importance):
+${sourceText}
+
+Generate a professional news summary in ${langLabel} following all rules above.`
+    }
+  ];
+
+  const completion = await client.chat.completions.create({
+    model: env.SUMMARY_MODEL,
+    messages,
+    temperature: 0.2,
+    max_tokens: 500,
+    top_p: 0.9,
+    frequency_penalty: 0.3,
+    presence_penalty: 0.1
+  });
+  
+  return completion.choices[0]?.message?.content?.trim() || '';
+}
+
+/**
+ * Translate summary from source language to multiple target languages
+ * @param summary - Summary in source language
+ * @param sourceLang - Source language code
+ * @returns Object with translations in all 3 languages
+ */
+export async function translateToMultipleLanguages(
+  summary: string,
+  sourceLang: 'en' | 'si' | 'ta'
+): Promise<{ en: string; si: string; ta: string }> {
+  const result = {
+    en: sourceLang === 'en' ? summary : '',
+    si: sourceLang === 'si' ? summary : '',
+    ta: sourceLang === 'ta' ? summary : ''
+  };
+
+  // Translate to the other 2 languages
+  if (sourceLang === 'en') {
+    // English → Sinhala + Tamil
+    const [sinhala, tamil] = await Promise.all([
+      translateFromTo(summary, 'en', 'si'),
+      translateFromTo(summary, 'en', 'ta')
+    ]);
+    result.si = sinhala;
+    result.ta = tamil;
+  } else if (sourceLang === 'si') {
+    // Sinhala → English + Tamil
+    const [english, tamil] = await Promise.all([
+      translateFromTo(summary, 'si', 'en'),
+      translateFromTo(summary, 'si', 'ta')
+    ]);
+    result.en = english;
+    result.ta = tamil;
+  } else if (sourceLang === 'ta') {
+    // Tamil → English + Sinhala
+    const [english, sinhala] = await Promise.all([
+      translateFromTo(summary, 'ta', 'en'),
+      translateFromTo(summary, 'ta', 'si')
+    ]);
+    result.en = english;
+    result.si = sinhala;
+  }
+
+  return result;
+}
+
+/**
+ * Translate text from one language to another
+ * @param text - Text to translate
+ * @param from - Source language
+ * @param to - Target language
+ * @returns Translated text
+ */
+async function translateFromTo(
+  text: string,
+  from: 'en' | 'si' | 'ta',
+  to: 'en' | 'si' | 'ta'
+): Promise<string> {
+  const fromLabel = from === 'en' ? 'English' : from === 'si' ? 'Sinhala' : 'Tamil';
+  const toLabel = to === 'en' ? 'English' : to === 'si' ? 'Sinhala' : 'Tamil';
+  
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    {
+      role: 'system',
+      content: `Translate the following ${fromLabel} news summary into formal written ${toLabel}.
+
+Rules:
+- Preserve meaning exactly
+- Do NOT add or remove information
+- Use formal news-style ${toLabel}
+- Avoid informal or conversational language
+- Maintain the same tone and structure
+- Keep all numbers, names, dates, and locations accurate${to === 'ta' ? '\n- Avoid informal or spoken Tamil' : ''}`
+    },
+    { role: 'user', content: text }
+  ];
+
   const completion = await client.chat.completions.create({
     model: env.SUMMARY_TRANSLATE_MODEL,
     messages,
     temperature: 0.2,
-    max_tokens: 400
+    max_tokens: 500
   });
+
   return completion.choices[0]?.message?.content?.trim() || '';
 }
 
@@ -398,5 +601,221 @@ function validateEventType(eventType: string | null | undefined): string | null 
   const validTypes = ['election', 'court', 'accident', 'protest', 'announcement', 'budget', 'policy', 'crime', 'disaster', 'sports_event', 'other'];
   const normalized = eventType.toLowerCase().trim();
   return validTypes.includes(normalized) ? normalized : null;
+}
+
+/**
+ * Generate key facts from sources
+ * Extracts 3-6 key facts as bullet points
+ */
+export async function generateKeyFacts(
+  sources: Array<{ title: string; content: string }>,
+  summary: string,
+  language: 'en' | 'si' | 'ta'
+): Promise<string[]> {
+  const langLabel = language === 'en' ? 'English' : language === 'si' ? 'Sinhala' : 'Tamil';
+  
+  const sourceText = sources
+    .slice(0, 6)
+    .map((s, i) => `Source ${i + 1}: ${s.title}\n${s.content.slice(0, 500)}`)
+    .join('\n\n');
+
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    {
+      role: 'system',
+      content: `You are a news fact extractor. Extract 3-6 key facts from news sources.
+
+RULES:
+- Extract only verified facts present in the sources
+- Each fact should be a complete, standalone statement
+- Prioritize: who, what, when, where, why, how
+- Include numbers, dates, locations, and entities
+- Write in ${langLabel}
+- Return as JSON array of strings
+- No opinions, no speculation
+- Each fact should be 10-30 words`
+    },
+    {
+      role: 'user',
+      content: `Summary: ${summary}
+
+Sources:
+${sourceText}
+
+Extract 3-6 key facts in ${langLabel}. Return ONLY a JSON array of strings, no other text.`
+    }
+  ];
+
+  try {
+    const completion = await withRetry(() => client.chat.completions.create({
+      model: env.SUMMARY_MODEL,
+      messages,
+      temperature: 0.2,
+      max_tokens: 400,
+      response_format: { type: 'json_object' }
+    }));
+
+    const response = completion.choices[0]?.message?.content?.trim() || '{}';
+    const parsed = JSON.parse(response);
+    
+    // Handle both {facts: [...]} and {key_facts: [...]} formats
+    const facts = parsed.facts || parsed.key_facts || parsed.keyFacts || [];
+    
+    // Ensure it's an array and limit to 6
+    const result = Array.isArray(facts) ? facts.slice(0, 6) : [];
+    
+    // Filter out empty strings and ensure all are strings
+    return result
+      .filter((f: any) => f && typeof f === 'string' && f.trim().length > 0)
+      .map((f: string) => f.trim());
+  } catch (error) {
+    console.error('[generateKeyFacts] Error:', error);
+    // Fallback: extract simple facts from summary
+    const sentences = summary.split(/[.!?]+/).filter(s => s.trim().length > 20);
+    return sentences.slice(0, 5).map(s => s.trim());
+  }
+}
+
+/**
+ * Generate confirmed vs differs section
+ * Compares sources to identify what's confirmed and what differs
+ */
+export async function generateConfirmedVsDiffers(
+  sources: Array<{ title: string; content: string }>,
+  summary: string,
+  language: 'en' | 'si' | 'ta'
+): Promise<string> {
+  const langLabel = language === 'en' ? 'English' : language === 'si' ? 'Sinhala' : 'Tamil';
+  
+  const sourceText = sources
+    .slice(0, 6)
+    .map((s, i) => `Source ${i + 1} (${s.title}):\n${s.content.slice(0, 400)}`)
+    .join('\n\n');
+
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    {
+      role: 'system',
+      content: `You are a news fact-checker. Compare multiple sources to identify what's confirmed vs what differs.
+
+RULES:
+- Identify facts mentioned in 2+ sources (CONFIRMED)
+- Identify facts mentioned in only 1 source (NEEDS VERIFICATION)
+- Identify conflicting information between sources (DIFFERS)
+- Write in ${langLabel}
+- Keep response to 1-2 paragraphs (100-200 words)
+- Be neutral and factual
+- Format: First paragraph = confirmed facts, Second paragraph = differences/conflicts`
+    },
+    {
+      role: 'user',
+      content: `Summary: ${summary}
+
+Sources:
+${sourceText}
+
+Analyze what's confirmed across multiple sources vs what differs. Write 1-2 paragraphs in ${langLabel}.`
+    }
+  ];
+
+  try {
+    const completion = await withRetry(() => client.chat.completions.create({
+      model: env.SUMMARY_MODEL,
+      messages,
+      temperature: 0.2,
+      max_tokens: 300,
+    }));
+
+    const result = completion.choices[0]?.message?.content?.trim() || '';
+    return result || '';
+  } catch (error) {
+    console.error('[generateConfirmedVsDiffers] Error:', error);
+    return '';
+  }
+}
+
+/**
+ * Generate SEO keywords
+ * Creates 5-12 keywords including topic, location, entities, etc.
+ */
+export async function generateKeywords(
+  headline: string,
+  summary: string,
+  topic: string | null,
+  city: string | null,
+  primaryEntity: string | null,
+  eventType: string | null
+): Promise<string[]> {
+  
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    {
+      role: 'system',
+      content: `You are an SEO keyword generator. Generate 5-12 relevant keywords for news articles.
+
+RULES:
+- Always include "Sri Lanka"
+- Include topic if provided
+- Include city if provided
+- Include primary entity if provided
+- Include event type if provided
+- Add 2-4 related terms from headline/summary
+- Return as JSON array of strings
+- All keywords should be lowercase
+- No duplicates`
+    },
+    {
+      role: 'user',
+      content: `Headline: ${headline}
+Summary: ${summary.slice(0, 300)}
+Topic: ${topic || 'N/A'}
+City: ${city || 'N/A'}
+Primary Entity: ${primaryEntity || 'N/A'}
+Event Type: ${eventType || 'N/A'}
+
+Generate 5-12 SEO keywords. Return ONLY a JSON array of strings, no other text.`
+    }
+  ];
+
+  try {
+    const completion = await withRetry(() => client.chat.completions.create({
+      model: env.SUMMARY_MODEL,
+      messages,
+      temperature: 0.3,
+      max_tokens: 200,
+      response_format: { type: 'json_object' }
+    }));
+
+    const response = completion.choices[0]?.message?.content?.trim() || '{}';
+    const parsed = JSON.parse(response);
+    
+    // Handle various response formats
+    const keywords = parsed.keywords || parsed.key_words || parsed.keyWords || [];
+    
+    // Build base keywords
+    const baseKeywords: string[] = ['Sri Lanka'];
+    if (topic) baseKeywords.push(topic);
+    if (city) baseKeywords.push(city);
+    if (primaryEntity) baseKeywords.push(primaryEntity);
+    if (eventType) baseKeywords.push(eventType);
+    
+    // Add AI-generated keywords
+    const aiKeywords = Array.isArray(keywords) 
+      ? keywords.filter((k: any) => k && typeof k === 'string' && k.trim().length > 0)
+      : [];
+    
+    // Combine and deduplicate
+    const allKeywords = [...baseKeywords, ...aiKeywords]
+      .map(k => k.toLowerCase().trim())
+      .filter((k, i, arr) => arr.indexOf(k) === i) // Remove duplicates
+      .slice(0, 12); // Max 12 keywords
+    
+    return allKeywords;
+  } catch (error) {
+    console.error('[generateKeywords] Error:', error);
+    // Fallback: basic keywords
+    const fallback: string[] = ['Sri Lanka'];
+    if (topic) fallback.push(topic);
+    if (city) fallback.push(city);
+    if (primaryEntity) fallback.push(primaryEntity);
+    return fallback;
+  }
 }
 

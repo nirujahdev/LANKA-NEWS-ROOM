@@ -38,24 +38,7 @@ const Navigation: React.FC<NavigationProps> = ({
 
           {/* Center: Search Bar (Desktop) */}
           <div className="hidden md:flex flex-1 max-w-2xl mx-6 lg:mx-12">
-            <div className="relative w-full">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#9AA0A6] w-4 h-4 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Search for topics, locations & sources"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-10 py-2.5 bg-[#F1F3F4] rounded-full 
-                         focus:outline-none focus:bg-white focus:shadow-md
-                         text-sm placeholder-[#80868B] 
-                         text-[#202124] transition-all duration-200 border border-transparent focus:border-[#E8EAED]"
-              />
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <svg className="w-4 h-4 text-[#9AA0A6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
+            <SearchBar language={currentLanguage} />
           </div>
 
           {/* Right: Utility Icons & Profile */}

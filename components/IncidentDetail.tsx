@@ -3,6 +3,8 @@
 import React from 'react';
 import { Clock, ExternalLink, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import FeedbackButtons from './FeedbackButtons';
+import SocialShare from './SocialShare';
 
 type Source = {
   name: string;
@@ -11,6 +13,7 @@ type Source = {
 
 type IncidentDetailProps = {
   id: string;
+  slug?: string | null;
   headline: string;
   summary: string;
   summarySi?: string | null;
@@ -22,9 +25,14 @@ type IncidentDetailProps = {
   currentLanguage?: 'en' | 'si' | 'ta';
   onLanguageChange?: (lang: 'en' | 'si' | 'ta') => void;
   needsReview?: boolean;
+  keyFacts?: string[];
+  confirmedVsDiffers?: string;
+  lastCheckedAt?: string | null;
 };
 
 const IncidentDetail: React.FC<IncidentDetailProps> = ({
+  id,
+  slug,
   headline,
   summary,
   summarySi,
@@ -35,7 +43,10 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({
   sourceCount,
   currentLanguage = 'en',
   onLanguageChange,
-  needsReview = false
+  needsReview = false,
+  keyFacts,
+  confirmedVsDiffers,
+  lastCheckedAt
 }) => {
   const getSummary = () => {
     if (currentLanguage === 'si' && summarySi) return summarySi;
@@ -108,6 +119,20 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({
         {headline}
       </h1>
 
+      {/* Key Facts Section */}
+      {keyFacts && keyFacts.length > 0 && (
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl font-semibold text-[#202124] mb-3 sm:mb-4">Key Facts</h2>
+          <ul className="list-disc list-inside space-y-2 sm:space-y-3">
+            {keyFacts.map((fact, i) => (
+              <li key={i} className="text-sm sm:text-base text-[#202124] leading-relaxed">
+                {fact}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Meta Information - Mobile optimized layout */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4 mb-6 sm:mb-8 text-xs sm:text-sm text-[#5F6368] pb-3 sm:pb-4 border-b border-[#E8EAED]">
         <div className="flex items-center gap-1.5 sm:gap-2">
@@ -124,6 +149,11 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({
         <span className="whitespace-nowrap">
           {sourceCount} {sourceCount === 1 ? 'source' : 'sources'}
         </span>
+        {lastCheckedAt && (
+          <span className="text-xs text-[#9AA0A6] whitespace-nowrap">
+            • Last checked: {formatTimeAgo(lastCheckedAt)}
+          </span>
+        )}
       </div>
 
       {/* Summary - Mobile-optimized typography */}
@@ -139,6 +169,18 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({
           )}
         </div>
       </div>
+
+      {/* Confirmed vs Differs Section */}
+      {confirmedVsDiffers && (
+        <div className="mb-6 sm:mb-8 p-4 sm:p-6 bg-[#F8F9FA] rounded-lg border border-[#E8EAED]">
+          <h2 className="text-lg sm:text-xl font-semibold text-[#202124] mb-2 sm:mb-3">
+            What's Confirmed vs What Differs
+          </h2>
+          <p className="text-sm sm:text-base text-[#5F6368] leading-relaxed whitespace-pre-line">
+            {confirmedVsDiffers}
+          </p>
+        </div>
+      )}
 
       {/* Sources Section - Mobile-friendly cards */}
       <div className="border-t border-[#E8EAED] pt-6 sm:pt-8">
@@ -173,6 +215,34 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({
           ))}
         </div>
       </div>
+
+      {/* Methodology Line */}
+      <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-[#E8EAED]">
+        <p className="text-xs sm:text-sm text-[#9AA0A6] leading-relaxed">
+          This is an AI-generated summary from multiple sources. We list sources so you can verify.
+        </p>
+      </div>
+
+      {/* Social Share Section */}
+      <div className="border-t border-[#E8EAED] pt-6 sm:pt-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg sm:text-xl font-normal text-[#202124]">Share this article</h2>
+          <SocialShare
+            url={`/${currentLanguage}/story/${slug || id}`}
+            title={headline}
+            description={getSummary()}
+            language={currentLanguage}
+          />
+        </div>
+      </div>
+
+      {/* Feedback Buttons */}
+      <FeedbackButtons
+        clusterId={id}
+        slug={slug || id}
+        headline={headline}
+        language={currentLanguage}
+      />
     </div>
   );
 };

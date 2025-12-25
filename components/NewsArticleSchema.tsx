@@ -13,6 +13,8 @@ type NewsArticleSchemaProps = {
   imageUrl?: string;
   authorName?: string;
   category?: string;
+  topic?: string | null;
+  keywords?: string[] | null;
   url: string;
   language?: 'en' | 'si' | 'ta';
 };
@@ -25,6 +27,8 @@ export default function NewsArticleSchema({
   imageUrl,
   authorName = 'Lanka News Room Editorial Team',
   category,
+  topic,
+  keywords,
   url,
   language = 'en'
 }: NewsArticleSchemaProps) {
@@ -66,6 +70,15 @@ export default function NewsArticleSchema({
     inLanguage: language === 'si' ? 'si-LK' : language === 'ta' ? 'ta-LK' : 'en-LK',
     ...(category && {
       articleSection: category
+    }),
+    ...(topic && {
+      about: {
+        '@type': 'Thing',
+        name: topic
+      }
+    }),
+    ...(keywords && keywords.length > 0 && {
+      keywords: keywords.join(', ')
     })
   };
 

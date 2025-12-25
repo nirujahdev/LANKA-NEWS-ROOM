@@ -1,19 +1,8 @@
-'use client';
-
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import Navigation from '@/components/Navigation';
-import TopicNavigation from '@/components/TopicNavigation';
-import IncidentCard from '@/components/IncidentCard';
-import Sidebar from '@/components/Sidebar';
-import { ClusterListItem, loadClusters, FeedType, CategoryType } from '@/lib/api';
-import { getSupabaseClient } from '@/lib/supabaseClient';
-import { getLanguageFromURL, setLanguage } from '@/lib/language';
-
-export const dynamic = 'force-dynamic';
-
+import { redirect } from 'next/navigation';
 
 export default function HomePage() {
+  // Redirect to /en (middleware will handle language detection)
+  redirect('/en');
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'si' | 'ta'>('en');
 
   // Initialize language from URL/localStorage

@@ -42,18 +42,18 @@ export async function GET() {
         xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
 ${clusters
   .map((cluster) => {
-    const url = `${baseUrl}/news/${cluster.slug}`;
+    const lang = cluster.language || 'en';
+    const url = `${baseUrl}/${lang}/story/${cluster.slug}`;
     const pubDate = cluster.published_at 
       ? new Date(cluster.published_at).toISOString()
       : new Date().toISOString();
-    const lang = cluster.language || 'en';
 
     return `  <url>
     <loc>${url}</loc>
     <news:news>
       <news:publication>
         <news:name>Lanka News Room</news:name>
-        <news:language>${lang}</news:language>
+        <news:language>${lang === 'si' ? 'si' : lang === 'ta' ? 'ta' : 'en'}</news:language>
       </news:publication>
       <news:publication_date>${pubDate}</news:publication_date>
       <news:title><![CDATA[${cluster.headline}]]></news:title>

@@ -4,6 +4,15 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Redirect root path to /en
+  if (pathname === '/') {
+    const lang = request.cookies.get('lang')?.value || 
+                 request.headers.get('accept-language')?.split(',')[0]?.split('-')[0] || 
+                 'en';
+    const detectedLang = ['en', 'si', 'ta'].includes(lang) ? lang : 'en';
+    return NextResponse.redirect(new URL(`/${detectedLang}`, request.url));
+  }
+
   // Protected routes
   const protectedRoutes = ['/for-you', '/onboarding', '/profile'];
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
@@ -20,6 +29,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/for-you/:path*', '/onboarding/:path*', '/profile/:path*', '/auth/callback/:path*']
+  matcher: ['/', '/for-you/:path*', '/onboarding/:path*', '/profile/:path*', '/auth/callback/:path*']
 };
 

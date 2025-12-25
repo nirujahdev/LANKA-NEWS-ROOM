@@ -5,9 +5,11 @@ import { fetchRssFeed } from './rss';
 import { detectLanguage } from './language';
 import { makeArticleHash } from './hash';
 import { extractEntities, normalizeTitle, similarityScore, generateSlug } from './text';
-import { summarizeEnglish, translateSummary, generateSEOMetadata, generateComprehensiveSEO } from './openaiClient';
+import { summarizeEnglish, translateSummary, generateSEOMetadata, generateComprehensiveSEO, summarizeInSourceLanguage, translateToMultipleLanguages, generateKeyFacts, generateConfirmedVsDiffers, generateKeywords } from './openaiClient';
 import { categorizeCluster } from './categorize';
 import { updateLastSuccessfulRun } from './pipelineEarlyExit';
+import { selectBestImage } from './imageSelection';
+import { cache } from './cache';
 
 type ClusterCache = {
   id: string;
@@ -52,6 +54,10 @@ export async function runFullPipeline(): Promise<PipelineStats> {
     
     // Update last successful run timestamp
     await updateLastSuccessfulRun();
+    
+    // Invalidate cache after successful pipeline run
+    cache.clear();
+    console.log('[Pipeline] Cache cleared after successful run');
 
     return {
       runId,
@@ -369,15 +375,95 @@ async function summarizeEligible(
       continue;
     }
 
+    // Enhanced source payload with weighting and more context
     const sourcePayload =
-      articles?.map((a) => ({
-        title: a.title,
-        content: (a.content_excerpt || a.content_text || a.title || '').slice(0, 800)
-      })) || [];
+      articles?.map((a, idx) => {
+        // Increase context from 800 to 1500 chars
+        const content = (a.content_excerpt || a.content_text || a.title || '').slice(0, 1500);
+        
+        // Weight recent articles higher
+        const weight = idx === 0 ? 1.5 : 1.0;
+        const recency = a.published_at 
+          ? Math.max(0, 1 - (Date.now() - new Date(a.published_at).getTime()) / (7 * 24 * 60 * 60 * 1000))
+          : 0.5;
+        
+        return {
+          title: a.title,
+          content,
+          weight: weight * (1 + recency * 0.3), // Boost recent articles
+          publishedAt: a.published_at
+        };
+      })
+      .sort((a, b) => (b.weight || 0) - (a.weight || 0)) // Sort by weight
+      .slice(0, env.MAX_SUMMARY_ARTICLES) || [];
 
-    const summaryEn = await summarizeEnglish(sourcePayload, summary?.summary_en);
-    const summarySi = await translateSummary(summaryEn, 'si');
-    const summaryTa = await translateSummary(summaryEn, 'ta');
+    // Detect source language from articles
+    let sourceLang: 'en' | 'si' | 'ta' = 'en';
+    try {
+      // Get language hint from first article's source
+      const firstArticle = articles?.[0];
+      let sourceHint: 'en' | 'si' | 'ta' | null = null;
+      
+      if (firstArticle) {
+        // Try to get language from source metadata
+        const { data: sourceData } = await supabaseAdmin
+          .from('sources')
+          .select('language')
+          .eq('id', (firstArticle as any).source_id)
+          .single();
+        
+        if (sourceData?.language && ['en', 'si', 'ta'].includes(sourceData.language)) {
+          sourceHint = sourceData.language as 'en' | 'si' | 'ta';
+        }
+      }
+      
+      // Detect language with AI verification
+      const combinedText = sourcePayload.map(s => s.title + ' ' + s.content.slice(0, 200)).join(' ');
+      sourceLang = await detectLanguage(combinedText, sourceHint);
+      
+      console.log(`[Pipeline] Detected source language: ${sourceLang} (hint: ${sourceHint})`);
+    } catch (error) {
+      console.error('[Pipeline] Language detection failed, defaulting to English:', error);
+      sourceLang = 'en';
+    }
+
+    // Generate summary in source language
+    let summaryInSource: string;
+    try {
+      summaryInSource = await summarizeInSourceLanguage(sourcePayload, sourceLang, summary?.summary_en || summary?.summary_si || summary?.summary_ta);
+    } catch (error) {
+      console.error('[Pipeline] Source language summarization failed, falling back to English:', error);
+      // Fallback to English summarization
+      summaryInSource = await summarizeEnglish(sourcePayload, summary?.summary_en);
+      sourceLang = 'en';
+    }
+
+    // Translate to all 3 languages
+    let summaryEn: string, summarySi: string, summaryTa: string;
+    try {
+      const translations = await translateToMultipleLanguages(summaryInSource, sourceLang);
+      summaryEn = translations.en;
+      summarySi = translations.si;
+      summaryTa = translations.ta;
+      
+      console.log(`[Pipeline] Translated summary from ${sourceLang} to all languages`);
+    } catch (error) {
+      console.error('[Pipeline] Multi-language translation failed, using fallback:', error);
+      // Fallback: if source was English, translate to Si/Ta; otherwise use source as-is
+      if (sourceLang === 'en') {
+        summaryEn = summaryInSource;
+        summarySi = await translateSummary(summaryEn, 'si').catch(() => summaryEn);
+        summaryTa = await translateSummary(summaryEn, 'ta').catch(() => summaryEn);
+      } else if (sourceLang === 'si') {
+        summarySi = summaryInSource;
+        summaryEn = summaryInSource; // Fallback
+        summaryTa = summaryInSource; // Fallback
+      } else {
+        summaryTa = summaryInSource;
+        summaryEn = summaryInSource; // Fallback
+        summarySi = summaryInSource; // Fallback
+      }
+    }
 
     // Generate comprehensive SEO metadata with topic/city/entity extraction
     let seoEn, seoSi, seoTa, topic, city, primaryEntity, eventType, imageUrl;
@@ -400,8 +486,25 @@ async function summarizeEligible(
       primaryEntity = comprehensiveSEO.primary_entity;
       eventType = comprehensiveSEO.event_type;
 
-      // Get image from first article with image
-      imageUrl = articles?.find(a => a.image_url)?.image_url || null;
+      // Use AI to select best image from all available images
+      const availableImages = articles
+        ?.filter(a => a.image_url)
+        .map(a => ({
+          url: a.image_url!,
+          source: (a as any).sources?.name || 'Unknown'
+        })) || [];
+      
+      if (availableImages.length > 0) {
+        try {
+          imageUrl = await selectBestImage(availableImages, cluster.headline, summaryEn);
+          console.log(`[Pipeline] Selected best image from ${availableImages.length} options`);
+        } catch (error) {
+          console.error('[Pipeline] Image selection failed, using first image:', error);
+          imageUrl = availableImages[0].url;
+        }
+      } else {
+        imageUrl = null;
+      }
 
       // Generate SEO for other languages (simpler, just title/description)
       [seoSi, seoTa] = await Promise.all([
@@ -463,13 +566,63 @@ async function summarizeEligible(
     const earliestArticle = articles?.[articles.length - 1];
     const publishedAt = earliestArticle?.published_at || new Date().toISOString();
 
-    // Save summaries
+    // Generate key facts, confirmed vs differs, and keywords
+    let keyFactsEn: string[] = [], keyFactsSi: string[] = [], keyFactsTa: string[] = [];
+    let confirmedDiffersEn = '', confirmedDiffersSi = '', confirmedDiffersTa = '';
+    let keywords: string[] = [];
+
+    try {
+      console.log('[Pipeline] Generating key facts, confirmed vs differs, and keywords...');
+      
+      // Generate key facts for all languages
+      [keyFactsEn, keyFactsSi, keyFactsTa] = await Promise.all([
+        generateKeyFacts(sourcePayload, summaryEn, 'en').catch(() => []),
+        generateKeyFacts(sourcePayload, summarySi, 'si').catch(() => []),
+        generateKeyFacts(sourcePayload, summaryTa, 'ta').catch(() => [])
+      ]);
+
+      // Generate confirmed vs differs for all languages
+      [confirmedDiffersEn, confirmedDiffersSi, confirmedDiffersTa] = await Promise.all([
+        generateConfirmedVsDiffers(sourcePayload, summaryEn, 'en').catch(() => ''),
+        generateConfirmedVsDiffers(sourcePayload, summarySi, 'si').catch(() => ''),
+        generateConfirmedVsDiffers(sourcePayload, summaryTa, 'ta').catch(() => '')
+      ]);
+
+      // Generate keywords (once, language-agnostic)
+      keywords = await generateKeywords(
+        cluster.headline,
+        summaryEn,
+        topic,
+        city,
+        primaryEntity,
+        eventType
+      ).catch(() => {
+        // Fallback keywords
+        const fallback: string[] = ['Sri Lanka'];
+        if (topic) fallback.push(topic);
+        if (city) fallback.push(city);
+        return fallback;
+      });
+
+      console.log(`[Pipeline] Generated ${keyFactsEn.length} key facts, keywords: ${keywords.join(', ')}`);
+    } catch (error) {
+      console.error('[Pipeline] Error generating key facts/confirmed vs differs/keywords:', error);
+      // Continue with empty values - these are optional enhancements
+    }
+
+    // Save summaries with new SEO content fields
     await supabaseAdmin.from('summaries').upsert(
       {
         cluster_id: cluster.id,
         summary_en: summaryEn,
         summary_si: summarySi,
         summary_ta: summaryTa,
+        key_facts_en: keyFactsEn.length > 0 ? keyFactsEn : null,
+        key_facts_si: keyFactsSi.length > 0 ? keyFactsSi : null,
+        key_facts_ta: keyFactsTa.length > 0 ? keyFactsTa : null,
+        confirmed_vs_differs_en: confirmedDiffersEn || null,
+        confirmed_vs_differs_si: confirmedDiffersSi || null,
+        confirmed_vs_differs_ta: confirmedDiffersTa || null,
         model: env.SUMMARY_MODEL,
         prompt_version: 'v1-title-excerpt',
         version: summary?.version ? summary.version + 1 : 1,
@@ -494,7 +647,9 @@ async function summarizeEligible(
       primary_entity: primaryEntity,
       event_type: eventType,
       image_url: imageUrl,
-      language: 'en' // Primary language (can be enhanced later)
+      language: 'en', // Primary language (can be enhanced later)
+      keywords: keywords.length > 0 ? keywords : null,
+      last_checked_at: new Date().toISOString()
     }).eq('id', cluster.id);
 
     if (updateResult.error) {

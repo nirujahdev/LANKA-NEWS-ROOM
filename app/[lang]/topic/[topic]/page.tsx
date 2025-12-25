@@ -1,7 +1,7 @@
 /**
  * Programmatic SEO: Topic Pages
  * 
- * URL format: /lk/en/politics, /lk/ta/economy, /lk/si/sports
+ * URL format: /en/topic/politics, /ta/topic/economy, /si/topic/sports
  * These pages rank for "[topic] news Sri Lanka" searches
  */
 
@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 300;
 
 type Props = {
-  params: { lang: 'en' | 'si' | 'ta'; topic: string };
+  params: Promise<{ lang: 'en' | 'si' | 'ta'; topic: string }>;
 };
 
 const VALID_TOPICS = ['politics', 'economy', 'sports', 'crime', 'education', 'health', 'environment', 'technology', 'culture'];
@@ -59,7 +59,8 @@ const TOPIC_LABELS = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { lang, topic } = params;
+  const resolvedParams = await params;
+  const { lang, topic } = resolvedParams;
   
   if (!VALID_TOPICS.includes(topic)) {
     return { title: 'Not Found' };
@@ -77,7 +78,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : `${countryRef} ${topicLabel} செய்திகள். சரிபார்க்கப்பட்ட பல ஆதாரங்களிலிருந்து நேரடி புதுப்பிப்புகள்.`;
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
-  const canonicalUrl = `${baseUrl}/lk/${lang}/${topic}`;
+  const enUrl = `${baseUrl}/en/topic/${topic}`;
+  const siUrl = `${baseUrl}/si/topic/${topic}`;
+  const taUrl = `${baseUrl}/ta/topic/${topic}`;
+  const canonicalUrl = lang === 'si' ? siUrl : lang === 'ta' ? taUrl : enUrl;
 
   return {
     title,
@@ -85,10 +89,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     alternates: {
       canonical: canonicalUrl,
       languages: {
-        'en-LK': `${baseUrl}/lk/en/${topic}`,
-        'si-LK': `${baseUrl}/lk/si/${topic}`,
-        'ta-LK': `${baseUrl}/lk/ta/${topic}`,
-        'x-default': `${baseUrl}/lk/en/${topic}`
+        'en-LK': enUrl,
+        'si-LK': siUrl,
+        'ta-LK': taUrl,
+        'x-default': enUrl
       }
     },
     openGraph: {
@@ -107,7 +111,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function TopicPage({ params }: Props) {
-  const { lang, topic } = params;
+  const resolvedParams = await params;
+  const { lang, topic } = resolvedParams;
 
   if (!VALID_TOPICS.includes(topic)) {
     notFound();
@@ -157,43 +162,43 @@ export default async function TopicPage({ params }: Props) {
 
             {/* Articles Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {clusters?.map((cluster: any) => {
-            const summary = cluster.summaries?.[0];
-            const summaryText =
-              lang === 'si' ? summary?.summary_si || summary?.summary_en :
-              lang === 'ta' ? summary?.summary_ta || summary?.summary_en :
-              summary?.summary_en;
+              {clusters?.map((cluster: any) => {
+                const summary = cluster.summaries?.[0];
+                const summaryText =
+                  lang === 'si' ? summary?.summary_si || summary?.summary_en :
+                  lang === 'ta' ? summary?.summary_ta || summary?.summary_en :
+                  summary?.summary_en;
 
-            // Extract unique sources from articles
-            const sourcesMap = new Map<string, { name: string; feed_url: string }>();
-            cluster.articles?.forEach((article: any) => {
-              if (article.sources) {
-                const source = article.sources;
-                if (!sourcesMap.has(source.name)) {
-                  sourcesMap.set(source.name, {
-                    name: source.name,
-                    feed_url: source.feed_url || '#'
-                  });
-                }
-              }
-            });
-            const sources = Array.from(sourcesMap.values());
+                // Extract unique sources from articles
+                const sourcesMap = new Map<string, { name: string; feed_url: string }>();
+                cluster.articles?.forEach((article: any) => {
+                  if (article.sources) {
+                    const source = article.sources;
+                    if (!sourcesMap.has(source.name)) {
+                      sourcesMap.set(source.name, {
+                        name: source.name,
+                        feed_url: source.feed_url || '#'
+                      });
+                    }
+                  }
+                });
+                const sources = Array.from(sourcesMap.values());
 
-            return (
-              <IncidentCard
-                key={cluster.id}
-                id={cluster.id}
-                headline={cluster.headline}
-                summary={summaryText || ''}
-                sourceCount={cluster.source_count || 0}
-                updatedAt={cluster.last_seen_at}
-                slug={cluster.slug}
-                language={lang}
-                sources={sources.length > 0 ? sources : [{ name: 'Multiple Sources', feed_url: '#' }]}
-              />
-            );
-          })}
-        </div>
+                return (
+                  <IncidentCard
+                    key={cluster.id}
+                    id={cluster.id}
+                    headline={cluster.headline}
+                    summary={summaryText || ''}
+                    sourceCount={cluster.source_count || 0}
+                    updatedAt={cluster.last_seen_at}
+                    slug={cluster.slug}
+                    language={lang}
+                    sources={sources.length > 0 ? sources : [{ name: 'Multiple Sources', feed_url: '#' }]}
+                  />
+                );
+              })}
+            </div>
 
             {(!clusters || clusters.length === 0) && (
               <div className="text-center py-12 text-[#5F6368]">

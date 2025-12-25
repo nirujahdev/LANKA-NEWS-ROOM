@@ -20,6 +20,7 @@ export interface ConsentEvent {
 declare global {
   interface Window {
     dataLayer?: any[];
+    gtag?: (...args: any[]) => void;
     googlefc?: {
       adsbygoogle?: Array<{
         event?: string;

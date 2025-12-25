@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { Database } from '@/lib/supabaseTypes';
+import { cache, CacheKeys } from '@/lib/cache';
 
 type ClusterRow = Database['public']['Tables']['clusters']['Row'] & {
   slug?: string | null;
@@ -30,6 +31,13 @@ export async function GET(req: Request) {
     const limit = Math.min(Number(searchParams.get('limit')) || 20, 50);
     const category = searchParams.get('category'); // Filter by category
     const feed = searchParams.get('feed'); // 'home' (24h) or 'recent' (30d) or null (all)
+    
+    // Check cache first
+    const cacheKey = CacheKeys.clusters(lang, feed, category);
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      return NextResponse.json({ clusters: cached });
+    }
 
     // Build time filter based on feed type
     let timeFilter: { column: string; operator: string; value: string } | null = null;
@@ -142,6 +150,9 @@ export async function GET(req: Request) {
       };
     });
 
+    // Cache result for 5 minutes
+    cache.set(cacheKey, payload, 300);
+    
     return NextResponse.json({ clusters: payload });
   } catch (error) {
     console.error('Error in GET /api/clusters:', error);

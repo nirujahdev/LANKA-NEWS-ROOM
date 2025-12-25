@@ -1,5 +1,6 @@
 import Parser from 'rss-parser';
 import { createHash } from 'crypto';
+import { withRetry } from './retry';
 
 export type NormalizedItem = {
   title: string;
@@ -27,10 +28,12 @@ const parser = new Parser({
  * Never accept feed URLs from user input or requests.
  */
 export async function fetchRssFeed(feedUrl: string): Promise<NormalizedItem[]> {
-  try {
-    const feed = await parser.parseURL(feedUrl);
-    return (feed.items || [])
-      .map((item) => {
+  // Wrap with retry logic for reliability
+  return withRetry(
+    async () => {
+      const feed = await parser.parseURL(feedUrl);
+      return (feed.items || [])
+        .map((item) => {
         // Extract image URL from various RSS feed formats
         let imageUrl: string | null = null;
         
@@ -62,12 +65,21 @@ export async function fetchRssFeed(feedUrl: string): Promise<NormalizedItem[]> {
           contentSnippet: item.contentSnippet || null,
           imageUrl: imageUrl?.trim() || null
         };
-      })
-      .filter((item) => item.url && item.url.startsWith('http')); // Only valid HTTP(S) URLs
-  } catch (error) {
+        })
+        .filter((item) => item.url && item.url.startsWith('http')); // Only valid HTTP(S) URLs
+    },
+    {
+      maxRetries: 3,
+      delayMs: 2000,
+      backoffMultiplier: 2,
+      onRetry: (error, attempt) => {
+        console.warn(`[RSS] Retry ${attempt}/3 for ${feedUrl}: ${error.message}`);
+      }
+    }
+  ).catch((error) => {
     // Re-throw with context for error handling upstream
-    throw new Error(`Failed to fetch RSS feed ${feedUrl}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
+    throw new Error(`Failed to fetch RSS feed ${feedUrl} after retries: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  });
 }
 
 export function hashTitle(title: string): string {

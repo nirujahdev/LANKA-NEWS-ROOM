@@ -18,6 +18,9 @@ export type ClusterListItem = {
 export type FeedType = 'home' | 'recent' | null;
 export type CategoryType = 'politics' | 'economy' | 'sports' | 'technology' | 'health' | 'education' | 'science' | null;
 
+// Import cache utilities
+import { cache, CacheKeys } from './cache';
+
 /**
  * Load clusters with optional feed type and category filter
  * @param lang - Language for summaries
@@ -29,6 +32,14 @@ export async function loadClusters(
   feed: FeedType = null,
   category: CategoryType = null
 ): Promise<ClusterListItem[]> {
+  // Check cache first
+  const cacheKey = CacheKeys.clusters(lang, feed, category);
+  const cached = cache.get<ClusterListItem[]>(cacheKey);
+  if (cached) {
+    console.log(`[Cache] Hit for ${cacheKey}`);
+    return cached;
+  }
+  
   const params = new URLSearchParams({ lang });
   if (feed) params.append('feed', feed);
   if (category) params.append('category', category);
@@ -38,7 +49,13 @@ export async function loadClusters(
     throw new Error('Failed to fetch clusters');
   }
   const json = await res.json();
-  return json.clusters as ClusterListItem[];
+  const clusters = json.clusters as ClusterListItem[];
+  
+  // Cache for 5 minutes
+  cache.set(cacheKey, clusters, 300);
+  console.log(`[Cache] Set for ${cacheKey}`);
+  
+  return clusters;
 }
 
 export type ClusterDetail = {

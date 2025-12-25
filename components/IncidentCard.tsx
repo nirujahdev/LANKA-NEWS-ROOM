@@ -32,7 +32,7 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
   topics = []
 }) => {
   // Use slug for SEO-friendly URLs, fallback to ID for backward compatibility
-  const href = slug ? `/news/${slug}${language !== 'en' ? `?lang=${language}` : ''}` : `/incident/${id}`;
+  const href = slug ? `/${language}/story/${slug}` : `/incident/${id}`;
   const getLabel = (en: string, si?: string, ta?: string) => {
     if (language === 'si' && si) return si;
     if (language === 'ta' && ta) return ta;

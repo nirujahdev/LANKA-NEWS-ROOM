@@ -10,9 +10,11 @@ const envSchema = z.object({
   SUMMARY_TRANSLATE_MODEL: z.string().default('gpt-4o-mini'),
   SIMILARITY_THRESHOLD: z.coerce.number().default(0.65),
   WINDOW_HOURS: z.coerce.number().default(24),
-  MAX_SUMMARY_ARTICLES: z.coerce.number().default(5),
+  MAX_SUMMARY_ARTICLES: z.coerce.number().default(8),
   RSS_CONCURRENCY: z.coerce.number().default(4),
-  LOCK_TTL_MINUTES: z.coerce.number().default(10)
+  LOCK_TTL_MINUTES: z.coerce.number().default(10),
+  CACHE_TTL_SECONDS: z.coerce.number().default(300),
+  RETRY_MAX_ATTEMPTS: z.coerce.number().default(3)
 });
 
 const parsed = envSchema.parse({
@@ -27,7 +29,9 @@ const parsed = envSchema.parse({
   WINDOW_HOURS: process.env.WINDOW_HOURS,
   MAX_SUMMARY_ARTICLES: process.env.MAX_SUMMARY_ARTICLES,
   RSS_CONCURRENCY: process.env.RSS_CONCURRENCY,
-  LOCK_TTL_MINUTES: process.env.LOCK_TTL_MINUTES
+  LOCK_TTL_MINUTES: process.env.LOCK_TTL_MINUTES,
+  CACHE_TTL_SECONDS: process.env.CACHE_TTL_SECONDS,
+  RETRY_MAX_ATTEMPTS: process.env.RETRY_MAX_ATTEMPTS
 });
 
 export const env = parsed;
