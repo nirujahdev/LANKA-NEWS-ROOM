@@ -187,7 +187,7 @@ async function fetchRssFeed(feedUrl: string): Promise<RSSItem[]> {
         return {
           title: item.title?.trim() || 'Untitled',
           url: (item.link || '').trim(),
-          guid: item.guid || item.id || null,
+          guid: item.guid || (item as any).id || null,
           publishedAt: item.isoDate || item.pubDate || null,
           content: item.content || null,
           contentSnippet: item.contentSnippet || null,
