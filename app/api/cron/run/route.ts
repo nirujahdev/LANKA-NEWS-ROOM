@@ -6,6 +6,15 @@ import { runFullPipeline } from '@/lib/pipeline';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 /**
+ * DEPRECATED: This endpoint is no longer used.
+ * 
+ * The pipeline now runs directly in GitHub Actions via scripts/pipeline.ts
+ * See .github/workflows/pipeline.yml for the new implementation.
+ * 
+ * This endpoint is kept for backward compatibility but should not be called.
+ * 
+ * ---
+ * 
  * Secure cron endpoint for data ingestion with lock protection and early-exit optimization.
  * 
  * SECURITY:
@@ -24,8 +33,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
  * - Checks if RSS feeds have new items (URL/GUID check)
  * - Skips expensive operations if no new data
  * 
- * This endpoint is called by GitHub Actions cron (every 15 minutes).
- * Never expose CRON_SECRET to client code.
+ * @deprecated Use GitHub Actions pipeline worker instead (scripts/pipeline.ts)
  */
 export async function GET(req: Request) {
   // Extract Authorization header
@@ -54,6 +62,10 @@ export async function GET(req: Request) {
 
   // Authorization successful - proceed with pipeline
 
+  // Check for force parameter to bypass cooldown
+  const url = new URL(req.url);
+  const forceRun = url.searchParams.get('force') === '1';
+
   // STEP 1: Check if already locked (quick check before expensive operations)
   const lockName = 'cron_pipeline';
   if (await isLocked(lockName)) {
@@ -66,14 +78,17 @@ export async function GET(req: Request) {
   }
 
   // STEP 2: Early exit check 1 - Last run too soon?
-  const tooSoonCheck = await checkLastRunTooSoon();
-  if (tooSoonCheck?.shouldSkip) {
-    return NextResponse.json({
-      ok: true,
-      skipped: true,
-      reason: tooSoonCheck.reason,
-      message: 'Last run was too recent, skipping'
-    });
+  // Skip this check if force=1 is provided
+  if (!forceRun) {
+    const tooSoonCheck = await checkLastRunTooSoon();
+    if (tooSoonCheck?.shouldSkip) {
+      return NextResponse.json({
+        ok: true,
+        skipped: true,
+        reason: tooSoonCheck.reason,
+        message: 'Last run was too recent, skipping (use ?force=1 to override)'
+      });
+    }
   }
 
   // STEP 3: Acquire lock (atomic operation)

@@ -40,10 +40,10 @@ jobs:
           
           # Using custom domain: lankanewsroom.xyz
           DOMAIN="lankanewsroom.xyz"
-          ENDPOINT="https://${DOMAIN}/api/cron/run"
+          ENDPOINT="https://${DOMAIN}/api/cron/run?force=1"
           
           echo "Triggering pipeline at ${ENDPOINT}"
-          echo "Using CRON_SECRET: ${CRON_SECRET:0:8}..." # Show first 8 chars for debugging
+          echo "Using CRON_SECRET: ${CRON_SECRET_CLEAN:0:8}..." # Show first 8 chars for debugging
           
           # Verify CRON_SECRET is not empty
           if [ -z "$CRON_SECRET" ]; then
@@ -51,8 +51,11 @@ jobs:
             exit 1
           fi
           
+          # Clean CRON_SECRET (remove any trailing newlines/whitespace)
+          CRON_SECRET_CLEAN=$(echo -n "$CRON_SECRET" | tr -d '\n\r' | xargs)
+          
           # Build Authorization header
-          AUTH_HEADER="Bearer ${CRON_SECRET}"
+          AUTH_HEADER="Bearer ${CRON_SECRET_CLEAN}"
           echo "Authorization header length: ${#AUTH_HEADER} characters"
           
           # Test: Verify the header doesn't contain newlines or special characters
@@ -74,7 +77,7 @@ jobs:
             --silent \
             --show-error \
             --write-out "\nHTTP_STATUS:%{http_code}\nHTTP_TIME:%{time_total}\n" \
-            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Authorization: Bearer ${CRON_SECRET_CLEAN}" \
             -H "Content-Type: application/json" \
             "${ENDPOINT}" 2>&1)
           curl_exit_code=$?
@@ -143,7 +146,7 @@ jobs:
           elif [ "$http_status" -eq 401 ]; then
             echo "❌ Authentication failed (401)"
             echo "Check that CRON_SECRET matches in both GitHub and Vercel (Production)"
-            echo "Current secret starts with: ${CRON_SECRET:0:8}..."
+            echo "Current secret starts with: ${CRON_SECRET_CLEAN:0:8}..."
             exit 1
           elif [ "$http_status" -eq 404 ]; then
             echo "❌ Endpoint not found (404)"

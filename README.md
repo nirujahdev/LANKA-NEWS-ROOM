@@ -45,6 +45,8 @@ A modern, editorial-style news platform UI inspired by Google News, designed spe
 ### Prerequisites
 - Node.js 18+ 
 - npm or yarn
+- Supabase project (for database)
+- OpenAI API key (for article processing)
 
 ### Installation
 
@@ -63,6 +65,61 @@ npm start
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
+
+### Running the Pipeline Locally
+
+The pipeline worker fetches RSS feeds, processes articles with OpenAI, and saves them to Supabase.
+
+**Required Environment Variables:**
+```bash
+export SUPABASE_URL="https://your-project.supabase.co"
+export SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
+export OPENAI_API_KEY="sk-your-openai-key"
+```
+
+**Optional Environment Variables:**
+```bash
+export SUMMARY_MODEL="gpt-4o-mini"  # Default: gpt-4o-mini
+export BATCH_SIZE="10"               # Default: 10
+export DRY_RUN="true"                # Set to "true" for dry run (no writes)
+```
+
+**Run the pipeline:**
+```bash
+# Production mode (writes to database)
+npm run pipeline
+
+# Dry run mode (no database writes, for testing)
+DRY_RUN=true npm run pipeline
+```
+
+**What the pipeline does:**
+1. Fetches RSS feeds from active sources in Supabase
+2. Inserts new articles into `articles` table (deduplicates by URL/hash)
+3. Picks unprocessed articles (`status='new'`)
+4. Processes each article with OpenAI to generate:
+   - Summary
+   - Topics
+   - SEO title and description
+   - Slug
+   - Language detection
+   - City extraction
+5. Creates/updates clusters in `clusters` table
+6. Saves summaries to `summaries` table
+7. Marks articles as `processed` or `failed`
+
+**Pipeline Statistics:**
+The pipeline prints statistics:
+- `fetched`: Number of RSS items fetched
+- `inserted`: New articles inserted
+- `deduped`: Articles skipped (already exist)
+- `pickedForProcessing`: Articles selected for processing
+- `processed`: Successfully processed articles
+- `failed`: Articles that failed processing
+
+**GitHub Actions:**
+The pipeline runs automatically every 15 minutes via GitHub Actions (`.github/workflows/pipeline.yml`). 
+See the workflow file for configuration details.
 
 ## Project Structure
 
