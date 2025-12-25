@@ -14,97 +14,111 @@ type Props = {
 };
 
 async function getClusterBySlug(slug: string) {
-  const { data: cluster, error } = await supabaseAdmin
-    .from('clusters')
-    .select(`
-      *,
-      summaries (*)
-    `)
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .single<{
-      id: string;
-      headline: string;
-      status: string;
-      meta_title_en?: string | null;
-      meta_description_en?: string | null;
-      meta_title_si?: string | null;
-      meta_description_si?: string | null;
-      meta_title_ta?: string | null;
-      meta_description_ta?: string | null;
-      slug?: string | null;
-      published_at?: string | null;
-      updated_at?: string | null;
-      created_at?: string | null;
-      first_seen_at?: string | null;
-      source_count?: number | null;
-      category?: string | null;
-      image_url?: string | null;
-      language?: string | null;
-      summaries?: Array<{
-        summary_en?: string | null;
-        summary_si?: string | null;
-        summary_ta?: string | null;
-      }>;
-    }>();
+  try {
+    const { data: cluster, error } = await supabaseAdmin
+      .from('clusters')
+      .select(`
+        *,
+        summaries (*)
+      `)
+      .eq('slug', slug)
+      .eq('status', 'published')
+      .single<{
+        id: string;
+        headline: string;
+        status: string;
+        meta_title_en?: string | null;
+        meta_description_en?: string | null;
+        meta_title_si?: string | null;
+        meta_description_si?: string | null;
+        meta_title_ta?: string | null;
+        meta_description_ta?: string | null;
+        slug?: string | null;
+        published_at?: string | null;
+        updated_at?: string | null;
+        created_at?: string | null;
+        first_seen_at?: string | null;
+        source_count?: number | null;
+        category?: string | null;
+        image_url?: string | null;
+        language?: string | null;
+        summaries?: Array<{
+          summary_en?: string | null;
+          summary_si?: string | null;
+          summary_ta?: string | null;
+        }>;
+      }>();
 
-  if (error || !cluster) return null;
+    if (error || !cluster) {
+      console.error('Error fetching cluster:', error);
+      return null;
+    }
 
-  // Get articles for this cluster
-  const { data: articles } = await supabaseAdmin
-    .from('articles')
-    .select(`
-      *,
-      sources (name, feed_url)
-    `)
-    .eq('cluster_id', cluster.id)
-    .order('published_at', { ascending: false })
-    .returns<Array<{
-      id: string;
-      image_url: string | null;
-      [key: string]: any;
-    }>>();
+    // Get articles for this cluster
+    const { data: articles, error: articlesError } = await supabaseAdmin
+      .from('articles')
+      .select(`
+        *,
+        sources (name, feed_url)
+      `)
+      .eq('cluster_id', cluster.id)
+      .order('published_at', { ascending: false })
+      .returns<Array<{
+        id: string;
+        image_url: string | null;
+        [key: string]: any;
+      }>>();
 
-  return {
-    cluster,
-    summary: cluster.summaries?.[0] || null,
-    articles: articles || []
-  };
+    if (articlesError) {
+      console.error('Error fetching articles:', articlesError);
+      // Continue with empty articles array
+    }
+
+    return {
+      cluster,
+      summary: cluster.summaries?.[0] || null,
+      articles: articles || []
+    };
+  } catch (error) {
+    console.error('Error in getClusterBySlug:', error);
+    return null;
+  }
 }
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
-  const lang = searchParams.lang || 'en';
-  const data = await getClusterBySlug(params.slug);
+  try {
+    const lang = searchParams.lang || 'en';
+    const data = await getClusterBySlug(params.slug);
 
-  if (!data) {
-    return {
-      title: 'News Not Found | Lanka News Room',
-      description: 'The requested news article could not be found.'
-    };
-  }
+    if (!data || !data.cluster) {
+      return {
+        title: 'News Not Found | Lanka News Room',
+        description: 'The requested news article could not be found.'
+      };
+    }
 
-  const { cluster, summary } = data;
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
+    const { cluster, summary } = data;
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
 
-  // Get language-specific metadata
-  const metaTitle = 
-    lang === 'si' ? cluster.meta_title_si || cluster.headline :
-    lang === 'ta' ? cluster.meta_title_ta || cluster.headline :
-    cluster.meta_title_en || cluster.headline;
+    // Get language-specific metadata
+    const metaTitle = 
+      lang === 'si' ? cluster.meta_title_si || cluster.headline :
+      lang === 'ta' ? cluster.meta_title_ta || cluster.headline :
+      cluster.meta_title_en || cluster.headline;
 
-  const metaDescription =
-    lang === 'si' ? cluster.meta_description_si || summary?.summary_si :
-    lang === 'ta' ? cluster.meta_description_ta || summary?.summary_ta :
-    cluster.meta_description_en || summary?.summary_en;
+    const metaDescription =
+      lang === 'si' ? cluster.meta_description_si || summary?.summary_si :
+      lang === 'ta' ? cluster.meta_description_ta || summary?.summary_ta :
+      cluster.meta_description_en || summary?.summary_en;
 
-  const canonicalUrl = `${baseUrl}/news/${params.slug}`;
-  const enUrl = `${baseUrl}/news/${params.slug}?lang=en`;
-  const siUrl = `${baseUrl}/news/${params.slug}?lang=si`;
-  const taUrl = `${baseUrl}/news/${params.slug}?lang=ta`;
+    const canonicalUrl = `${baseUrl}/news/${params.slug}`;
+    const enUrl = `${baseUrl}/news/${params.slug}?lang=en`;
+    const siUrl = `${baseUrl}/news/${params.slug}?lang=si`;
+    const taUrl = `${baseUrl}/news/${params.slug}?lang=ta`;
 
-  // Get first article image if cluster doesn't have one
-  const firstArticle = data.articles?.[0] as { image_url?: string | null } | undefined;
-  const imageUrl = cluster.image_url || firstArticle?.image_url || null;
+    // Get first article image if cluster doesn't have one
+    const firstArticle = data.articles?.[0] as { image_url?: string | null } | undefined;
+    const imageUrl = cluster.image_url || firstArticle?.image_url || null;
 
   return {
     title: metaTitle,
@@ -159,14 +173,20 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 }
 
 export default async function NewsDetailPage({ params, searchParams }: Props) {
-  const lang = searchParams.lang || 'en';
-  const data = await getClusterBySlug(params.slug);
+  try {
+    const lang = searchParams.lang || 'en';
+    const data = await getClusterBySlug(params.slug);
 
-  if (!data || !data.cluster || !data.summary) {
-    notFound();
-  }
+    if (!data || !data.cluster) {
+      notFound();
+    }
 
-  const { cluster, summary, articles } = data;
+    // Handle case where summary might be null
+    if (!data.summary) {
+      console.warn(`Cluster ${data.cluster.id} has no summary`);
+    }
+
+    const { cluster, summary, articles } = data;
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
   const canonicalUrl = `${baseUrl}/news/${params.slug}`;
