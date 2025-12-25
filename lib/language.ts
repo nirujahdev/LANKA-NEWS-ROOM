@@ -1,7 +1,6 @@
 'use client';
 
 import OpenAI from 'openai';
-import { env } from './env';
 
 /**
  * Language persistence utility
@@ -58,32 +57,38 @@ export async function detectLanguage(
     return sourceHint;
   }
   
-  // Fall back to AI detection for uncertain cases
-  try {
-    const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
-    const completion = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a language detection system. Identify if the text is in English (en), Sinhala (si), or Tamil (ta).
+  // Fall back to AI detection for uncertain cases (server-side only)
+  // Don't use OpenAI API on client side - it requires server-only env vars
+  if (typeof window === 'undefined') {
+    try {
+      const openaiKey = process.env.OPENAI_API_KEY;
+      if (openaiKey) {
+        const client = new OpenAI({ apiKey: openaiKey });
+        const completion = await client.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `You are a language detection system. Identify if the text is in English (en), Sinhala (si), or Tamil (ta).
 Return ONLY the language code: en, si, or ta.`
-        },
-        {
-          role: 'user',
-          content: `Detect language of this text:\n\n${text.slice(0, 500)}`
+            },
+            {
+              role: 'user',
+              content: `Detect language of this text:\n\n${text.slice(0, 500)}`
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 10
+        });
+        
+        const detected = completion.choices[0]?.message?.content?.trim().toLowerCase();
+        if (detected === 'en' || detected === 'si' || detected === 'ta') {
+          return detected;
         }
-      ],
-      temperature: 0.1,
-      max_tokens: 10
-    });
-    
-    const detected = completion.choices[0]?.message?.content?.trim().toLowerCase();
-    if (detected === 'en' || detected === 'si' || detected === 'ta') {
-      return detected;
+      }
+    } catch (error) {
+      console.error('AI language detection failed:', error);
     }
-  } catch (error) {
-    console.error('AI language detection failed:', error);
   }
   
   // Final fallback: use source hint or default to English

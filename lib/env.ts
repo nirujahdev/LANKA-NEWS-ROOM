@@ -1,9 +1,12 @@
 import { z } from 'zod';
 
-const envSchema = z.object({
+// Check if we're on the client side
+const isClient = typeof window !== 'undefined';
+
+// Server-only environment variables (not available on client)
+const serverEnvSchema = z.object({
   SUPABASE_URL: z.string().url(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  SUPABASE_ANON_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().min(1),
   CRON_SECRET: z.string().min(1),
   SUMMARY_MODEL: z.string().default('gpt-4o-mini'),
@@ -17,22 +20,53 @@ const envSchema = z.object({
   RETRY_MAX_ATTEMPTS: z.coerce.number().default(3)
 });
 
-const parsed = envSchema.parse({
-  SUPABASE_URL: process.env.SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-  CRON_SECRET: process.env.CRON_SECRET,
-  SUMMARY_MODEL: process.env.SUMMARY_MODEL,
-  SUMMARY_TRANSLATE_MODEL: process.env.SUMMARY_TRANSLATE_MODEL,
-  SIMILARITY_THRESHOLD: process.env.SIMILARITY_THRESHOLD,
-  WINDOW_HOURS: process.env.WINDOW_HOURS,
-  MAX_SUMMARY_ARTICLES: process.env.MAX_SUMMARY_ARTICLES,
-  RSS_CONCURRENCY: process.env.RSS_CONCURRENCY,
-  LOCK_TTL_MINUTES: process.env.LOCK_TTL_MINUTES,
-  CACHE_TTL_SECONDS: process.env.CACHE_TTL_SECONDS,
-  RETRY_MAX_ATTEMPTS: process.env.RETRY_MAX_ATTEMPTS
+// Client-safe environment variables (only validate these on client)
+const clientEnvSchema = z.object({
+  SUMMARY_MODEL: z.string().default('gpt-4o-mini'),
+  SUMMARY_TRANSLATE_MODEL: z.string().default('gpt-4o-mini'),
+  SIMILARITY_THRESHOLD: z.coerce.number().default(0.65),
+  WINDOW_HOURS: z.coerce.number().default(24),
+  MAX_SUMMARY_ARTICLES: z.coerce.number().default(8),
+  RSS_CONCURRENCY: z.coerce.number().default(4),
+  LOCK_TTL_MINUTES: z.coerce.number().default(10),
+  CACHE_TTL_SECONDS: z.coerce.number().default(300),
+  RETRY_MAX_ATTEMPTS: z.coerce.number().default(3)
 });
+
+// Parse based on environment
+let parsed: z.infer<typeof serverEnvSchema>;
+
+if (isClient) {
+  // On client, only validate safe variables
+  parsed = clientEnvSchema.parse({
+    SUMMARY_MODEL: process.env.SUMMARY_MODEL,
+    SUMMARY_TRANSLATE_MODEL: process.env.SUMMARY_TRANSLATE_MODEL,
+    SIMILARITY_THRESHOLD: process.env.SIMILARITY_THRESHOLD,
+    WINDOW_HOURS: process.env.WINDOW_HOURS,
+    MAX_SUMMARY_ARTICLES: process.env.MAX_SUMMARY_ARTICLES,
+    RSS_CONCURRENCY: process.env.RSS_CONCURRENCY,
+    LOCK_TTL_MINUTES: process.env.LOCK_TTL_MINUTES,
+    CACHE_TTL_SECONDS: process.env.CACHE_TTL_SECONDS,
+    RETRY_MAX_ATTEMPTS: process.env.RETRY_MAX_ATTEMPTS
+  }) as any; // Type assertion needed due to schema difference
+} else {
+  // On server, validate all variables
+  parsed = serverEnvSchema.parse({
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    CRON_SECRET: process.env.CRON_SECRET,
+    SUMMARY_MODEL: process.env.SUMMARY_MODEL,
+    SUMMARY_TRANSLATE_MODEL: process.env.SUMMARY_TRANSLATE_MODEL,
+    SIMILARITY_THRESHOLD: process.env.SIMILARITY_THRESHOLD,
+    WINDOW_HOURS: process.env.WINDOW_HOURS,
+    MAX_SUMMARY_ARTICLES: process.env.MAX_SUMMARY_ARTICLES,
+    RSS_CONCURRENCY: process.env.RSS_CONCURRENCY,
+    LOCK_TTL_MINUTES: process.env.LOCK_TTL_MINUTES,
+    CACHE_TTL_SECONDS: process.env.CACHE_TTL_SECONDS,
+    RETRY_MAX_ATTEMPTS: process.env.RETRY_MAX_ATTEMPTS
+  });
+}
 
 export const env = parsed;
 
