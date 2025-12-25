@@ -173,29 +173,31 @@ const IncidentCard: React.FC<IncidentCardProps> = ({
   if (variant === 'compact') {
      return (
        <Link href={href}>
-         <article className="group relative py-3 flex gap-4 cursor-pointer hover:bg-[#F8F9FA] -mx-2 px-2 transition-colors border-b border-[#E8EAED] last:border-b-0">
+         <article className="group relative flex gap-3 cursor-pointer transition-colors">
             <div className="flex-1 min-w-0 flex flex-col">
                {/* Topic Tags */}
-               <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                  {topicTags.slice(0, 1).map((topic, idx) => (
-                    <span
-                      key={idx}
-                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#E8F0FE] text-[#1A73E8]"
-                    >
-                      {getTopicLabel(topic)}
-                    </span>
-                  ))}
-               </div>
-               <h3 className="text-sm font-medium text-[#202124] leading-snug line-clamp-2 group-hover:text-[#1A73E8] transition-colors duration-200 flex items-center gap-1.5">
-                  <span className="group-hover:underline decoration-1 underline-offset-2">{headline}</span>
-                  <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#1A73E8] text-xs">➝</span>
+               {topicTags.length > 0 && (
+                 <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                    {topicTags.slice(0, 1).map((topic, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#E8F0FE] text-[#1A73E8]"
+                      >
+                        {getTopicLabel(topic)}
+                      </span>
+                    ))}
+                 </div>
+               )}
+               <h3 className="text-sm font-medium text-[#202124] leading-snug line-clamp-2 group-hover:text-[#1A73E8] transition-colors duration-200 flex items-start gap-1.5 mb-1">
+                  <span className="flex-1 group-hover:underline decoration-1 underline-offset-2">{headline}</span>
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#1A73E8] text-xs flex-shrink-0 mt-0.5">➝</span>
                </h3>
-               <div className="text-[11px] text-[#5F6368] mt-1">
+               <div className="text-[11px] text-[#5F6368]">
                   {formatTimeAgo(updatedAt)}
                </div>
             </div>
             
-            <div className="w-16 h-16 flex-shrink-0 rounded-2xl overflow-hidden relative bg-[#F1F3F4]">
+            <div className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden relative bg-[#F1F3F4]">
                <Image 
                   src={getImageUrl()} 
                   alt={headline}

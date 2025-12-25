@@ -602,17 +602,73 @@ async function createOrUpdateCluster(
     .update({ cluster_id: clusterId })
     .eq('id', article.id);
 
-  // Create/update summary
+  // Create/update summary with translations
+  // First, get existing summary to check if we need to generate translations
+  const { data: existingSummary } = await supabase
+    .from('summaries')
+    .select('summary_en, summary_si, summary_ta')
+    .eq('cluster_id', clusterId)
+    .maybeSingle();
+
+  let summaryEn = openaiResult.language === 'en' ? openaiResult.summary : null;
+  let summarySi = openaiResult.language === 'si' ? openaiResult.summary : null;
+  let summaryTa = openaiResult.language === 'ta' ? openaiResult.summary : null;
+
+  // If we have an English summary but no translations, generate them
+  if (summaryEn && (!existingSummary?.summary_si || !existingSummary?.summary_ta)) {
+    try {
+      // Simple translation function using OpenAI
+      const translateText = async (text: string, targetLang: 'si' | 'ta'): Promise<string | null> => {
+        try {
+          const langLabel = targetLang === 'si' ? 'Sinhala' : 'Tamil';
+          const completion = await openai.chat.completions.create({
+            model: process.env.SUMMARY_MODEL || 'gpt-4o-mini',
+            messages: [
+              { 
+                role: 'system', 
+                content: `Translate the following English news summary into formal written ${langLabel}. Preserve meaning exactly. Use formal news-style ${langLabel}.`
+              },
+              { role: 'user', content: text }
+            ],
+            temperature: 0.2,
+            max_tokens: 400
+          });
+          return completion.choices[0]?.message?.content?.trim() || null;
+        } catch (error) {
+          console.warn(`  ⚠️  Translation to ${targetLang} failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          return null;
+        }
+      };
+
+      // Generate translations in parallel
+      const [siResult, taResult] = await Promise.all([
+        translateText(summaryEn, 'si'),
+        translateText(summaryEn, 'ta')
+      ]);
+      
+      if (siResult) summarySi = siResult;
+      if (taResult) summaryTa = taResult;
+    } catch (error) {
+      console.warn(`  ⚠️  Failed to generate translations for cluster ${clusterId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Continue without translations - we'll try again later
+    }
+  }
+
+  // Preserve existing translations if we don't have new ones
+  const finalSummaryEn = summaryEn || existingSummary?.summary_en || null;
+  const finalSummarySi = summarySi || existingSummary?.summary_si || null;
+  const finalSummaryTa = summaryTa || existingSummary?.summary_ta || null;
+
   await supabase
     .from('summaries')
     .upsert({
       cluster_id: clusterId,
-      summary_en: openaiResult.language === 'en' ? openaiResult.summary : null,
-      summary_si: openaiResult.language === 'si' ? openaiResult.summary : null,
-      summary_ta: openaiResult.language === 'ta' ? openaiResult.summary : null,
+      summary_en: finalSummaryEn,
+      summary_si: finalSummarySi,
+      summary_ta: finalSummaryTa,
       model: process.env.SUMMARY_MODEL || 'gpt-4o-mini',
       prompt_version: 'v2-individual-processing',
-      version: 1,
+      version: (existingSummary ? 1 : 1), // Keep version logic simple for now
       updated_at: new Date().toISOString()
     }, { onConflict: 'cluster_id' });
 

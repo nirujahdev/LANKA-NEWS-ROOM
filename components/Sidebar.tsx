@@ -44,20 +44,21 @@ const Sidebar: React.FC<SidebarProps> = ({ latestUpdates = [], language = 'en' }
           </button>
         </div>
         
-        <div>
+        <div className="divide-y divide-[#E8EAED]">
           {latestUpdates.slice(0, 5).map((update) => (
-            <IncidentCard
-              key={update.id}
-              id={update.id}
-              slug={update.slug}
-              headline={update.headline}
-              summary={update.summary || ''}
-              sources={update.sources}
-              updatedAt={update.updatedAt}
-              sourceCount={update.sourceCount}
-              language={language}
-              variant="compact"
-            />
+            <div key={update.id} className="px-5 py-3">
+              <IncidentCard
+                id={update.id}
+                slug={update.slug}
+                headline={update.headline}
+                summary={update.summary || ''}
+                sources={update.sources}
+                updatedAt={update.updatedAt}
+                sourceCount={update.sourceCount}
+                language={language}
+                variant="compact"
+              />
+            </div>
           ))}
         </div>
         

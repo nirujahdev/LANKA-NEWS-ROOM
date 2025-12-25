@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import WeatherWidget from './WeatherWidget';
 
 interface Topic {
@@ -37,11 +37,20 @@ const TopicNavigation: React.FC<TopicNavigationProps> = ({
   showWeather = true 
 }) => {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const getLabel = (topic: Topic) => {
     if (language === 'si' && topic.labelSi) return topic.labelSi;
     if (language === 'ta' && topic.labelTa) return topic.labelTa;
     return topic.label;
+  };
+
+  // Build href with language parameter
+  const getHref = (href: string) => {
+    if (language === 'en') return href;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('lang', language);
+    return `${href}?${params.toString()}`;
   };
 
   const formatDate = () => {
@@ -64,25 +73,27 @@ const TopicNavigation: React.FC<TopicNavigationProps> = ({
       <div className="border-b border-[#E8EAED]">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="flex overflow-x-auto scrollbar-hide -mb-px justify-center">
-            {topics.map((topic) => {
-              const active = isActive(topic.href);
-              return (
-                <Link
-                  key={topic.id}
-                  href={topic.href}
-                  className={`
-                    relative px-3 sm:px-4 py-3 text-sm font-normal whitespace-nowrap
-                    border-b-2 transition-colors duration-150
-                    ${active
-                      ? 'border-[#1A73E8] text-[#1A73E8]'
-                      : 'border-transparent text-[#5F6368] hover:text-[#202124]'
-                    }
-                  `}
-                >
-                  {getLabel(topic)}
-                </Link>
-              );
-            })}
+            <div className="flex min-w-max">
+              {topics.map((topic) => {
+                const active = isActive(topic.href);
+                return (
+                  <Link
+                    key={topic.id}
+                    href={getHref(topic.href)}
+                    className={`
+                      relative px-3 sm:px-4 py-3 text-sm font-normal whitespace-nowrap
+                      border-b-2 transition-colors duration-150
+                      ${active
+                        ? 'border-[#1A73E8] text-[#1A73E8]'
+                        : 'border-transparent text-[#5F6368] hover:text-[#202124]'
+                      }
+                    `}
+                  >
+                    {getLabel(topic)}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
