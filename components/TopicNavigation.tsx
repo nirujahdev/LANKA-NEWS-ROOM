@@ -21,10 +21,8 @@ interface TopicNavigationProps {
 const topics: Topic[] = [
   { id: 'home', label: 'Home', labelSi: 'මුල් පිටුව', labelTa: 'முகப்பு', href: '/' },
   { id: 'for-you', label: 'For you', labelSi: 'ඔබ වෙනුවෙන්', labelTa: 'உங்களுக்காக', href: '/for-you' },
-  { id: 'following', label: 'Following', labelSi: 'අනුගමනය', labelTa: 'பின்தொடரும்', href: '/following' },
   { id: 'sri-lanka', label: 'Sri Lanka', labelSi: 'ශ්‍රී ලංකාව', labelTa: 'இலங்கை', href: '/sri-lanka' },
   { id: 'world', label: 'World', labelSi: 'ලෝකය', labelTa: 'உலகம்', href: '/world' },
-  { id: 'local', label: 'Local', labelSi: 'ප්‍රාදේශීය', labelTa: 'உள்ளூர்', href: '/local' },
   { id: 'politics', label: 'Politics', labelSi: 'දේශපාලනය', labelTa: 'அரசியல்', href: '/politics' },
   { id: 'business', label: 'Business', labelSi: 'ව්‍යාපාර', labelTa: 'வணிகம்', href: '/business' },
   { id: 'technology', label: 'Technology', labelSi: 'තාක්ෂණය', labelTa: 'தொழில்நுட்பம்', href: '/technology' },
@@ -62,10 +60,10 @@ const TopicNavigation: React.FC<TopicNavigationProps> = ({
 
   return (
     <div className="bg-white border-b border-[#E8EAED]">
-      {/* Topic Tabs - Scrollable on Mobile */}
+      {/* Topic Tabs - Centered and Scrollable on Mobile */}
       <div className="border-b border-[#E8EAED]">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-          <div className="flex overflow-x-auto scrollbar-hide -mb-px">
+          <div className="flex overflow-x-auto scrollbar-hide -mb-px justify-center">
             {topics.map((topic) => {
               const active = isActive(topic.href);
               return (
@@ -89,27 +87,14 @@ const TopicNavigation: React.FC<TopicNavigationProps> = ({
         </div>
       </div>
 
-      {/* Date and Weather Section */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-          {/* Left: Date */}
-          <div>
-            <h2 className="text-xl sm:text-2xl font-normal text-[#202124] mb-1">
-              Your briefing
-            </h2>
-            <p className="text-sm text-[#5F6368]">
-              {formatDate()}
-            </p>
+      {/* Weather Section */}
+      {showWeather && (
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex justify-end">
+            <WeatherWidget />
           </div>
-
-          {/* Right: Weather Widget */}
-          {showWeather && (
-            <div className="w-full sm:w-auto">
-              <WeatherWidget />
-            </div>
-          )}
         </div>
-      </div>
+      )}
     </div>
   );
 };
