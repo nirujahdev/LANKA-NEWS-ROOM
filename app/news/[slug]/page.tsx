@@ -187,9 +187,9 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
         headline={cluster.headline}
         description={metaDescription || cluster.headline}
         datePublished={cluster.published_at || cluster.created_at || new Date().toISOString()}
-        dateModified={cluster.updated_at}
-        imageUrl={imageUrl}
-        category={cluster.category}
+        dateModified={cluster.updated_at || undefined}
+        imageUrl={imageUrl || undefined}
+        category={cluster.category || undefined}
         url={canonicalUrl}
         language={lang}
       />
