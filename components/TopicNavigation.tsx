@@ -4,6 +4,7 @@ import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import WeatherWidget from './WeatherWidget';
+import { normalizeTopicSlug } from '@/lib/topics';
 
 interface Topic {
   id: string;
