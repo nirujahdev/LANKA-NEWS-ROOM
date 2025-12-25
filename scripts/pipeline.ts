@@ -682,8 +682,29 @@ async function runPipeline(): Promise<Stats> {
     let hasMore = true;
     let consecutiveFailures = 0;
     const MAX_CONSECUTIVE_FAILURES = 5; // Stop if 5 in a row fail
+    const MAX_PROCESSING_TIME_MS = 50 * 60 * 1000; // 50 minutes (leave 10min buffer for timeout)
+    const startTime = Date.now();
+    let totalProcessed = 0;
+    const MAX_ARTICLES_PER_RUN = 100; // Limit articles per run to prevent timeout
     
     while (hasMore) {
+      // Time-based exit: stop if we're approaching timeout
+      const elapsed = Date.now() - startTime;
+      if (elapsed > MAX_PROCESSING_TIME_MS) {
+        console.log(`\n⏰ Time limit reached (${Math.round(elapsed / 1000 / 60)} minutes). Stopping processing.`);
+        console.log(`   Processed ${totalProcessed} articles in this run. Remaining articles will be processed in next run.`);
+        hasMore = false;
+        break;
+      }
+
+      // Article count limit: stop if we've processed enough
+      if (totalProcessed >= MAX_ARTICLES_PER_RUN) {
+        console.log(`\n📊 Article limit reached (${MAX_ARTICLES_PER_RUN} articles). Stopping processing.`);
+        console.log(`   Remaining articles will be processed in next run.`);
+        hasMore = false;
+        break;
+      }
+
       const articles = await pickArticlesForProcessing(BATCH_SIZE);
       stats.pickedForProcessing += articles.length;
       
@@ -692,18 +713,26 @@ async function runPipeline(): Promise<Stats> {
         break;
       }
 
-      console.log(`   Processing batch of ${articles.length} articles...`);
+      console.log(`   Processing batch of ${articles.length} articles... (${totalProcessed}/${MAX_ARTICLES_PER_RUN} processed, ${Math.round((Date.now() - startTime) / 1000 / 60)}min elapsed)`);
 
       // Process articles sequentially to avoid overwhelming API and better error tracking
       let batchSuccess = 0;
       let batchFailed = 0;
       
       for (const article of articles) {
+        // Check time limit before each article
+        if (Date.now() - startTime > MAX_PROCESSING_TIME_MS) {
+          console.log(`\n⏰ Time limit reached. Stopping batch processing.`);
+          hasMore = false;
+          break;
+        }
+
         try {
           const openaiResult = await withRetry(() => processArticleWithOpenAI(article), 2, 3000); // 2 retries, 3s delay
           const clusterId = await createOrUpdateCluster(article, openaiResult);
           await markArticleProcessed(article.id, clusterId);
           stats.processed++;
+          totalProcessed++;
           batchSuccess++;
           consecutiveFailures = 0; // Reset on success
           console.log(`   ✓ Processed: ${article.title.slice(0, 50)}...`);
@@ -730,7 +759,7 @@ async function runPipeline(): Promise<Stats> {
       }
 
       // Rate limiting: wait between batches
-      if (articles.length === BATCH_SIZE && hasMore) {
+      if (articles.length === BATCH_SIZE && hasMore && totalProcessed < MAX_ARTICLES_PER_RUN) {
         await sleep(1000); // 1 second between batches
       } else {
         hasMore = false;
