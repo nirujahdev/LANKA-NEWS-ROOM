@@ -44,14 +44,22 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 const rssParser = new Parser({
-  timeout: 10000,
+  timeout: 15000, // Increased timeout
+  maxRedirects: 5,
   headers: {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+    'Accept': 'application/rss+xml, application/xml, text/xml, application/atom+xml, */*',
     'Accept-Language': 'en-US,en;q=0.9',
     'Accept-Encoding': 'gzip, deflate, br',
     'Connection': 'keep-alive',
-    'Referer': 'https://www.google.com/'
+    'Referer': 'https://www.google.com/',
+    'Cache-Control': 'no-cache'
+  },
+  customFields: {
+    item: [
+      ['media:content', 'mediaContent', { keepArray: true }],
+      ['media:thumbnail', 'mediaThumbnail', { keepArray: true }]
+    ]
   }
 });
 
@@ -165,7 +173,14 @@ async function withRetry<T>(
 
 async function fetchRssFeed(feedUrl: string): Promise<RSSItem[]> {
   try {
+    // Try to fetch with better error handling
     const feed = await rssParser.parseURL(feedUrl);
+    
+    if (!feed || !feed.items || feed.items.length === 0) {
+      console.warn(`  ⚠️  Feed ${feedUrl} returned no items`);
+      return [];
+    }
+    
     return (feed.items || [])
       .map((item: Item) => {
         let imageUrl: string | null = null;
@@ -199,8 +214,23 @@ async function fetchRssFeed(feedUrl: string): Promise<RSSItem[]> {
         };
       })
       .filter((item) => item.url && item.url.startsWith('http'));
-  } catch (error) {
-    throw new Error(`Failed to fetch RSS feed ${feedUrl}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  } catch (error: any) {
+    // Provide more detailed error information
+    const errorMsg = error?.message || 'Unknown error';
+    const statusCode = error?.statusCode || error?.status || 'N/A';
+    
+    // Check for specific error types
+    if (errorMsg.includes('403') || statusCode === 403) {
+      throw new Error(`Status code 403 - Feed blocked by server. URL: ${feedUrl}`);
+    } else if (errorMsg.includes('404') || statusCode === 404) {
+      throw new Error(`Status code 404 - Feed not found. URL: ${feedUrl}`);
+    } else if (errorMsg.includes('XML') || errorMsg.includes('parse') || errorMsg.includes('Non-whitespace')) {
+      throw new Error(`XML parsing error - Invalid feed format. URL: ${feedUrl}. Error: ${errorMsg}`);
+    } else if (errorMsg.includes('timeout') || errorMsg.includes('ETIMEDOUT')) {
+      throw new Error(`Timeout - Feed took too long to respond. URL: ${feedUrl}`);
+    } else {
+      throw new Error(`Failed to fetch RSS feed ${feedUrl}: ${errorMsg}`);
+    }
   }
 }
 
