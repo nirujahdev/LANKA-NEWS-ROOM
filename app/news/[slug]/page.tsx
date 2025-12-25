@@ -51,6 +51,7 @@ async function getClusterBySlug(slug: string) {
         first_seen_at?: string | null;
         source_count?: number | null;
         category?: string | null;
+        topic?: string | null;
         image_url?: string | null;
         language?: string | null;
         summaries?: Array<{
