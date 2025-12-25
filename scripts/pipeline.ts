@@ -558,17 +558,50 @@ async function createOrUpdateCluster(
 
   if (existing) {
     clusterId = existing.id;
+    // Map topic to category for updates too
+    const primaryTopic = openaiResult.topics[0] || 'other';
+    const categoryMap: Record<string, string> = {
+      'politics': 'politics',
+      'economy': 'economy',
+      'sports': 'sports',
+      'technology': 'technology',
+      'health': 'health',
+      'education': 'education',
+      'crime': 'politics',
+      'environment': 'health',
+      'culture': 'politics',
+      'other': 'politics'
+    };
+    const category = categoryMap[primaryTopic.toLowerCase()] || 'politics';
+    
     // Update existing cluster
     await supabase
       .from('clusters')
       .update({
         last_seen_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        category: category // Update category if it changed
       })
       .eq('id', clusterId);
   } else {
     // Create new cluster
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    // Map topic to category (ensure it matches database constraint)
+    const primaryTopic = openaiResult.topics[0] || 'other';
+    const categoryMap: Record<string, string> = {
+      'politics': 'politics',
+      'economy': 'economy',
+      'sports': 'sports',
+      'technology': 'technology',
+      'health': 'health',
+      'education': 'education',
+      'crime': 'politics', // Map crime to politics
+      'environment': 'health', // Map environment to health
+      'culture': 'politics', // Map culture to politics
+      'other': 'politics' // Default to politics
+    };
+    const category = categoryMap[primaryTopic.toLowerCase()] || 'politics';
+    
     const { data: newCluster, error } = await supabase
       .from('clusters')
       .insert({
@@ -577,7 +610,8 @@ async function createOrUpdateCluster(
         slug: openaiResult.slug,
         meta_title_en: openaiResult.seo_title,
         meta_description_en: openaiResult.seo_description,
-        topic: openaiResult.topics[0] || 'other',
+        topic: primaryTopic,
+        category: category, // Set category for API filtering
         city: openaiResult.city,
         language: openaiResult.language,
         first_seen_at: new Date().toISOString(),
