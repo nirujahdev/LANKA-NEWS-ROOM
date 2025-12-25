@@ -15,6 +15,12 @@ type Props = {
 
 async function getClusterBySlug(slug: string) {
   try {
+    // Check if Supabase is configured
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('Supabase credentials not configured');
+      return null;
+    }
+
     const { data: cluster, error } = await supabaseAdmin
       .from('clusters')
       .select(`
