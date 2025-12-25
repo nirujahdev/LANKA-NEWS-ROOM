@@ -175,7 +175,7 @@ export default function HomePage() {
           { id: 'business', category: 'economy' },
           { id: 'technology', category: 'technology' },
           { id: 'sports', category: 'sports' },
-          { id: 'science', category: 'science' },
+          { id: 'science', category: 'technology' }, // Science maps to technology category for now
           { id: 'health', category: 'health' }
         ];
         const topicPromises = topics.map(async ({ id, category }) => {

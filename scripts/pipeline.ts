@@ -567,6 +567,7 @@ async function createOrUpdateCluster(
       'technology': 'technology',
       'health': 'health',
       'education': 'education',
+      'science': 'technology', // Map science to technology
       'crime': 'politics',
       'environment': 'health',
       'culture': 'politics',
@@ -595,6 +596,7 @@ async function createOrUpdateCluster(
       'technology': 'technology',
       'health': 'health',
       'education': 'education',
+      'science': 'technology', // Map science to technology (closest match until DB constraint updated)
       'crime': 'politics', // Map crime to politics
       'environment': 'health', // Map environment to health
       'culture': 'politics', // Map culture to politics
