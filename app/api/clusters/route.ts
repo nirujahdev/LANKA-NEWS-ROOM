@@ -147,6 +147,7 @@ export async function GET(req: Request) {
   }
 }
 
-// Removed edge runtime to avoid static generation issues
-// export const runtime = 'edge';
+// Mark as dynamic to prevent static generation
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
