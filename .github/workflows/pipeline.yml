@@ -31,10 +31,11 @@ on:
           - 'false'
           - 'true'
 
-# Prevent concurrent runs - cancel in-progress runs
+# Prevent concurrent runs - queue new runs instead of canceling
+# This ensures all runs complete, even if triggered multiple times
 concurrency:
   group: pipeline-worker
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   pipeline:
