@@ -266,5 +266,9 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
       </div>
     </div>
   );
+  } catch (error) {
+    console.error('Error rendering NewsDetailPage:', error);
+    notFound();
+  }
 }
 
