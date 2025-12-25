@@ -32,14 +32,6 @@ function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 'ta' }) {
     // Only run on client side
     if (typeof window === 'undefined') return;
 
-    let supabase: ReturnType<typeof getSupabaseClient>;
-    try {
-      supabase = getSupabaseClient();
-    } catch (error) {
-      console.error('Failed to get Supabase client:', error);
-      // Don't block page loading - getSupabaseClient handles missing env vars gracefully
-    }
-
     // Check if Supabase is properly configured (but don't block if not)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -48,7 +40,16 @@ function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 'ta' }) {
       // Continue loading - getSupabaseClient returns a placeholder client
     }
 
-    // Check authentication (only if Supabase is properly configured)
+    // Get Supabase client (handles missing env vars gracefully)
+    let supabase: ReturnType<typeof getSupabaseClient> | undefined;
+    try {
+      supabase = getSupabaseClient();
+    } catch (error) {
+      console.error('Failed to get Supabase client:', error);
+      // Don't block page loading - getSupabaseClient handles missing env vars gracefully
+    }
+
+    // Check authentication (only if Supabase is properly configured and client exists)
     if (supabaseUrl && supabaseAnonKey && supabase) {
       supabase.auth.getSession().then(({ data: { session } }) => {
         setIsAuthenticated(!!session);

@@ -48,6 +48,18 @@ export function useLanguage(initialLang?: 'en' | 'si' | 'ta') {
 
     async function loadUserLanguage() {
       try {
+        // Only try to load user language if Supabase is configured
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        
+        if (!supabaseUrl || !supabaseAnonKey) {
+          // Supabase not configured, skip user language loading
+          if (!cancelled) {
+            setIsLoading(false);
+          }
+          return;
+        }
+
         const supabase = getSupabaseClient();
         const { data: { session } } = await supabase.auth.getSession();
         
@@ -73,6 +85,7 @@ export function useLanguage(initialLang?: 'en' | 'si' | 'ta') {
         }
       } catch (error) {
         console.error('Failed to load user language:', error);
+        // Don't throw - continue with default language
       } finally {
         if (!cancelled) {
           setIsLoading(false);
@@ -147,19 +160,25 @@ export function useLanguage(initialLang?: 'en' | 'si' | 'ta') {
     // Update localStorage
     localStorage.setItem('preferredLanguage', lang);
 
-    // Update user profile if authenticated
+    // Update user profile if authenticated (only if Supabase is configured)
     try {
-      const supabase = getSupabaseClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       
-      if (session?.user) {
-        await supabase
-          .from('profiles')
-          .update({ language: lang })
-          .eq('id', session.user.id);
+      if (supabaseUrl && supabaseAnonKey) {
+        const supabase = getSupabaseClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          await supabase
+            .from('profiles')
+            .update({ language: lang })
+            .eq('id', session.user.id);
+        }
       }
     } catch (error) {
       console.error('Failed to update user language:', error);
+      // Don't throw - language change should still work even if profile update fails
     }
 
     // Update URL to reflect language change
