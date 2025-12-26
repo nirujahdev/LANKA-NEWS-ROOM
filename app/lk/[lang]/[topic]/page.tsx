@@ -113,7 +113,7 @@ export default async function TopicPage({ params }: Props) {
   }
 
   // Get latest articles for this topic with sources
-  const { data: clusters } = await supabaseAdmin
+  const { data: clustersData, error: clustersError } = await supabaseAdmin
     .from('clusters')
     .select(`
       *,
@@ -129,6 +129,78 @@ export default async function TopicPage({ params }: Props) {
     .eq('topic', topic)
     .order('last_seen_at', { ascending: false })
     .limit(20);
+
+  // Serialize clusters data to ensure all dates are strings and all values are serializable
+  const clusters = (clustersData || []).map((cluster: any) => {
+    const serializedCluster = { ...cluster };
+    
+    // Convert all date fields to ISO strings
+    const dateFields = ['last_seen_at', 'first_seen_at', 'published_at', 'created_at', 'updated_at', 'last_checked_at'];
+    for (const field of dateFields) {
+      if (serializedCluster[field]) {
+        if (serializedCluster[field] instanceof Date) {
+          serializedCluster[field] = serializedCluster[field].toISOString();
+        } else if (typeof serializedCluster[field] === 'string') {
+          // Already a string, ensure it's valid
+          try {
+            new Date(serializedCluster[field]);
+          } catch {
+            serializedCluster[field] = null;
+          }
+        }
+      } else {
+        serializedCluster[field] = null;
+      }
+    }
+    
+    // Ensure all string fields are strings
+    serializedCluster.id = String(serializedCluster.id || '');
+    serializedCluster.headline = String(serializedCluster.headline || '');
+    serializedCluster.slug = serializedCluster.slug ? String(serializedCluster.slug) : null;
+    serializedCluster.status = String(serializedCluster.status || 'published');
+    serializedCluster.topic = serializedCluster.topic ? String(serializedCluster.topic) : null;
+    serializedCluster.source_count = typeof serializedCluster.source_count === 'number' ? serializedCluster.source_count : 0;
+    
+    // Ensure summaries is an array
+    if (serializedCluster.summaries && !Array.isArray(serializedCluster.summaries)) {
+      serializedCluster.summaries = [serializedCluster.summaries];
+    }
+    if (!Array.isArray(serializedCluster.summaries)) {
+      serializedCluster.summaries = [];
+    }
+    
+    // Ensure articles is an array
+    if (serializedCluster.articles && !Array.isArray(serializedCluster.articles)) {
+      serializedCluster.articles = [serializedCluster.articles];
+    }
+    if (!Array.isArray(serializedCluster.articles)) {
+      serializedCluster.articles = [];
+    }
+    
+    // Serialize nested articles and sources
+    serializedCluster.articles = serializedCluster.articles.map((article: any) => {
+      if (!article || typeof article !== 'object') return null;
+      const serializedArticle: any = {
+        id: String(article.id || ''),
+        cluster_id: article.cluster_id ? String(article.cluster_id) : null,
+        source_id: article.source_id ? String(article.source_id) : null
+      };
+      
+      // Serialize nested source
+      if (article.sources && typeof article.sources === 'object') {
+        serializedArticle.sources = {
+          name: String(article.sources.name || ''),
+          feed_url: String(article.sources.feed_url || '')
+        };
+      } else {
+        serializedArticle.sources = null;
+      }
+      
+      return serializedArticle;
+    }).filter(Boolean);
+    
+    return serializedCluster;
+  });
 
   const topicLabel = TOPIC_LABELS[lang][topic as keyof typeof TOPIC_LABELS.en];
   const countryRef = lang === 'en' ? 'Sri Lanka' : lang === 'si' ? 'ශ්‍රී ලංකා' : 'இலங்கை';
