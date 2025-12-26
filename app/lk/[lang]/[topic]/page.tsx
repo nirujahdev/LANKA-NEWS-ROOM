@@ -10,6 +10,7 @@ import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import NavigationWrapper from '@/components/NavigationWrapper';
 import NewsCard from '@/components/NewsCard';
+import FilterMenu from '@/components/FilterMenu';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 300;

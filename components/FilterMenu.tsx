@@ -99,7 +99,7 @@ export default function FilterMenu({
   }, [filters, pathname, router, searchParams]);
 
   const clearFilters = useCallback(() => {
-    setFilters({ date: 'all', city: null, sort: 'newest' });
+    setFilters({ date: 'all', district: null, sort: 'newest' });
     
     // Preserve existing query parameters (like q, lang) when clearing filters
     const params = new URLSearchParams(searchParams.toString());
