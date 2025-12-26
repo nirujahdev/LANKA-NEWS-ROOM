@@ -101,12 +101,13 @@ export async function ensureProfileExists(
 
   // Profile doesn't exist, create it
   // The database trigger should handle this, but we'll create it manually if needed
-  const profileData: Partial<ProfileData> = {
+  const profileData = {
     id: userId,
     email: userMetadata?.email || null,
     name: userMetadata?.full_name || userMetadata?.name || 'User',
     language: (userMetadata?.language as 'en' | 'si' | 'ta') || 'en',
     city: userMetadata?.city || 'Colombo',
+    district: userMetadata?.district || null,
     avatar_url: userMetadata?.picture || userMetadata?.avatar_url || null,
   };
 
