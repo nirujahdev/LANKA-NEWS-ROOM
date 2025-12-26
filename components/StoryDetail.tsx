@@ -122,30 +122,6 @@ const StoryDetail: React.FC<StoryDetailProps> = ({
         {headline}
       </h1>
 
-      {/* Featured Image - Moved to top of summary area */}
-      {imageUrl && (
-        <div className="mb-6 sm:mb-8">
-          <div className="relative w-full aspect-video rounded-lg sm:rounded-xl overflow-hidden bg-[#F1F3F4]">
-            <Image
-              src={imageUrl}
-              alt={headline}
-              fill
-              className="object-cover"
-              priority
-              unoptimized
-              onError={(e) => {
-                console.error('Image failed to load:', imageUrl);
-                const target = e.target as HTMLImageElement;
-                const parent = target.closest('div');
-                if (parent) {
-                  parent.style.display = 'none';
-                }
-              }}
-            />
-          </div>
-        </div>
-      )}
-
       {/* Key Facts Section */}
       {keyFacts && keyFacts.length > 0 && (
         <div className="mb-6 sm:mb-8">
@@ -184,8 +160,31 @@ const StoryDetail: React.FC<StoryDetailProps> = ({
       </div>
 
       {/* Summary - Mobile-optimized typography */}
-      <div className="mb-8 sm:mb-10 pb-20 sm:pb-24 md:pb-28">
+      <div className="mb-8 sm:mb-10 pb-32 sm:pb-40 md:pb-48">
         <div className="prose prose-sm sm:prose-base md:prose-lg max-w-none">
+          {/* Featured Image - Inside article content */}
+          {imageUrl && (
+            <div className="my-6 sm:my-8">
+              <div className="relative w-full aspect-video rounded-lg sm:rounded-xl overflow-hidden bg-[#F1F3F4]">
+                <Image
+                  src={imageUrl}
+                  alt={headline}
+                  fill
+                  className="object-cover"
+                  priority
+                  unoptimized
+                  onError={(e) => {
+                    console.error('Image failed to load:', imageUrl);
+                    const target = e.target as HTMLImageElement;
+                    const parent = target.closest('div');
+                    if (parent) {
+                      parent.style.display = 'none';
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          )}
           <p className="text-sm sm:text-base md:text-lg text-[#202124] leading-[1.6] sm:leading-[1.7] md:leading-[1.75] font-normal">
             {getSummary()}
           </p>
@@ -224,8 +223,8 @@ const StoryDetail: React.FC<StoryDetailProps> = ({
               rel="noopener noreferrer"
               className="
                 flex items-center justify-between
-                p-3 sm:p-4 bg-white border border-[#E8EAED] rounded-lg
-                hover:shadow-sm active:shadow-md transition-shadow duration-200
+                p-3 sm:p-4 bg-transparent
+                hover:opacity-80 transition-opacity duration-200
                 group touch-target
               "
             >
