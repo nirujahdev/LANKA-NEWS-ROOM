@@ -47,9 +47,22 @@ export function middleware(request: NextRequest) {
   const protectedRoutes = ['/for-you', '/onboarding', '/profile'];
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
 
-  // Allow auth callback
-  if (pathname.startsWith('/auth/callback')) {
+  // Allow auth callback and error pages
+  if (pathname.startsWith('/auth/callback') || pathname.startsWith('/auth/error')) {
     return NextResponse.next();
+  }
+
+  // For protected routes, store the intended destination
+  if (isProtectedRoute) {
+    const response = NextResponse.next();
+    // Store the intended destination in a cookie for post-auth redirect
+    response.cookies.set('auth_redirect', pathname, {
+      maxAge: 60 * 5, // 5 minutes
+      path: '/',
+      sameSite: 'lax',
+      httpOnly: false, // Need to read from client side
+    });
+    return response;
   }
 
   // For protected routes, we'll check auth in the page component
