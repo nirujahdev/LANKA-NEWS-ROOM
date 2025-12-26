@@ -30,10 +30,24 @@ export default function ProfilePage() {
   useEffect(() => {
     async function fetchUserData() {
       try {
+        // Check if Supabase is configured
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+          console.error('❌ Supabase URL not configured. Please set NEXT_PUBLIC_SUPABASE_URL in Vercel environment variables.');
+          setLoading(false);
+          return;
+        }
+        
         const supabase = getSupabaseClient();
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
-        if (userError || !user) {
+        if (userError) {
+          console.error('Error getting user:', userError);
+          setLoading(false);
+          return;
+        }
+        
+        if (!user) {
           // Don't redirect immediately - let the page show sign-in prompt
           setLoading(false);
           return;
