@@ -1253,11 +1253,33 @@ async function summarizeEligible(
       console.warn(`[Pipeline] ⚠️ Low quality score (${summaryQualityScore}) for cluster ${cluster.id}`);
     }
 
+    // Ensure topics array always has at least 2 topics before saving
+    if (!Array.isArray(topics) || topics.length < 2) {
+      console.warn(`[Pipeline] ⚠️ Topics array has less than 2 topics for cluster ${cluster.id}, fixing...`);
+      const hasGeographic = topics?.some((t: string) => t === 'sri-lanka' || t === 'world') || false;
+      const hasContent = topics?.some((t: string) => 
+        ['politics', 'economy', 'sports', 'crime', 'education', 'health', 'environment', 'technology', 'culture', 'society', 'other'].includes(t)
+      ) || false;
+      
+      if (!hasGeographic) {
+        topics = ['sri-lanka', ...(topics || [])];
+      }
+      if (!hasContent) {
+        topics = [...(topics || []), topic || 'politics'];
+      }
+      // Final check - ensure at least 2
+      if (topics.length < 2) {
+        topics = ['sri-lanka', topic || 'politics'];
+      }
+      console.log(`[Pipeline] Fixed topics array: ${JSON.stringify(topics)}`);
+    }
+    
     // Log headline status before saving
     console.log(`[Pipeline] Saving headlines for cluster ${cluster.id}:`);
     console.log(`  - English: ${cluster.headline?.substring(0, 60)}...`);
     console.log(`  - Sinhala: ${headlineSi ? headlineSi.substring(0, 60) + '...' : 'NULL (not generated)'}`);
     console.log(`  - Tamil: ${headlineTa ? headlineTa.substring(0, 60) + '...' : 'NULL (not generated)'}`);
+    console.log(`  - Topics: ${JSON.stringify(topics)} (should have at least 2: geographic + content)`);
     
     // Update cluster with comprehensive SEO metadata and publish
     const updateResult = await supabaseAdmin.from('clusters').update({
@@ -1271,9 +1293,9 @@ async function summarizeEligible(
       slug: slug,
       published_at: publishedAt,
       topic: topic,
-      topics: topics, // Multi-topic array
-      headline_si: headlineSi || null, // Explicitly set to null if not generated
-      headline_ta: headlineTa || null, // Explicitly set to null if not generated
+      topics: topics, // Multi-topic array (always has at least 2: geographic + content)
+      headline_si: headlineSi && headlineSi.trim().length > 0 ? headlineSi.trim() : null, // Save if valid
+      headline_ta: headlineTa && headlineTa.trim().length > 0 ? headlineTa.trim() : null, // Save if valid
       city: district, // Keep city field for backward compatibility, but use district value
       primary_entity: primaryEntity,
       event_type: eventType,

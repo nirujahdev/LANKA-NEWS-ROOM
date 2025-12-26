@@ -164,9 +164,29 @@ export async function GET(req: Request) {
           cluster.headline;
         
         // Get topics array (prefer topics array, fallback to single topic)
-        const topicsArray = cluster.topics && Array.isArray(cluster.topics) && cluster.topics.length > 0
+        // Ensure we always have at least 2 topics (geographic + content)
+        let topicsArray = cluster.topics && Array.isArray(cluster.topics) && cluster.topics.length > 0
           ? cluster.topics
           : cluster.topic ? [cluster.topic] : [];
+        
+        // Ensure 2-topic system: always have geographic + content
+        if (topicsArray.length < 2) {
+          const hasGeographic = topicsArray.some(t => t === 'sri-lanka' || t === 'world');
+          const hasContent = topicsArray.some(t => 
+            ['politics', 'economy', 'sports', 'crime', 'education', 'health', 'environment', 'technology', 'culture', 'society', 'other'].includes(t)
+          );
+          
+          if (!hasGeographic) {
+            topicsArray = ['sri-lanka', ...topicsArray];
+          }
+          if (!hasContent && cluster.topic) {
+            topicsArray = [...topicsArray, cluster.topic];
+          }
+          // Final fallback
+          if (topicsArray.length < 2) {
+            topicsArray = ['sri-lanka', cluster.topic || 'politics'];
+          }
+        }
         
         // Ensure all date values are strings (serializable)
         const firstSeen = cluster.first_seen_at 
