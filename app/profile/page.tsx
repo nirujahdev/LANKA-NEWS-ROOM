@@ -89,7 +89,9 @@ export default function ProfilePage() {
         setReadingHistory(0);
       } catch (error) {
         console.error('Error loading user data:', error);
-        router.push('/');
+        // Don't redirect on error - let the page show the sign-in prompt or error state
+        // Only redirect if it's a critical error that prevents the page from rendering
+        setLoading(false);
       } finally {
         setLoading(false);
       }
