@@ -101,34 +101,44 @@ export function useLanguage(initialLang?: 'en' | 'si' | 'ta') {
   }, []);
 
   // Determine current language based on priority
-  // DO NOT auto-update URLs - only update when user explicitly calls setLanguage()
+  // URL is the source of truth - always sync with URL first
   useEffect(() => {
     if (isLoading) return;
 
-    // Priority 1: User profile language (if authenticated and no manual override)
-    // Only check localStorage on client side to avoid hydration issues
-    if (typeof window !== 'undefined' && userLanguage && !localStorage.getItem('preferredLanguage')) {
-      setCurrentLanguageState(userLanguage);
-      localStorage.setItem('preferredLanguage', userLanguage);
-      // DO NOT auto-update URL - let user navigate manually
-      return;
-    }
-
-    // Priority 2: localStorage preference (session) - only on client
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('preferredLanguage') as 'en' | 'si' | 'ta' | null;
-      if (stored && ['en', 'si', 'ta'].includes(stored)) {
-        // DO NOT auto-update URL - only update state to match localStorage
-        // URL will be updated when user explicitly calls setLanguage()
-        setCurrentLanguageState(stored);
+      // Priority 1: URL path (source of truth)
+      const pathLang = getLangFromPath(pathname);
+      if (pathLang) {
+        // URL has language - use it and sync localStorage
+        if (currentLanguage !== pathLang) {
+          setCurrentLanguageState(pathLang);
+          localStorage.setItem('preferredLanguage', pathLang);
+        }
         return;
       }
 
-      // Priority 3: URL param (only if no preference exists)
-      const pathLang = getLangFromPath(pathname);
-      if (pathLang) {
-        setCurrentLanguageState(pathLang);
-        localStorage.setItem('preferredLanguage', pathLang);
+      // Priority 2: User profile language (if authenticated and no URL language)
+      if (userLanguage && !pathLang) {
+        setCurrentLanguageState(userLanguage);
+        localStorage.setItem('preferredLanguage', userLanguage);
+        // If we're on a language-aware route but URL doesn't match, redirect
+        if (pathname.match(/^\/(en|si|ta)(\/|$)/)) {
+          const newPath = pathname.replace(/^\/(en|si|ta)/, `/${userLanguage}`);
+          router.push(newPath);
+        }
+        return;
+      }
+
+      // Priority 3: localStorage preference (only if no URL language)
+      const stored = localStorage.getItem('preferredLanguage') as 'en' | 'si' | 'ta' | null;
+      if (stored && ['en', 'si', 'ta'].includes(stored) && !pathLang) {
+        // If we're on a language-aware route, redirect to match localStorage
+        if (pathname.match(/^\/(en|si|ta)(\/|$)/)) {
+          const newPath = pathname.replace(/^\/(en|si|ta)/, `/${stored}`);
+          router.push(newPath);
+        } else {
+          setCurrentLanguageState(stored);
+        }
         return;
       }
 
@@ -140,15 +150,15 @@ export function useLanguage(initialLang?: 'en' | 'si' | 'ta') {
         }
       }
     }
-  }, [pathname, userLanguage, isLoading, currentLanguage]);
+  }, [pathname, userLanguage, isLoading, currentLanguage, getLangFromPath, router]);
 
   // Change language (user action)
   const setLanguage = useCallback(async (lang: 'en' | 'si' | 'ta') => {
+    // Update localStorage first
+    localStorage.setItem('preferredLanguage', lang);
+    
     // Update state
     setCurrentLanguageState(lang);
-    
-    // Update localStorage
-    localStorage.setItem('preferredLanguage', lang);
 
     // Update user profile if authenticated (only if Supabase is configured)
     try {
@@ -171,7 +181,7 @@ export function useLanguage(initialLang?: 'en' | 'si' | 'ta') {
       // Don't throw - language change should still work even if profile update fails
     }
 
-    // Update URL to reflect language change
+    // Update URL to reflect language change - this is the source of truth
     const pathLang = getLangFromPath(pathname);
     if (pathLang) {
       // Replace language in path

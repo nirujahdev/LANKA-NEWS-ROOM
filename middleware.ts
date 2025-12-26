@@ -16,13 +16,31 @@ export function middleware(request: NextRequest) {
     }
     
     const response = NextResponse.redirect(new URL(`/${detectedLang}`, request.url));
-    // Set cookie for future requests
+    // Set cookie for future requests to match the URL
     response.cookies.set('preferredLanguage', detectedLang, {
       maxAge: 60 * 60 * 24 * 365, // 1 year
       path: '/',
       sameSite: 'lax'
     });
     return response;
+  }
+
+  // Sync cookie with URL language for language-aware routes
+  const langMatch = pathname.match(/^\/(en|si|ta)(\/|$)/);
+  if (langMatch) {
+    const urlLang = langMatch[1];
+    const langCookie = request.cookies.get('preferredLanguage')?.value;
+    
+    // If cookie doesn't match URL, update it
+    if (langCookie !== urlLang) {
+      const response = NextResponse.next();
+      response.cookies.set('preferredLanguage', urlLang, {
+        maxAge: 60 * 60 * 24 * 365, // 1 year
+        path: '/',
+        sameSite: 'lax'
+      });
+      return response;
+    }
   }
 
   // Protected routes
@@ -41,6 +59,13 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/for-you/:path*', '/onboarding/:path*', '/profile/:path*', '/auth/callback/:path*']
+  matcher: [
+    '/',
+    '/for-you/:path*',
+    '/onboarding/:path*',
+    '/profile/:path*',
+    '/auth/callback/:path*',
+    '/(en|si|ta)/:path*' // Match all language routes
+  ]
 };
 
