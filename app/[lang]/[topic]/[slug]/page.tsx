@@ -333,6 +333,25 @@ export default async function StoryPage({ params }: Props) {
       };
     }).filter(Boolean);
     
+    // Serialize summary object to ensure all values are JSON-serializable
+    const serializedSummary = summary ? {
+      summary_en: summary.summary_en ? String(summary.summary_en) : null,
+      summary_si: summary.summary_si ? String(summary.summary_si) : null,
+      summary_ta: summary.summary_ta ? String(summary.summary_ta) : null,
+      key_facts_en: Array.isArray(summary.key_facts_en) 
+        ? summary.key_facts_en.filter((item: any) => typeof item === 'string').map((item: any) => String(item))
+        : null,
+      key_facts_si: Array.isArray(summary.key_facts_si) 
+        ? summary.key_facts_si.filter((item: any) => typeof item === 'string').map((item: any) => String(item))
+        : null,
+      key_facts_ta: Array.isArray(summary.key_facts_ta) 
+        ? summary.key_facts_ta.filter((item: any) => typeof item === 'string').map((item: any) => String(item))
+        : null,
+      confirmed_vs_differs_en: summary.confirmed_vs_differs_en ? String(summary.confirmed_vs_differs_en) : null,
+      confirmed_vs_differs_si: summary.confirmed_vs_differs_si ? String(summary.confirmed_vs_differs_si) : null,
+      confirmed_vs_differs_ta: summary.confirmed_vs_differs_ta ? String(summary.confirmed_vs_differs_ta) : null
+    } : null;
+    
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
     const canonicalUrl = `${baseUrl}/${lang}/${topic}/${slug}`;
     
@@ -344,23 +363,23 @@ export default async function StoryPage({ params }: Props) {
     
     // Get metadata for JSON-LD
     const metaDescription =
-      lang === 'si' ? serializedCluster.meta_description_si || summary?.summary_si :
-      lang === 'ta' ? serializedCluster.meta_description_ta || summary?.summary_ta :
-      serializedCluster.meta_description_en || summary?.summary_en;
+      lang === 'si' ? serializedCluster.meta_description_si || serializedSummary?.summary_si :
+      lang === 'ta' ? serializedCluster.meta_description_ta || serializedSummary?.summary_ta :
+      serializedCluster.meta_description_en || serializedSummary?.summary_en;
 
     const firstArticle = serializedArticles?.[0] as { image_url?: string | null } | undefined;
     const imageUrl = serializedCluster.image_url || firstArticle?.image_url || null;
 
-    // Get language-specific key facts and confirmed vs differs
+    // Get language-specific key facts and confirmed vs differs (from serialized summary)
     const keyFacts = 
-      lang === 'si' ? summary?.key_facts_si || null :
-      lang === 'ta' ? summary?.key_facts_ta || null :
-      summary?.key_facts_en || null;
+      lang === 'si' ? serializedSummary?.key_facts_si || null :
+      lang === 'ta' ? serializedSummary?.key_facts_ta || null :
+      serializedSummary?.key_facts_en || null;
 
     const confirmedVsDiffers =
-      lang === 'si' ? summary?.confirmed_vs_differs_si || null :
-      lang === 'ta' ? summary?.confirmed_vs_differs_ta || null :
-      summary?.confirmed_vs_differs_en || null;
+      lang === 'si' ? serializedSummary?.confirmed_vs_differs_si || null :
+      lang === 'ta' ? serializedSummary?.confirmed_vs_differs_ta || null :
+      serializedSummary?.confirmed_vs_differs_en || null;
 
     // Build breadcrumb items with new URL format
     const breadcrumbItems = [
@@ -415,13 +434,13 @@ export default async function StoryPage({ params }: Props) {
                 headline={headlineText}
                 summary={
                   lang === 'si'
-                    ? summary?.summary_si || summary?.summary_en || ''
+                    ? serializedSummary?.summary_si || serializedSummary?.summary_en || ''
                     : lang === 'ta'
-                    ? summary?.summary_ta || summary?.summary_en || ''
-                    : summary?.summary_en || ''
+                    ? serializedSummary?.summary_ta || serializedSummary?.summary_en || ''
+                    : serializedSummary?.summary_en || ''
                 }
-                summarySi={summary?.summary_si || undefined}
-                summaryTa={summary?.summary_ta || undefined}
+                summarySi={serializedSummary?.summary_si || undefined}
+                summaryTa={serializedSummary?.summary_ta || undefined}
                 sources={serializedArticles.map((article: any) => article.sources || { name: 'Unknown', feed_url: '#' })}
                 updatedAt={serializedCluster.updated_at || null}
                 firstSeen={serializedCluster.first_seen_at || null}
