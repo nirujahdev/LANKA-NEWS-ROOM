@@ -282,15 +282,21 @@ export default async function TopicPage({ params, searchParams }: Props) {
             serializedCluster.summaries = serializedCluster.summaries.map((summary: any) => {
               if (!summary || typeof summary !== 'object') return null;
               return {
-                summary_en: summary.summary_en || null,
-                summary_si: summary.summary_si || null,
-                summary_ta: summary.summary_ta || null,
-                key_facts_en: Array.isArray(summary.key_facts_en) ? summary.key_facts_en : null,
-                key_facts_si: Array.isArray(summary.key_facts_si) ? summary.key_facts_si : null,
-                key_facts_ta: Array.isArray(summary.key_facts_ta) ? summary.key_facts_ta : null,
-                confirmed_vs_differs_en: summary.confirmed_vs_differs_en || null,
-                confirmed_vs_differs_si: summary.confirmed_vs_differs_si || null,
-                confirmed_vs_differs_ta: summary.confirmed_vs_differs_ta || null
+                summary_en: summary.summary_en ? String(summary.summary_en) : null,
+                summary_si: summary.summary_si ? String(summary.summary_si) : null,
+                summary_ta: summary.summary_ta ? String(summary.summary_ta) : null,
+                key_facts_en: Array.isArray(summary.key_facts_en) 
+                  ? summary.key_facts_en.filter((item: any) => typeof item === 'string').map((item: any) => String(item))
+                  : null,
+                key_facts_si: Array.isArray(summary.key_facts_si) 
+                  ? summary.key_facts_si.filter((item: any) => typeof item === 'string').map((item: any) => String(item))
+                  : null,
+                key_facts_ta: Array.isArray(summary.key_facts_ta) 
+                  ? summary.key_facts_ta.filter((item: any) => typeof item === 'string').map((item: any) => String(item))
+                  : null,
+                confirmed_vs_differs_en: summary.confirmed_vs_differs_en ? String(summary.confirmed_vs_differs_en) : null,
+                confirmed_vs_differs_si: summary.confirmed_vs_differs_si ? String(summary.confirmed_vs_differs_si) : null,
+                confirmed_vs_differs_ta: summary.confirmed_vs_differs_ta ? String(summary.confirmed_vs_differs_ta) : null
               };
             }).filter(Boolean);
             

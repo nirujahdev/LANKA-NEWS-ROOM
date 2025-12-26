@@ -48,10 +48,12 @@ async function getClusterBySlug(slug: string) {
         updated_at?: string | null;
         created_at?: string | null;
         first_seen_at?: string | null;
+        last_checked_at?: string | null;
         source_count?: number | null;
         category?: string | null;
         topic?: string | null;
         topics?: string[] | null;
+        keywords?: string[] | null;
         headline_si?: string | null;
         headline_ta?: string | null;
         image_url?: string | null;
@@ -60,6 +62,12 @@ async function getClusterBySlug(slug: string) {
           summary_en?: string | null;
           summary_si?: string | null;
           summary_ta?: string | null;
+          key_facts_en?: string[] | null;
+          key_facts_si?: string[] | null;
+          key_facts_ta?: string[] | null;
+          confirmed_vs_differs_en?: string | null;
+          confirmed_vs_differs_si?: string | null;
+          confirmed_vs_differs_ta?: string | null;
         }>;
       }>();
 
@@ -220,26 +228,108 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
 
     const { cluster, summary, articles } = data;
     
-    // Allow page to render even without summary (cluster might be processing)
-    // Summary will be empty string if not available
+    // Serialize cluster data to ensure all dates are strings and all values are serializable
+    // Helper function to safely convert date values to ISO strings
+    const toISOString = (value: any): string | null => {
+      if (!value) return null;
+      if (value instanceof Date) {
+        return value.toISOString();
+      }
+      if (typeof value === 'string') {
+        // Try to parse and validate the date string
+        try {
+          const date = new Date(value);
+          if (!isNaN(date.getTime())) {
+            return date.toISOString();
+          }
+        } catch {
+          // If parsing fails, return the original string
+        }
+        return value;
+      }
+      return String(value);
+    };
+
+    const serializedCluster = {
+      ...cluster,
+      // Convert all date fields to ISO strings
+      published_at: toISOString(cluster.published_at),
+      updated_at: toISOString(cluster.updated_at),
+      created_at: toISOString(cluster.created_at),
+      first_seen_at: toISOString(cluster.first_seen_at),
+      last_checked_at: toISOString(cluster.last_checked_at),
+      // Ensure all string fields are strings
+      id: String(cluster.id || ''),
+      headline: String(cluster.headline || ''),
+      headline_si: cluster.headline_si ? String(cluster.headline_si) : null,
+      headline_ta: cluster.headline_ta ? String(cluster.headline_ta) : null,
+      slug: cluster.slug ? String(cluster.slug) : null,
+      status: String(cluster.status || 'published'),
+      topic: cluster.topic ? String(cluster.topic) : null,
+      category: cluster.category ? String(cluster.category) : null,
+      image_url: cluster.image_url ? String(cluster.image_url) : null,
+      source_count: typeof cluster.source_count === 'number' ? cluster.source_count : 0,
+      topics: Array.isArray(cluster.topics) ? cluster.topics.filter((t: any) => typeof t === 'string') : [],
+      keywords: Array.isArray(cluster.keywords) ? cluster.keywords.filter((k: any) => typeof k === 'string') : null,
+      meta_title_en: cluster.meta_title_en ? String(cluster.meta_title_en) : null,
+      meta_description_en: cluster.meta_description_en ? String(cluster.meta_description_en) : null,
+      meta_title_si: cluster.meta_title_si ? String(cluster.meta_title_si) : null,
+      meta_description_si: cluster.meta_description_si ? String(cluster.meta_description_si) : null,
+      meta_title_ta: cluster.meta_title_ta ? String(cluster.meta_title_ta) : null,
+      meta_description_ta: cluster.meta_description_ta ? String(cluster.meta_description_ta) : null
+    };
+    
+    // Serialize articles
+    const serializedArticles = (articles || []).map((article: any) => {
+      if (!article || typeof article !== 'object') return null;
+      return {
+        id: String(article.id || ''),
+        image_url: article.image_url && typeof article.image_url === 'string' ? article.image_url : null,
+        sources: article.sources && typeof article.sources === 'object' 
+          ? {
+              name: String(article.sources.name || 'Unknown'),
+              feed_url: String(article.sources.feed_url || '#')
+            }
+          : { name: 'Unknown', feed_url: '#' }
+      };
+    }).filter(Boolean);
+    
+    // Serialize summary object to ensure all values are JSON-serializable
+    const serializedSummary = summary ? {
+      summary_en: summary.summary_en ? String(summary.summary_en) : null,
+      summary_si: summary.summary_si ? String(summary.summary_si) : null,
+      summary_ta: summary.summary_ta ? String(summary.summary_ta) : null,
+      key_facts_en: Array.isArray(summary.key_facts_en) 
+        ? summary.key_facts_en.filter((item: any) => typeof item === 'string').map((item: any) => String(item))
+        : null,
+      key_facts_si: Array.isArray(summary.key_facts_si) 
+        ? summary.key_facts_si.filter((item: any) => typeof item === 'string').map((item: any) => String(item))
+        : null,
+      key_facts_ta: Array.isArray(summary.key_facts_ta) 
+        ? summary.key_facts_ta.filter((item: any) => typeof item === 'string').map((item: any) => String(item))
+        : null,
+      confirmed_vs_differs_en: summary.confirmed_vs_differs_en ? String(summary.confirmed_vs_differs_en) : null,
+      confirmed_vs_differs_si: summary.confirmed_vs_differs_si ? String(summary.confirmed_vs_differs_si) : null,
+      confirmed_vs_differs_ta: summary.confirmed_vs_differs_ta ? String(summary.confirmed_vs_differs_ta) : null
+    } : null;
 
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
     const canonicalUrl = `${baseUrl}/news/${resolvedParams.slug}`;
     
     // Get language-specific headline
     const headlineText =
-      lang === 'si' ? cluster.headline_si || cluster.headline :
-      lang === 'ta' ? cluster.headline_ta || cluster.headline :
-      cluster.headline;
+      lang === 'si' ? serializedCluster.headline_si || serializedCluster.headline :
+      lang === 'ta' ? serializedCluster.headline_ta || serializedCluster.headline :
+      serializedCluster.headline;
     
     // Get metadata for JSON-LD
     const metaDescription =
-      lang === 'si' ? cluster.meta_description_si || summary?.summary_si :
-      lang === 'ta' ? cluster.meta_description_ta || summary?.summary_ta :
-      cluster.meta_description_en || summary?.summary_en;
+      lang === 'si' ? serializedCluster.meta_description_si || serializedSummary?.summary_si :
+      lang === 'ta' ? serializedCluster.meta_description_ta || serializedSummary?.summary_ta :
+      serializedCluster.meta_description_en || serializedSummary?.summary_en;
 
-    const firstArticle = articles?.[0] as { image_url?: string | null } | undefined;
-    const imageUrl = cluster.image_url || firstArticle?.image_url || null;
+    const firstArticle = serializedArticles?.[0] as { image_url?: string | null } | undefined;
+    const imageUrl = serializedCluster.image_url || firstArticle?.image_url || null;
 
     return (
     <div className="min-h-screen bg-[#F5F5F5]">
@@ -247,10 +337,10 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
       <NewsArticleSchema
         headline={headlineText}
         description={metaDescription || headlineText}
-        datePublished={cluster.published_at || cluster.created_at || new Date().toISOString()}
-        dateModified={cluster.updated_at || undefined}
-        imageUrl={imageUrl || undefined}
-        category={cluster.category || undefined}
+        datePublished={serializedCluster.published_at || serializedCluster.created_at || new Date().toISOString()}
+        dateModified={serializedCluster.updated_at || null}
+        imageUrl={imageUrl || null}
+        category={serializedCluster.category || null}
         url={canonicalUrl}
         language={lang}
       />
@@ -272,22 +362,22 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
           <main className="flex-1 min-w-0 w-full lg:max-w-3xl lg:mx-auto">
             <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 md:p-8 lg:p-10">
               <StoryDetail
-                id={cluster.id}
-                slug={cluster.slug}
+                id={serializedCluster.id}
+                slug={serializedCluster.slug}
                 headline={headlineText}
                 summary={
                   lang === 'si'
-                    ? summary?.summary_si || summary?.summary_en || ''
+                    ? serializedSummary?.summary_si || serializedSummary?.summary_en || ''
                     : lang === 'ta'
-                    ? summary?.summary_ta || summary?.summary_en || ''
-                    : summary?.summary_en || ''
+                    ? serializedSummary?.summary_ta || serializedSummary?.summary_en || ''
+                    : serializedSummary?.summary_en || ''
                 }
-                summarySi={summary?.summary_si}
-                summaryTa={summary?.summary_ta}
-                sources={(articles || []).map((article: any) => article.sources || { name: 'Unknown', feed_url: '#' })}
-                updatedAt={cluster.updated_at}
-                firstSeen={cluster.first_seen_at}
-                sourceCount={cluster.source_count || 0}
+                summarySi={serializedSummary?.summary_si || null}
+                summaryTa={serializedSummary?.summary_ta || null}
+                sources={serializedArticles.map((article: any) => article.sources || { name: 'Unknown', feed_url: '#' })}
+                updatedAt={serializedCluster.updated_at || null}
+                firstSeen={serializedCluster.first_seen_at || null}
+                sourceCount={serializedCluster.source_count || 0}
                 currentLanguage={lang}
               />
             </div>
