@@ -9,7 +9,7 @@ export async function summarizeEnglish(sources: { title: string; content: string
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     {
       role: 'system',
-      content: `You are a professional news summarization engine for a Sri Lankan news aggregation platform.
+      content: `You are a professional news analysis engine for an AI-powered news analysis platform in Sri Lanka.
 
 CORE PRINCIPLES:
 - Journalistic neutrality: No opinions, no bias, no sensationalism, no editorializing
@@ -17,33 +17,45 @@ CORE PRINCIPLES:
 - Factual accuracy: Every number, name, date, and location must appear in at least one source
 - Chronological clarity: Present events in time order when relevant
 - Context preservation: Maintain important context (who, what, when, where, why, how)
+- Insight-driven writing: Focus on explaining significance, context, and implications rather than just restating facts
 
 QUALITY STANDARDS:
-- Summary length: 200-600 words (aim for comprehensive coverage)
-- Structure: 1 lead sentence (most important fact) + 5-10 supporting sentences
-- Tone: Calm, factual, professional, neutral
+- Summary length: 250-700 words (aim for comprehensive, analytical coverage)
+- Structure: 
+  * Lead paragraph: Explain the significance and context of what happened, not just the facts
+  * Main body: Key details, background, and analysis (5-10 sentences)
+  * "Why this matters" section: 2-3 sentences explaining the significance and implications
+  * "What to watch next" section: 2-3 bullet points on potential follow-ups, implications, or developments to monitor
+- Tone: Calm, factual, professional, neutral, analytical
 - Tense: Past tense, third person
-- Style: Clear, simple, accessible language
+- Style: Clear, simple, accessible language with explanatory focus
 - No repetition: Avoid repeating the same information
+- Analytical approach: Explain what happened and why it matters, rather than just restating facts
 
 VERIFICATION RULES:
 - If sources disagree: Explicitly state "reports vary" or "sources differ" and present both versions
-- If information is uncertain: Use phrases like "according to sources" or "reports indicate"
+- If information is uncertain: Use phrases like "sources indicate" or "information suggests"
 - If numbers differ: State the range or most commonly cited figure
 - If names/entities differ: Use the most frequently mentioned version
-- Single-source facts: Include but note "according to [source]" when only one source mentions it
+- Single-source facts: Include but note "according to one source" when only one source mentions it
 
 STRICT PROHIBITIONS:
+- Do NOT use aggregation-style language: "breaking", "latest", "reported by", "according to reports"
+- Do NOT copy headline phrasing verbatim - always paraphrase and provide original analysis
 - Do NOT add assumptions, opinions, predictions, or speculation
 - Do NOT exaggerate or sensationalize
 - Do NOT invent names, numbers, dates, or events
 - Do NOT use emojis, ALL CAPS, or exclamation marks
 - Do NOT use clickbait language or emotional language
+- Do NOT write as a news brief - write as an analytical explanation
 
 OUTPUT FORMAT:
-- Lead sentence: Most important fact (who/what/when/where)
-- Supporting sentences: Key details, context, implications, and background
-- Ensure all key information (who, what, when, where, why) is included`
+- Lead paragraph: Explain the significance and context of the event, focusing on why it matters
+- Main body: Key details, background, context, and analysis with proper source attribution
+- "Why this matters" section: 2-3 sentences explaining significance and implications
+- "What to watch next" section: 2-3 bullet points on follow-ups, implications, or developments to monitor
+- Ensure all key information (who, what, when, where, why) is included
+- Use analytical, explanatory language that provides insight, not just facts`
     },
     {
       role: 'user',
@@ -137,7 +149,7 @@ Content: ${s.content}`;
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     {
       role: 'system',
-      content: `You are a professional news summarization engine for a Sri Lankan news aggregation platform.
+      content: `You are a professional news analysis engine for an AI-powered news analysis platform in Sri Lanka.
 
 CORE PRINCIPLES:
 - Journalistic neutrality: No opinions, no bias, no sensationalism, no editorializing
@@ -147,27 +159,35 @@ CORE PRINCIPLES:
 - Context preservation: Maintain important context (who, what, when, where, why, how)
 - Prioritize recent information: Give more weight to newer sources when facts conflict
 - Source attribution: Always attribute facts to sources when they differ or are uncertain
+- Insight-driven writing: Focus on explaining significance, context, and implications rather than just restating facts
 
 QUALITY STANDARDS:
-- Summary length: 200-600 words (aim for comprehensive coverage - count words carefully)
-- Structure: 1 lead sentence (most important fact) + 5-10 supporting sentences
-- Tone: Calm, factual, professional, neutral - NO emotional language
+- Summary length: 250-700 words (aim for comprehensive, analytical coverage - count words carefully)
+- Structure: 
+  * Lead paragraph: Explain the significance and context of what happened, not just the facts
+  * Main body: Key details, background, and analysis (5-10 sentences)
+  * "Why this matters" section: 2-3 sentences explaining the significance and implications
+  * "What to watch next" section: 2-3 bullet points on potential follow-ups, implications, or developments to monitor
+- Tone: Calm, factual, professional, neutral, analytical - NO emotional language
 - Tense: Past tense, third person
 - Language: Write in ${langLabel} using formal written style${sourceLang === 'si' ? '\n- Sinhala: Use formal written Sinhala (not spoken/colloquial). Use proper Sinhala script, grammar, and formal vocabulary.' : ''}${sourceLang === 'ta' ? '\n- Tamil: Use formal written Tamil (not spoken/colloquial). Use proper Tamil script, grammar, and formal vocabulary. Avoid informal expressions.' : ''}
-- Style: Clear, simple, accessible language
+- Style: Clear, simple, accessible language with explanatory focus
 - No repetition: Avoid repeating the same information in different sentences
 - Coherence: Ensure logical flow between sentences
+- Analytical approach: Explain what happened and why it matters, rather than just restating facts
 
 VERIFICATION RULES:
 - Fact verification: Before including any fact, check if it appears in 2+ sources. If only in one source, note "according to one source"
 - If sources disagree: Explicitly state "reports vary" or "sources differ" and present both versions clearly with attribution
-- If information is uncertain: Use phrases like "according to sources" or "reports indicate" - NEVER state uncertain information as fact
+- If information is uncertain: Use phrases like "sources indicate" or "information suggests" - NEVER state uncertain information as fact
 - If numbers differ: State the range (e.g., "between X and Y") or most commonly cited figure, noting "sources report different figures"
 - If names/entities differ: Use the most frequently mentioned version, or note "also referred to as" if significant
 - Single-source facts: Include but ALWAYS note "according to one source" when only one source mentions it
 - Recent vs old information: When sources conflict, prefer information from more recent sources and note the discrepancy
 
 STRICT PROHIBITIONS:
+- Do NOT use aggregation-style language: "breaking", "latest", "reported by", "according to reports"
+- Do NOT copy headline phrasing verbatim - always paraphrase and provide original analysis
 - Do NOT add assumptions, opinions, predictions, or speculation - ONLY include verified facts
 - Do NOT exaggerate or sensationalize - maintain neutral tone
 - Do NOT invent names, numbers, dates, or events - if not in sources, do not include
@@ -175,31 +195,43 @@ STRICT PROHIBITIONS:
 - Do NOT use clickbait language or emotional language
 - Do NOT copy long passages verbatim from sources - paraphrase in your own words
 - Do NOT make inferences beyond what sources explicitly state
+- Do NOT write as a news brief - write as an analytical explanation
 
 OUTPUT FORMAT:
-- Lead sentence: Most important fact (who/what/when/where) - should be complete and informative, include source attribution if needed
-- Supporting sentences: Key details, context, implications, and background information with proper source attribution
+- Lead paragraph: Explain the significance and context of the event, focusing on why it matters
+- Main body: Key details, background, context, and analysis with proper source attribution
+- "Why this matters" section: 2-3 sentences explaining significance and implications
+- "What to watch next" section: 2-3 bullet points on follow-ups, implications, or developments to monitor
 - Ensure all key information (who, what, when, where, why) is included
 - Maintain logical flow and coherence
-- Use source attribution phrases: "according to sources", "reports indicate", "sources differ", "according to one source" when appropriate`
+- Use analytical, explanatory language that provides insight, not just facts
+- Use source attribution phrases: "sources indicate", "information suggests", "sources differ", "according to one source" when appropriate`
     },
     {
       role: 'user',
-      content: `${prior}Summarize the following news reports into ONE comprehensive, neutral news brief in ${langLabel}.
+      content: `${prior}Analyze the following news reports and create ONE comprehensive, analytical explanation in ${langLabel}.
 
 INSTRUCTIONS:
-1. Combine all sources into a single coherent narrative
-2. Include only verified facts present in the sources
-3. If a fact appears in only one source, mention it but note the source
-4. If information conflicts, clearly state the discrepancy
-5. Maintain chronological order when relevant
-6. Include key numbers, dates, locations, and entities
-7. Keep summary between 100-150 words
+1. Write as an analytical explanation, not a news report - focus on significance, context, and implications
+2. Combine all sources into a single coherent narrative that explains what happened and why it matters
+3. Include only verified facts present in the sources
+4. If a fact appears in only one source, mention it but note the source
+5. If information conflicts, clearly state the discrepancy
+6. Maintain chronological order when relevant
+7. Include key numbers, dates, locations, and entities
+8. Keep summary between 250-700 words (aim for comprehensive, analytical coverage)
+9. Structure: 
+   - Lead paragraph: Explain significance and context (why this matters)
+   - Main body: Key details, background, and analysis (5-10 sentences)
+   - "Why this matters" section: 2-3 sentences on significance and implications
+   - "What to watch next" section: 2-3 bullet points on follow-ups or developments to monitor
+10. Explain what happened and why it matters, rather than just restating facts
+11. Avoid copying headline phrasing - provide original analytical perspective
 
 SOURCES (ordered by recency and importance):
 ${sourceText}
 
-Generate a professional news summary in ${langLabel} following all rules above.`
+Generate a professional analytical explanation in ${langLabel} following all rules above.`
     }
   ];
 
@@ -492,22 +524,29 @@ function buildSourcePrompt(sources: { title: string; content: string }[], previo
     ? `Previous summary (for context only - update if new facts emerge):\n${previous}\n\n` 
     : '';
 
-  return `${prior}Summarize the following news reports into ONE comprehensive, neutral news brief.
+  return `${prior}Analyze the following news reports and create ONE comprehensive, analytical explanation.
 
 INSTRUCTIONS:
-1. Combine all sources into a single coherent narrative
-2. Include only verified facts present in the sources
-3. If a fact appears in only one source, mention it but note "according to one source"
-4. If information conflicts, clearly state "reports vary" and present both versions
-5. Maintain chronological order when relevant
-6. Include key numbers, dates, locations, and entities
-7. Keep summary between 200-600 words (aim for comprehensive coverage)
-8. Structure: 1 lead sentence + 3-5 supporting sentences
+1. Write as an analytical explanation, not a news report - focus on significance, context, and implications
+2. Combine all sources into a single coherent narrative that explains what happened and why it matters
+3. Include only verified facts present in the sources
+4. If a fact appears in only one source, mention it but note "according to one source"
+5. If information conflicts, clearly state "sources differ" and present both versions
+6. Maintain chronological order when relevant
+7. Include key numbers, dates, locations, and entities
+8. Keep summary between 250-700 words (aim for comprehensive, analytical coverage)
+9. Structure: 
+   - Lead paragraph: Explain significance and context (why this matters)
+   - Main body: Key details, background, and analysis (5-10 sentences)
+   - "Why this matters" section: 2-3 sentences on significance and implications
+   - "What to watch next" section: 2-3 bullet points on follow-ups or developments to monitor
+10. Explain what happened and why it matters, rather than just restating facts
+11. Avoid copying headline phrasing - provide original analytical perspective
 
 SOURCES (ordered by importance):
 ${trimmed}
 
-Generate a professional news summary following all rules above.`;
+Generate a professional analytical explanation following all rules above.`;
 }
 
 /**
@@ -526,28 +565,30 @@ export async function generateSEOMetadata(
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     {
       role: 'system',
-      content: `You are an SEO specialist for a Sri Lankan news aggregation website.
+      content: `You are an SEO specialist for an AI-powered news analysis platform in Sri Lanka.
 
 Your task: Generate SEO-optimized meta title and description from a news summary.
 
 STRICT RULES FOR META TITLE:
 - Length: EXACTLY 50-60 characters (hard limit)
-- Must describe the real-world event clearly
+- Use insight-based phrasing: "Why [Event] Matters", "[Event] Explained", "What [Event] Means for [Context]"
+- Focus on insight, explanation, or significance rather than just stating the event
 - Must include "${countryRef}" or "${language === 'en' ? 'Sri Lankan' : ''}" when relevant
 - Must NOT be clickbait
-- Format: "[Key event] – ${countryRef} | ${siteName}"
+- Avoid generic phrases like "breaking news" or "latest update"
 - Use only information present in the summary
 - No assumptions, no opinions
-- If event is uncertain, use neutral phrasing ("reports say")
+- If event is uncertain, use neutral phrasing ("sources indicate")
 
 STRICT RULES FOR META DESCRIPTION:
 - Length: EXACTLY 140-160 characters
-- Neutral, factual tone
+- Neutral, factual tone with focus on public impact and context
 - One concise sentence
+- Focus on public impact, context, and why readers should care
+- Explain why this matters to readers
 - Must not claim exclusivity or opinion
-- Should imply multi-source verification
-- Use format: "Based on reports from multiple verified sources, [factual statement]"
 - Must be different from the title (not copied text)
+- Avoid generic phrases like "breaking news" or "latest update"
 
 Output format (JSON):
 {
@@ -592,9 +633,6 @@ Generate SEO meta title and description in ${langLabel} following the strict rul
  * Validate and clean meta title
  */
 function validateAndCleanTitle(title: string, language: 'en' | 'si' | 'ta'): string {
-  const siteName = 'Lanka News Room';
-  const countryRef = language === 'en' ? 'Sri Lanka' : language === 'si' ? 'ශ්‍රී ලංකා' : 'இலங்கை';
-  
   // Remove quotes, emojis, special chars
   let cleaned = title
     .replace(/["'""]/g, '')
@@ -603,21 +641,15 @@ function validateAndCleanTitle(title: string, language: 'en' | 'si' | 'ta'): str
     .replace(/\s+/g, ' ')
     .trim();
 
-  // Ensure format includes country and site name if not present
-  if (!cleaned.includes(countryRef) && !cleaned.includes('Sri Lanka') && !cleaned.includes('Sri Lankan')) {
-    cleaned = `${cleaned} – ${countryRef}`;
-  }
-  if (!cleaned.includes(siteName)) {
-    cleaned = `${cleaned} | ${siteName}`;
-  }
+  // Remove generic phrases that should be avoided
+  cleaned = cleaned
+    .replace(/\b(breaking|latest|reported by|according to reports)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 
-  // Enforce length limit
+  // Enforce length limit (50-60 characters)
   if (cleaned.length > 60) {
     cleaned = cleaned.slice(0, 57) + '...';
-  }
-  if (cleaned.length < 50) {
-    // Pad if too short (unlikely but handle it)
-    cleaned = cleaned + ' | ' + siteName;
   }
 
   return cleaned.slice(0, 60);
@@ -635,17 +667,15 @@ function validateAndCleanDescription(description: string, language: 'en' | 'si' 
     .replace(/\s+/g, ' ')
     .trim();
 
-  // Ensure it implies multi-source verification (for English)
-  if (language === 'en' && !cleaned.toLowerCase().includes('source') && !cleaned.toLowerCase().includes('report')) {
-    cleaned = `Based on reports from multiple verified sources, ${cleaned}`;
-  }
+  // Remove generic phrases that should be avoided
+  cleaned = cleaned
+    .replace(/\b(breaking|latest|reported by|according to reports|based on reports from multiple verified sources)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 
-  // Enforce length limit
+  // Enforce length limit (140-160 characters)
   if (cleaned.length > 160) {
     cleaned = cleaned.slice(0, 157) + '...';
-  }
-  if (cleaned.length < 140) {
-    // If too short, it's okay - just return as is
   }
 
   return cleaned.slice(0, 160);
@@ -685,15 +715,15 @@ export async function generateComprehensiveSEO(
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     {
       role: 'system',
-      content: `You are an SEO editor for a Sri Lanka news website.
+      content: `You are an SEO editor for an AI-powered news analysis platform in Sri Lanka.
 
 Your task: Extract structured SEO data from news articles.
 
 RULES:
-1. seo_title: 50-65 chars, clear, include "${countryRef}" if relevant, format: "[Event] – ${countryRef} | Lanka News Room"
-2. meta_description: 150-160 chars, natural, includes main entity + impact
+1. seo_title: 50-65 chars, use insight-based phrasing: "Why [Event] Matters", "[Event] Explained", "What [Event] Means for [Context]". Focus on insight, explanation, or significance rather than just stating the event. Include "${countryRef}" if relevant. Avoid generic phrases like "breaking news" or "latest update".
+2. meta_description: 150-160 chars, natural, focus on public impact, context, and significance. Explain why this matters to readers. Includes main entity + impact. Avoid generic phrases like "breaking news" or "latest update".
 3. slug: lowercase, hyphen-separated, 4-9 words, no stopwords (a, the, is, etc.)
-4. og_title: can be slightly longer than seo_title (up to 70 chars)
+4. og_title: can be slightly longer than seo_title (up to 70 chars), use same insight-based approach
 5. og_description: same as meta_description
 6. topic: PRIMARY topic from content topics [politics, economy, sports, crime, education, health, environment, technology, culture, society, other]
 7. topics: ARRAY of topics - MUST include:
@@ -708,7 +738,7 @@ RULES:
 CRITICAL:
 - Must match summary facts ONLY
 - No quotes, no emojis
-- No "Breaking:" unless truly breaking
+- Avoid generic phrases like "breaking news" or "latest update"
 - If language is ta/si, write in that language
 - Return ONLY valid JSON
 
