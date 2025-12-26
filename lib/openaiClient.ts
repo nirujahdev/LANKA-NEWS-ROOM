@@ -659,7 +659,8 @@ export async function generateComprehensiveSEO(
   summary: string,
   headline: string,
   articles: Array<{ title: string; content_excerpt?: string | null }>,
-  language: 'en' | 'si' | 'ta'
+  language: 'en' | 'si' | 'ta',
+  preserveTopic?: string
 ): Promise<{
   seo_title: string;
   meta_description: string;
@@ -793,14 +794,20 @@ Generate comprehensive SEO pack in ${langLabel} following the rules above.`
       }
     }
     
+    // Preserve "other" topic if explicitly requested
+    const finalTopic = preserveTopic === 'other' ? 'other' : validateTopic(result.topic);
+    const finalTopics = preserveTopic === 'other' 
+      ? ['sri-lanka', 'other']
+      : (topicsArray.length > 0 ? topicsArray : ['sri-lanka', finalTopic]);
+    
     return {
       seo_title: validateAndCleanTitle(result.seo_title || headline, language),
       meta_description: validateAndCleanDescription(result.meta_description || summary, language),
       slug: cleanSlug(result.slug || headline),
       og_title: result.og_title || validateAndCleanTitle(result.seo_title || headline, language),
       og_description: result.og_description || validateAndCleanDescription(result.meta_description || summary, language),
-      topic: validateTopic(result.topic),
-      topics: topicsArray.length > 0 ? topicsArray : ['sri-lanka', validateTopic(result.topic)],
+      topic: finalTopic,
+      topics: finalTopics,
       district: validateDistrict(result.district),
       primary_entity: result.primary_entity || null,
       event_type: validateEventType(result.event_type)
@@ -848,6 +855,8 @@ function cleanSlug(text: string): string {
 function validateTopic(topic: string | null | undefined): string {
   if (!topic) return 'politics'; // Default to politics instead of 'other'
   const normalized = normalizeTopicSlug(topic);
+  // Preserve "other" if it's explicitly set
+  if (normalized === 'other') return 'other';
   // If normalized topic is valid, return it; otherwise default to 'politics'
   return normalized || 'politics';
 }

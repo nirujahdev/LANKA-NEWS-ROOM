@@ -9,7 +9,8 @@ export const VALID_TOPICS = [
   'technology',
   'society',
   'sri-lanka',
-  'world'
+  'world',
+  'other'
 ] as const;
 
 export type ValidTopic = typeof VALID_TOPICS[number];
@@ -24,7 +25,8 @@ export const TOPIC_LABELS = {
     technology: 'Technology',
     society: 'Society',
     'sri-lanka': 'Sri Lanka',
-    world: 'Global'
+    world: 'Global',
+    other: 'Other'
   },
   si: {
     politics: 'දේශපාලනය',
@@ -35,7 +37,8 @@ export const TOPIC_LABELS = {
     technology: 'තාක්ෂණය',
     society: 'සමාජය',
     'sri-lanka': 'ශ්‍රී ලංකාව',
-    world: 'ලෝකය'
+    world: 'ලෝකය',
+    other: 'වෙනත්'
   },
   ta: {
     politics: 'அரசியல்',
@@ -46,7 +49,8 @@ export const TOPIC_LABELS = {
     technology: 'தொழில்நுட்பம்',
     society: 'சமூகம்',
     'sri-lanka': 'இலங்கை',
-    world: 'உலகம்'
+    world: 'உலகம்',
+    other: 'மற்றவை'
   }
 } as const;
 

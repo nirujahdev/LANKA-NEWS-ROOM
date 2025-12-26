@@ -364,6 +364,7 @@ export default async function StoryPage({ params }: Props) {
                 keyFacts={keyFacts || undefined}
                 confirmedVsDiffers={confirmedVsDiffers || undefined}
                 lastCheckedAt={cluster.last_checked_at}
+                imageUrl={imageUrl || undefined}
               />
             </div>
           </main>

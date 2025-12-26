@@ -7,6 +7,7 @@ import { makeArticleHash } from './hash';
 import { extractEntities, normalizeTitle, similarityScore, generateSlug } from './text';
 import { summarizeEnglish, translateSummary, generateSEOMetadata, generateComprehensiveSEO, summarizeInSourceLanguage, translateToMultipleLanguages, generateKeyFacts, generateConfirmedVsDiffers, generateKeywords, translateFromTo, translateHeadline, validateSummaryQuality, validateTranslationQuality } from './openaiClient';
 import { categorizeCluster } from './categorize';
+import { normalizeTopicSlug } from './topics';
 import { updateLastSuccessfulRun } from './pipelineEarlyExit';
 import { selectBestImage } from './imageSelection';
 import { extractAllImagesFromHtml, fetchArticleImages } from './imageExtraction';
@@ -688,12 +689,17 @@ async function summarizeEligible(
     let headlineSi: string | null = null;
     let headlineTa: string | null = null;
     try {
+      // Check if cluster already has "other" topic - preserve it and don't reassign
+      const existingTopic = cluster.topic ? normalizeTopicSlug(cluster.topic) : null;
+      const isOtherTopic = existingTopic === 'other';
+      
       // Generate comprehensive SEO for English (includes topic, district, entities)
       const comprehensiveSEO = await generateComprehensiveSEO(
         summaryEn,
         cluster.headline,
         articles || [],
-        'en'
+        'en',
+        isOtherTopic ? 'other' : undefined // Pass existing "other" topic to preserve it
       );
 
       seoEn = {
@@ -701,8 +707,11 @@ async function summarizeEligible(
         description: comprehensiveSEO.meta_description
       };
 
-      topic = comprehensiveSEO.topic;
-      topics = comprehensiveSEO.topics || [comprehensiveSEO.topic];
+      // Preserve "other" topic if it was already assigned
+      topic = isOtherTopic ? 'other' : comprehensiveSEO.topic;
+      topics = isOtherTopic 
+        ? ['sri-lanka', 'other'] 
+        : (comprehensiveSEO.topics || [comprehensiveSEO.topic]);
       district = comprehensiveSEO.district;
       primaryEntity = comprehensiveSEO.primary_entity;
       eventType = comprehensiveSEO.event_type;
@@ -810,14 +819,18 @@ async function summarizeEligible(
         console.warn(`[Pipeline] No images found for cluster ${cluster.id}`);
       }
 
-      // Generate SEO for other languages (simpler, just title/description)
+      // Generate SEO for other languages using translated headlines
+      // Use translated headlines if available, otherwise use English headline
+      const headlineForSi = headlineSi || cluster.headline;
+      const headlineForTa = headlineTa || cluster.headline;
+      
       [seoSi, seoTa] = await Promise.all([
-        generateSEOMetadata(summarySi, cluster.headline, 'si').catch(() => ({
-          title: cluster.headline.slice(0, 60),
+        generateSEOMetadata(summarySi, headlineForSi, 'si').catch(() => ({
+          title: headlineForSi.slice(0, 60),
           description: summarySi.slice(0, 160)
         })),
-        generateSEOMetadata(summaryTa, cluster.headline, 'ta').catch(() => ({
-          title: cluster.headline.slice(0, 60),
+        generateSEOMetadata(summaryTa, headlineForTa, 'ta').catch(() => ({
+          title: headlineForTa.slice(0, 60),
           description: summaryTa.slice(0, 160)
         }))
       ]);

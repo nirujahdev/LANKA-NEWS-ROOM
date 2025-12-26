@@ -3,6 +3,7 @@
 import React from 'react';
 import { Clock, ExternalLink, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import FeedbackButtons from './FeedbackButtons';
 import SocialShare from './SocialShare';
 
@@ -28,6 +29,7 @@ type StoryDetailProps = {
   keyFacts?: string[];
   confirmedVsDiffers?: string;
   lastCheckedAt?: string | null;
+  imageUrl?: string | null;
 };
 
 const StoryDetail: React.FC<StoryDetailProps> = ({
@@ -46,7 +48,8 @@ const StoryDetail: React.FC<StoryDetailProps> = ({
   needsReview = false,
   keyFacts,
   confirmedVsDiffers,
-  lastCheckedAt
+  lastCheckedAt,
+  imageUrl
 }) => {
   const getSummary = () => {
     if (currentLanguage === 'si' && summarySi) return summarySi;
@@ -118,6 +121,25 @@ const StoryDetail: React.FC<StoryDetailProps> = ({
       <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal text-[#202124] mb-3 sm:mb-4 leading-[1.2] sm:leading-[1.3] tracking-tight">
         {headline}
       </h1>
+
+      {/* Featured Image */}
+      {imageUrl && (
+        <div className="mb-6 sm:mb-8">
+          <div className="relative w-full aspect-video rounded-lg sm:rounded-xl overflow-hidden bg-[#F1F3F4]">
+            <Image
+              src={imageUrl}
+              alt={headline}
+              fill
+              className="object-cover"
+              priority
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Key Facts Section */}
       {keyFacts && keyFacts.length > 0 && (

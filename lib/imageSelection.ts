@@ -107,15 +107,22 @@ Available Images:
 ${imageDescriptions.join('\n')}
 
 SELECTION CRITERIA (in order of importance):
-1. Relevance: Image should directly relate to the main topic/event
-2. Recency: Prefer images that appear current (avoid generic stock photos if possible)
-3. Quality: Prefer clear, professional images over blurry or low-quality ones
-4. Appropriateness: Image should be suitable for news context
+1. Relevance: Image should directly relate to the main topic/event described in the headline and summary
+2. Content Match: Image should show the actual subject matter (people, places, events) mentioned in the article
+3. Recency: Prefer images that appear current and specific to the event (avoid generic stock photos, logos, or unrelated images)
+4. Quality: Prefer clear, professional images over blurry, pixelated, or low-quality ones
+5. Appropriateness: Image should be suitable for news context (avoid promotional material, ads, or unrelated graphics)
+
+CRITICAL RULES:
+- If an image is clearly a logo, advertisement, or unrelated graphic, DO NOT select it
+- Prefer images that show actual news events, people, or locations mentioned in the article
+- If multiple images are relevant, choose the one that best represents the main event/topic
+- Avoid selecting placeholder images, default images, or generic graphics
 
 Return your response in this EXACT JSON format:
 {
   "selectedIndex": <number 0 to ${imageUrls.length - 1}>,
-  "reason": "<brief explanation in 1 sentence>"
+  "reason": "<brief explanation in 1 sentence explaining why this image is most relevant>"
 }
 
 IMPORTANT: Return ONLY valid JSON, no other text.`;
