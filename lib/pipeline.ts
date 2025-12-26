@@ -366,7 +366,15 @@ async function summarizeEligible(
       .maybeSingle();
 
     const prevSourceCount = summary ? cluster.source_count : 0;
-    if (summary && prevSourceCount === cluster.source_count) continue;
+    const needsSummary = !summary || prevSourceCount !== cluster.source_count;
+    // Always check if headlines need to be generated (even if summary exists)
+    const needsHeadlines = !cluster.headline_si || !cluster.headline_ta || !cluster.topics || !Array.isArray(cluster.topics);
+    
+    // Skip only if summary exists, source count unchanged, AND headlines/topics are already present
+    if (!needsSummary && !needsHeadlines) {
+      console.log(`[Pipeline] Skipping cluster ${cluster.id} - summary and headlines already exist`);
+      continue;
+    }
 
     const { data: articles, error } = await supabaseAdmin
       .from('articles')
@@ -381,16 +389,33 @@ async function summarizeEligible(
     }
 
     // Enhanced source payload with weighting and more context
+    // Detect government/official sources for higher weighting
+    const isGovernmentSource = (articleUrl: string): boolean => {
+      const govPatterns = [
+        /\.gov\.lk/i, /\.gov\./i, /ministry/i, /department/i, /parliament/i,
+        /president/i, /prime.?minister/i, /cabinet/i, /official/i,
+        /press.?release/i, /announcement/i, /\.go\.jp/i
+      ];
+      return govPatterns.some(pattern => pattern.test(articleUrl));
+    };
+    
     const sourcePayload =
       articles?.map((a, idx) => {
         // Increase context from 1500 to 2500 chars for longer summaries
         const content = (a.content_excerpt || a.content_text || a.title || '').slice(0, 2500);
         
         // Weight recent articles higher
-        const weight = idx === 0 ? 1.5 : 1.0;
+        let weight = idx === 0 ? 1.5 : 1.0;
         const recency = a.published_at 
           ? Math.max(0, 1 - (Date.now() - new Date(a.published_at).getTime()) / (7 * 24 * 60 * 60 * 1000))
           : 0.5;
+        
+        // Boost government/official sources significantly (2x weight)
+        const isGov = isGovernmentSource(a.url || '');
+        if (isGov) {
+          weight *= 2.0;
+          console.log(`[Pipeline] 🏛️ Government source detected: ${a.title.substring(0, 60)}...`);
+        }
         
         return {
           title: a.title,
@@ -432,47 +457,54 @@ async function summarizeEligible(
       sourceLang = 'en';
     }
 
-    // Generate summary in source language
+    // Generate summary in source language (only if needed)
     let summaryInSource: string;
     let summaryQualityScore = 0;
-    try {
-      summaryInSource = await summarizeInSourceLanguage(sourcePayload, sourceLang, summary?.summary_en || summary?.summary_si || summary?.summary_ta);
+    
+    if (needsSummary) {
+      try {
+        summaryInSource = await summarizeInSourceLanguage(sourcePayload, sourceLang, summary?.summary_en || summary?.summary_si || summary?.summary_ta);
       
-      // Validate summary quality
-      const qualityCheck = validateSummaryQuality(summaryInSource);
-      summaryQualityScore = qualityCheck.score;
-      
-      if (!qualityCheck.isValid) {
-        console.warn(`[Pipeline] Summary quality check failed (score: ${qualityCheck.score}):`, qualityCheck.issues);
-        // If quality is very poor, try regenerating once
-        if (qualityCheck.score < 50) {
-          console.log('[Pipeline] Regenerating summary due to poor quality...');
-          try {
-            summaryInSource = await summarizeInSourceLanguage(sourcePayload, sourceLang);
-            const retryCheck = validateSummaryQuality(summaryInSource);
-            summaryQualityScore = retryCheck.score;
-            if (!retryCheck.isValid) {
-              console.warn(`[Pipeline] Retry summary also failed quality check (score: ${retryCheck.score})`);
+        // Validate summary quality
+        const qualityCheck = validateSummaryQuality(summaryInSource);
+        summaryQualityScore = qualityCheck.score;
+        
+        if (!qualityCheck.isValid) {
+          console.warn(`[Pipeline] Summary quality check failed (score: ${qualityCheck.score}):`, qualityCheck.issues);
+          // If quality is very poor, try regenerating once
+          if (qualityCheck.score < 50) {
+            console.log('[Pipeline] Regenerating summary due to poor quality...');
+            try {
+              summaryInSource = await summarizeInSourceLanguage(sourcePayload, sourceLang);
+              const retryCheck = validateSummaryQuality(summaryInSource);
+              summaryQualityScore = retryCheck.score;
+              if (!retryCheck.isValid) {
+                console.warn(`[Pipeline] Retry summary also failed quality check (score: ${retryCheck.score})`);
+              }
+            } catch (retryError) {
+              console.error('[Pipeline] Summary regeneration failed:', retryError);
             }
-          } catch (retryError) {
-            console.error('[Pipeline] Summary regeneration failed:', retryError);
           }
+        } else {
+          console.log(`[Pipeline] Summary quality check passed (score: ${qualityCheck.score})`);
         }
-      } else {
-        console.log(`[Pipeline] Summary quality check passed (score: ${qualityCheck.score})`);
+      } catch (error) {
+        console.error('[Pipeline] Source language summarization failed, falling back to English:', error);
+        // Fallback to English summarization
+        summaryInSource = await summarizeEnglish(sourcePayload, summary?.summary_en);
+        sourceLang = 'en';
+        
+        // Validate fallback summary
+        const qualityCheck = validateSummaryQuality(summaryInSource);
+        summaryQualityScore = qualityCheck.score;
+        if (!qualityCheck.isValid) {
+          console.warn(`[Pipeline] Fallback summary quality check failed (score: ${qualityCheck.score})`);
+        }
       }
-    } catch (error) {
-      console.error('[Pipeline] Source language summarization failed, falling back to English:', error);
-      // Fallback to English summarization
-      summaryInSource = await summarizeEnglish(sourcePayload, summary?.summary_en);
-      sourceLang = 'en';
-      
-      // Validate fallback summary
-      const qualityCheck = validateSummaryQuality(summaryInSource);
-      summaryQualityScore = qualityCheck.score;
-      if (!qualityCheck.isValid) {
-        console.warn(`[Pipeline] Fallback summary quality check failed (score: ${qualityCheck.score})`);
-      }
+    } else {
+      // Use existing summary
+      summaryInSource = summary?.summary_en || summary?.summary_si || summary?.summary_ta || '';
+      console.log(`[Pipeline] Using existing summary for cluster ${cluster.id}`);
     }
 
     // Translate to all 3 languages - ensure all are always generated
@@ -667,6 +699,12 @@ async function summarizeEligible(
           summaryTa = summaryInSource;
         }
       }
+    } else {
+      // Use existing summaries
+      summaryEn = summary?.summary_en || summaryInSource;
+      summarySi = summary?.summary_si || summaryInSource;
+      summaryTa = summary?.summary_ta || summaryInSource;
+      console.log(`[Pipeline] Using existing summaries for cluster ${cluster.id}`);
     }
     
     // Final validation - ensure all 3 are non-empty and meet minimum length
