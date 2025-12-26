@@ -382,8 +382,8 @@ async function summarizeEligible(
     // Enhanced source payload with weighting and more context
     const sourcePayload =
       articles?.map((a, idx) => {
-        // Increase context from 800 to 1500 chars
-        const content = (a.content_excerpt || a.content_text || a.title || '').slice(0, 1500);
+        // Increase context from 1500 to 2500 chars for longer summaries
+        const content = (a.content_excerpt || a.content_text || a.title || '').slice(0, 2500);
         
         // Weight recent articles higher
         const weight = idx === 0 ? 1.5 : 1.0;
@@ -493,15 +493,15 @@ async function summarizeEligible(
       // Validate translation quality for each language
       if (translationStatus.en && sourceLang !== 'en') {
         const enQuality = validateTranslationQuality(summaryInSource, summaryEn, sourceLang, 'en');
-        if (!enQuality.isValid || enQuality.score < 70) {
+        if (!enQuality.isValid || enQuality.score < 75) {
           console.warn(`[Pipeline] English translation quality check failed (score: ${enQuality.score}):`, enQuality.issues);
           // Retry translation if quality is poor
-          if (enQuality.score < 60) {
+          if (enQuality.score < 65) {
             try {
               console.log('[Pipeline] Retrying English translation due to poor quality...');
               summaryEn = await translateFromTo(summaryInSource, sourceLang, 'en');
               const retryQuality = validateTranslationQuality(summaryInSource, summaryEn, sourceLang, 'en');
-              if (!retryQuality.isValid || retryQuality.score < 70) {
+              if (!retryQuality.isValid || retryQuality.score < 75) {
                 console.warn(`[Pipeline] Retry English translation also failed quality check (score: ${retryQuality.score})`);
               } else {
                 console.log(`[Pipeline] Retry English translation passed quality check (score: ${retryQuality.score})`);
@@ -517,17 +517,17 @@ async function summarizeEligible(
       
       if (translationStatus.si && sourceLang !== 'si') {
         const siQuality = validateTranslationQuality(summaryInSource, summarySi, sourceLang, 'si');
-        if (!siQuality.isValid || siQuality.score < 70) {
+        if (!siQuality.isValid || siQuality.score < 75) {
           console.warn(`[Pipeline] Sinhala translation quality check failed (score: ${siQuality.score}):`, siQuality.issues);
           // Retry translation if quality is poor
-          if (siQuality.score < 60) {
+          if (siQuality.score < 65) {
             try {
               console.log('[Pipeline] Retrying Sinhala translation due to poor quality...');
               const sourceForSi = sourceLang === 'en' ? summaryEn : summaryInSource;
               const sourceLangForSi = sourceLang === 'en' ? 'en' : sourceLang;
               summarySi = await translateFromTo(sourceForSi, sourceLangForSi, 'si');
               const retryQuality = validateTranslationQuality(sourceForSi, summarySi, sourceLangForSi, 'si');
-              if (!retryQuality.isValid || retryQuality.score < 70) {
+              if (!retryQuality.isValid || retryQuality.score < 75) {
                 console.warn(`[Pipeline] Retry Sinhala translation also failed quality check (score: ${retryQuality.score})`);
               } else {
                 console.log(`[Pipeline] Retry Sinhala translation passed quality check (score: ${retryQuality.score})`);
@@ -543,17 +543,17 @@ async function summarizeEligible(
       
       if (translationStatus.ta && sourceLang !== 'ta') {
         const taQuality = validateTranslationQuality(summaryInSource, summaryTa, sourceLang, 'ta');
-        if (!taQuality.isValid || taQuality.score < 70) {
+        if (!taQuality.isValid || taQuality.score < 75) {
           console.warn(`[Pipeline] Tamil translation quality check failed (score: ${taQuality.score}):`, taQuality.issues);
           // Retry translation if quality is poor
-          if (taQuality.score < 60) {
+          if (taQuality.score < 65) {
             try {
               console.log('[Pipeline] Retrying Tamil translation due to poor quality...');
               const sourceForTa = sourceLang === 'en' ? summaryEn : summaryInSource;
               const sourceLangForTa = sourceLang === 'en' ? 'en' : sourceLang;
               summaryTa = await translateFromTo(sourceForTa, sourceLangForTa, 'ta');
               const retryQuality = validateTranslationQuality(sourceForTa, summaryTa, sourceLangForTa, 'ta');
-              if (!retryQuality.isValid || retryQuality.score < 70) {
+              if (!retryQuality.isValid || retryQuality.score < 75) {
                 console.warn(`[Pipeline] Retry Tamil translation also failed quality check (score: ${retryQuality.score})`);
               } else {
                 console.log(`[Pipeline] Retry Tamil translation passed quality check (score: ${retryQuality.score})`);

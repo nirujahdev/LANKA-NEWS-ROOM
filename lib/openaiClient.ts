@@ -18,8 +18,8 @@ CORE PRINCIPLES:
 - Context preservation: Maintain important context (who, what, when, where, why, how)
 
 QUALITY STANDARDS:
-- Summary length: 100-150 words (strict requirement)
-- Structure: 1 lead sentence (most important fact) + 3-5 supporting sentences
+- Summary length: 200-600 words (aim for comprehensive coverage)
+- Structure: 1 lead sentence (most important fact) + 5-10 supporting sentences
 - Tone: Calm, factual, professional, neutral
 - Tense: Past tense, third person
 - Style: Clear, simple, accessible language
@@ -56,7 +56,7 @@ OUTPUT FORMAT:
         model: env.SUMMARY_MODEL,
         messages,
         temperature: 0.2,
-        max_tokens: 400
+        max_tokens: 1200
       });
       return completion.choices[0]?.message?.content?.trim() || '';
     },
@@ -148,8 +148,8 @@ CORE PRINCIPLES:
 - Source attribution: Always attribute facts to sources when they differ or are uncertain
 
 QUALITY STANDARDS:
-- Summary length: 100-150 words (strict requirement - count words carefully)
-- Structure: 1 lead sentence (most important fact) + 3-5 supporting sentences
+- Summary length: 200-600 words (aim for comprehensive coverage - count words carefully)
+- Structure: 1 lead sentence (most important fact) + 5-10 supporting sentences
 - Tone: Calm, factual, professional, neutral - NO emotional language
 - Tense: Past tense, third person
 - Language: Write in ${langLabel} using formal written style${sourceLang === 'si' ? '\n- Sinhala: Use formal written Sinhala (not spoken/colloquial). Use proper Sinhala script, grammar, and formal vocabulary.' : ''}${sourceLang === 'ta' ? '\n- Tamil: Use formal written Tamil (not spoken/colloquial). Use proper Tamil script, grammar, and formal vocabulary. Avoid informal expressions.' : ''}
@@ -206,7 +206,7 @@ Generate a professional news summary in ${langLabel} following all rules above.`
     model: env.SUMMARY_MODEL,
     messages,
     temperature: 0.2,
-    max_tokens: 500,
+        max_tokens: 1200,
     top_p: 0.9,
     frequency_penalty: 0.3,
     presence_penalty: 0.1
@@ -326,16 +326,17 @@ async function translateFromTo(
 Your task: Translate the following ${fromLabel} news summary into formal, accurate ${toLabel}.
 
 CRITICAL TRANSLATION RULES:
-1. Accuracy: Preserve the exact meaning - do NOT add, remove, or change any information. Every fact must be preserved.
-2. Formality: Use formal written ${toLabel} appropriate for news media - NO colloquialisms, slang, or informal expressions
-3. Grammar: Use proper ${toLabel} grammar, sentence structure, and punctuation. Ensure sentences are well-formed and coherent.
-4. Terminology: Use standard ${toLabel} news terminology and vocabulary. Use formal news language conventions.
-5. Cultural Context: Preserve cultural context and nuances. Adapt cultural references appropriately while maintaining accuracy.
-6. Names & Places: Keep all proper nouns (names, places, organizations) in their original form unless there is a standard ${toLabel} transliteration. For Sri Lankan names and places, use standard ${toLabel} transliterations when they exist.
-7. Numbers & Dates: Preserve all numbers, dates, and statistics exactly as written - do NOT convert or modify them
-8. Tone: Maintain a neutral, factual news reporting tone - no emotional language, no sensationalism
-9. Length: The translated text should be approximately the same length as the source text (within 10-15% variance is acceptable)
-10. Sentence Structure: Maintain the logical flow and structure of the source. Preserve paragraph breaks and sentence connections.
+1. Accuracy: Preserve the EXACT meaning - do NOT add, remove, or change ANY information. Every fact, detail, and nuance must be preserved exactly. Verify that all factual information is maintained.
+2. Formality: Use formal written ${toLabel} appropriate for news media - NO colloquialisms, slang, informal expressions, or spoken language patterns. This is formal news writing, not casual conversation.
+3. Grammar: Use proper ${toLabel} grammar, sentence structure, and punctuation. Ensure all sentences are well-formed, coherent, and follow proper ${toLabel} grammatical rules.
+4. Terminology: Use standard ${toLabel} news terminology and formal vocabulary. Use established news language conventions and avoid informal or colloquial terms.
+5. Cultural Context: Preserve cultural context and nuances accurately. Adapt cultural references appropriately while maintaining complete factual accuracy.
+6. Names & Places: Keep ALL proper nouns (names, places, organizations, titles) in their original form unless there is a standard ${toLabel} transliteration. For Sri Lankan names and places, use standard ${toLabel} transliterations when they exist. Do NOT translate proper nouns unless there is an established translation.
+7. Numbers & Dates: Preserve ALL numbers, dates, percentages, statistics, and numerical data EXACTLY as written - do NOT convert, modify, round, or approximate them. Every number must match the source.
+8. Tone: Maintain a neutral, factual news reporting tone - no emotional language, no sensationalism, no opinions, no editorializing.
+9. Length: The translated text should be approximately the same length as the source text (within 10-15% variance is acceptable). Do not significantly expand or contract the content.
+10. Sentence Structure: Maintain the logical flow, structure, and organization of the source. Preserve paragraph breaks, sentence connections, and the overall narrative structure.
+11. Verification: Before completing the translation, verify that all numbers, dates, names, and facts from the source are present in the translation.
 ${to === 'si' ? `11. Sinhala-Specific:
     - Use formal written Sinhala (not spoken/colloquial)
     - Use proper Sinhala script and grammar
@@ -365,8 +366,8 @@ OUTPUT REQUIREMENTS:
       const completion = await client.chat.completions.create({
         model: env.SUMMARY_TRANSLATE_MODEL,
         messages,
-        temperature: 0.2,
-        max_tokens: 500
+        temperature: 0.1,
+        max_tokens: Math.ceil(text.length * 2.5)
       });
       const translated = completion.choices[0]?.message?.content?.trim();
       if (!translated) {
@@ -392,7 +393,7 @@ function buildSourcePrompt(sources: { title: string; content: string }[], previo
     .slice(0, env.MAX_SUMMARY_ARTICLES)
     .map(
       (s, idx) =>
-        `Source ${idx + 1} Title: ${s.title}\nSource ${idx + 1} Content: ${s.content.slice(0, 1500)}`
+        `Source ${idx + 1} Title: ${s.title}\nSource ${idx + 1} Content: ${s.content.slice(0, 2500)}`
     )
     .join('\n\n---\n\n');
 
@@ -409,7 +410,7 @@ INSTRUCTIONS:
 4. If information conflicts, clearly state "reports vary" and present both versions
 5. Maintain chronological order when relevant
 6. Include key numbers, dates, locations, and entities
-7. Keep summary between 100-150 words (strict requirement)
+7. Keep summary between 200-600 words (aim for comprehensive coverage)
 8. Structure: 1 lead sentence + 3-5 supporting sentences
 
 SOURCES (ordered by importance):
@@ -966,16 +967,16 @@ export function validateSummaryQuality(summary: string): {
     return { isValid: false, score: 0, issues: ['Summary is empty'] };
   }
 
-  // Check minimum length (100 words - increased from 80)
+  // Check minimum length (200 words - increased from 100)
   const wordCount = summary.trim().split(/\s+/).length;
-  if (wordCount < 100) {
-    issues.push(`Summary too short: ${wordCount} words (minimum 100)`);
+  if (wordCount < 200) {
+    issues.push(`Summary too short: ${wordCount} words (minimum 200)`);
     score -= 30;
   }
 
-  // Check maximum length (200 words)
-  if (wordCount > 200) {
-    issues.push(`Summary too long: ${wordCount} words (maximum 200)`);
+  // Check maximum length (600 words)
+  if (wordCount > 600) {
+    issues.push(`Summary too long: ${wordCount} words (maximum 600)`);
     score -= 20;
   }
 
@@ -1004,7 +1005,7 @@ export function validateSummaryQuality(summary: string): {
 
   // Check for source attribution phrases (good practice)
   const hasSourceAttribution = /\b(?:according to|reports indicate|sources say|sources report|sources differ|reports vary|according to sources|according to one source|multiple sources|verified sources)\b/i.test(summary);
-  if (!hasSourceAttribution && wordCount > 120) {
+  if (!hasSourceAttribution && wordCount > 250) {
     // For longer summaries, source attribution is more important
     issues.push('Missing source attribution phrases (recommended for multi-source summaries)');
     score -= 5; // Minor penalty, not critical
@@ -1135,14 +1136,19 @@ export function validateTranslationQuality(
     return { isValid: false, score: 0, issues: ['Source text is empty'] };
   }
 
-  // Check length similarity (translation should be within 10-15% of source length)
-  const sourceLength = sourceText.trim().length;
-  const translatedLength = translatedText.trim().length;
-  const lengthRatio = translatedLength / sourceLength;
+  // Check length similarity (translation should be within 15% of source length - stricter)
+  const sourceWordCount = sourceText.trim().split(/\s+/).length;
+  const translatedWordCount = translatedText.trim().split(/\s+/).length;
+  const lengthRatio = translatedWordCount / sourceWordCount;
   
-  if (lengthRatio < 0.7 || lengthRatio > 1.5) {
-    issues.push(`Translation length significantly differs from source (ratio: ${lengthRatio.toFixed(2)})`);
-    score -= 15;
+  if (sourceWordCount > 10) {
+    if (lengthRatio < 0.85 || lengthRatio > 1.15) {
+      issues.push(`Translation length differs significantly from source (ratio: ${lengthRatio.toFixed(2)}, source: ${sourceWordCount} words, translation: ${translatedWordCount} words)`);
+      score -= 20;
+    } else if (lengthRatio < 0.90 || lengthRatio > 1.10) {
+      issues.push(`Translation length slightly differs from source (ratio: ${lengthRatio.toFixed(2)})`);
+      score -= 10;
+    }
   }
 
   // Extract numbers from source and translation - all should be preserved
@@ -1172,48 +1178,72 @@ export function validateTranslationQuality(
   }
 
   // Check for proper nouns (names, places, organizations) - should be preserved
-  // This is a simplified check - proper nouns are often preserved in translations
-  // For English source, check for capitalized words that should be preserved
+  // Enhanced check with stricter requirements
   if (sourceLang === 'en') {
     const properNouns = sourceText.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b/g) || [];
     // Filter out common words that start with capital (like "The", "A", etc.)
     const significantProperNouns = properNouns.filter(noun => 
-      !['The', 'A', 'An', 'This', 'That', 'These', 'Those'].includes(noun) &&
-      noun.length > 2
+      !['The', 'A', 'An', 'This', 'That', 'These', 'Those', 'Sri', 'Lanka'].includes(noun) &&
+      noun.length > 2 &&
+      !noun.match(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|January|February|March|April|May|June|July|August|September|October|November|December)$/i)
     );
     
-    // Check if at least some proper nouns appear in translation
-    // (This is approximate - proper nouns might be transliterated)
+    // Check if proper nouns appear in translation (stricter - need at least 70% preserved)
     if (significantProperNouns.length > 0) {
-      const preservedCount = significantProperNouns.filter(noun => 
-        translatedText.toLowerCase().includes(noun.toLowerCase())
-      ).length;
+      const preservedCount = significantProperNouns.filter(noun => {
+        const nounLower = noun.toLowerCase();
+        return translatedText.toLowerCase().includes(nounLower) || 
+               translatedText.toLowerCase().includes(nounLower.replace(/\s+/g, ''));
+      }).length;
       
-      if (preservedCount < significantProperNouns.length * 0.5) {
-        issues.push(`Many proper nouns may be missing or incorrectly translated`);
-        score -= 10;
+      const preservationRate = preservedCount / significantProperNouns.length;
+      if (preservationRate < 0.7) {
+        issues.push(`Many proper nouns may be missing or incorrectly translated (${Math.round(preservationRate * 100)}% preserved, need 70%+)`);
+        score -= 15;
+      } else if (preservationRate < 0.85) {
+        issues.push(`Some proper nouns may be missing (${Math.round(preservationRate * 100)}% preserved)`);
+        score -= 5;
       }
     }
-  }
-
-  // Check for formal language (no colloquialisms, slang, or informal expressions)
-  // This is language-specific
-  if (targetLang === 'si') {
-    // Sinhala: Check for common informal patterns (this is simplified)
-    const informalPatterns = [
-      /[ක-ෆ]{1,2}[ාිීුූෘෟෙෛොෞ]/g, // Very short words might be informal (simplified check)
-    ];
-    // Note: This is a basic check - proper Sinhala formal language validation would require more sophisticated analysis
-  }
-  
-  if (targetLang === 'ta') {
-    // Tamil: Check for common informal patterns (this is simplified)
-    // Note: Proper Tamil formal language validation would require more sophisticated analysis
   }
 
   // Check sentence structure - translation should have similar sentence count
   const sourceSentences = sourceText.split(/[.!?]+/).filter(s => s.trim().length > 10);
   const translatedSentences = translatedText.split(/[.!?]+/).filter(s => s.trim().length > 10);
+
+  // Check for formal language (no colloquialisms, slang, or informal expressions)
+  // Enhanced check for formal language usage
+  if (targetLang === 'si') {
+    // Sinhala: Check for common informal patterns
+    // Look for very short words that might indicate informal speech
+    const shortWords = translatedText.match(/\b[ක-ෆ]{1,2}\b/g) || [];
+    if (shortWords.length > translatedText.split(/\s+/).length * 0.1) {
+      issues.push('May contain informal Sinhala patterns (too many very short words)');
+      score -= 5;
+    }
+    // Check for proper sentence endings and formal structure
+    const hasProperEndings = /[.!?]\s+[ක-ෆ]/.test(translatedText);
+    if (!hasProperEndings && translatedSentences.length > 2) {
+      issues.push('May lack proper formal Sinhala sentence structure');
+      score -= 5;
+    }
+  }
+  
+  if (targetLang === 'ta') {
+    // Tamil: Check for common informal patterns
+    // Look for English words mixed in (might indicate informal usage)
+    const englishWords = translatedText.match(/\b[A-Za-z]{3,}\b/g) || [];
+    if (englishWords.length > translatedText.split(/\s+/).length * 0.15) {
+      issues.push('May contain too many English words (informal usage)');
+      score -= 5;
+    }
+    // Check for proper sentence endings and formal structure
+    const hasProperEndings = /[.!?]\s+[அ-ஹ]/.test(translatedText);
+    if (!hasProperEndings && translatedSentences.length > 2) {
+      issues.push('May lack proper formal Tamil sentence structure');
+      score -= 5;
+    }
+  }
   
   if (sourceSentences.length > 0) {
     const sentenceRatio = translatedSentences.length / sourceSentences.length;

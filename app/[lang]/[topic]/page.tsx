@@ -165,7 +165,7 @@ export default async function TopicPage({ params, searchParams }: Props) {
         .ilike('district', city);
       
       if (articlesWithDistrict && articlesWithDistrict.length > 0) {
-        const clusterIds = articlesWithDistrict.map(a => a.cluster_id).filter(Boolean);
+        const clusterIds = articlesWithDistrict.map(a => a.cluster_id).filter((id): id is string => id !== null && id !== undefined);
         if (clusterIds.length > 0) {
           query = query.in('id', clusterIds);
         } else {
