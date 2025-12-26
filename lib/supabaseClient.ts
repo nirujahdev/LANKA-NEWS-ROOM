@@ -9,20 +9,14 @@ export function createSupabaseClient() {
   // During build time or if env vars are missing, return a mock client that won't crash
   // This prevents React errors during hydration when env vars aren't set
   if (!supabaseUrl || !supabaseAnonKey) {
-    // Log warning in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('❌ Missing Supabase environment variables!');
-      console.error('   NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✓' : '✗');
-      console.error('   NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✓' : '✗');
-      console.error('   Please set these in your .env.local file or Vercel environment variables.');
+    // Log warning in both development and production
+    if (typeof window !== 'undefined') {
+      console.warn('⚠️ Missing Supabase environment variables - some features may not work');
+      console.warn('   Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel environment variables.');
     }
     
     // Return a minimal client that won't crash but will fail gracefully on API calls
-    // In production, this should never happen - fail loudly
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Please configure environment variables in Vercel.');
-    }
-    
+    // Don't throw - let the app render and show appropriate UI for missing auth
     return createClient<Database>('https://placeholder.supabase.co', 'placeholder-key', {
       auth: {
         autoRefreshToken: false,
