@@ -1,0 +1,112 @@
+name: Sitemap Generator
+
+# ============================================
+# SETUP INSTRUCTIONS
+# ============================================
+# Before this workflow can run, you must:
+# 1. Go to GitHub Repo → Settings → Secrets and variables → Actions
+# 2. Add the following secrets (if not already set):
+#    - SUPABASE_URL: Your Supabase project URL
+#    - SUPABASE_SERVICE_ROLE_KEY: Your Supabase service role key
+# 3. Optionally set:
+#    - NEXT_PUBLIC_SITE_URL: Your site URL (default: https://lankanewsroom.xyz)
+# ============================================
+
+on:
+  # Schedule: Every 1 hour
+  schedule:
+    - cron: '0 * * * *'  # Run at the top of every hour
+  
+  # Manual trigger (for testing)
+  workflow_dispatch:
+
+# Prevent concurrent runs - queue new runs instead of canceling
+# This ensures all runs complete, even if triggered multiple times
+concurrency:
+  group: sitemap-generator
+  cancel-in-progress: false
+
+jobs:
+  generate-sitemaps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Fetch full history for proper git diff
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify environment variables
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "❌ SUPABASE_URL secret is not set"
+            exit 1
+          fi
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "❌ SUPABASE_SERVICE_ROLE_KEY secret is not set"
+            exit 1
+          fi
+          echo "✅ All required secrets are set"
+
+      - name: Generate sitemaps
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz' }}
+        run: |
+          echo "🚀 Generating sitemaps..."
+          npx tsx scripts/generate-sitemaps.ts
+
+      - name: Check for changes
+        id: check-changes
+        run: |
+          if git diff --exit-code public/sitemap.xml public/sitemaps/ public/robots.txt > /dev/null 2>&1; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "📝 No changes detected in sitemap files"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "📝 Changes detected in sitemap files"
+            git diff --stat public/sitemap.xml public/sitemaps/ public/robots.txt || true
+          fi
+
+      - name: Configure Git
+        if: steps.check-changes.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: Commit and push changes
+        if: steps.check-changes.outputs.changed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git add public/sitemap.xml public/sitemaps/ public/robots.txt
+          git commit -m "chore: update sitemaps [skip ci]" || exit 0
+          git push origin HEAD:${{ github.ref }} || exit 0
+          echo "✅ Sitemaps committed and pushed"
+
+      - name: Sitemap generation summary
+        if: always()
+        run: |
+          echo "📊 Sitemap generation completed"
+          if [ "${{ steps.check-changes.outputs.changed }}" == "true" ]; then
+            echo "✅ Sitemaps were updated and pushed"
+          else
+            echo "ℹ️  No changes detected - sitemaps are up to date"
+          fi
+
