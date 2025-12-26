@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import Navigation from '@/components/Navigation';
 import Link from 'next/link';
@@ -6,7 +8,7 @@ import { ArrowLeft } from 'lucide-react';
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
-      <Navigation currentLanguage="en" onLanguageChange={() => {}} />
+      <Navigation />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link
