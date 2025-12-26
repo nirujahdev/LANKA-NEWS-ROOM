@@ -12,6 +12,8 @@ name: News Pipeline Worker
 # 3. Optionally set:
 #    - SUMMARY_MODEL: OpenAI model to use (default: gpt-4o-mini)
 #    - BATCH_SIZE: Number of articles to process per batch (default: 10)
+#    - NEWSAPI_KEY: NewsAPI.org API key (optional - for additional news sources)
+#    - NEWSDATA_API_KEY: NewsData.io API key (optional - for additional news sources)
 # ============================================
 
 on:
@@ -85,6 +87,9 @@ jobs:
           SUMMARY_TRANSLATE_MODEL: ${{ secrets.SUMMARY_TRANSLATE_MODEL || 'gpt-4o-mini' }}
           BATCH_SIZE: ${{ secrets.BATCH_SIZE || '10' }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          # News API Keys (optional - for additional news sources)
+          NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
+          NEWSDATA_API_KEY: ${{ secrets.NEWSDATA_API_KEY }}
         run: |
           echo "🚀 Starting pipeline worker..."
           echo "   DRY_RUN: ${DRY_RUN}"

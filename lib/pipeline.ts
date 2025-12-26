@@ -176,10 +176,6 @@ async function fetchAllSources(
           console.log(`[Pipeline] Fetching from NewsData.io (source: ${apiSource.name})...`);
           const { fetchFromNewsData } = await import('./apiSources');
           apiItems = await fetchFromNewsData({ country: 'lk' });
-        } else if (provider === 'bing' && env.BING_NEWS_SUBSCRIPTION_KEY) {
-          console.log(`[Pipeline] Fetching from Bing News (source: ${apiSource.name})...`);
-          const { fetchFromBingNews } = await import('./apiSources');
-          apiItems = await fetchFromBingNews();
         } else {
           console.warn(`[Pipeline] API source ${apiSource.name} (${provider}) skipped - API key not configured`);
           continue;

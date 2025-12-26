@@ -5,18 +5,17 @@
 
 import { fetchNewsAPI, fetchSriLankaNews, NormalizedNewsAPIItem } from './newsApi';
 import { fetchNewsData, fetchSriLankaNewsData, NormalizedNewsDataItem } from './newsData';
-import { fetchBingNews, fetchSriLankaBingNews, NormalizedBingNewsItem } from './bingNews';
 import { env } from './env';
 import { NormalizedItem } from './rss';
 
-export type ApiSourceType = 'newsapi' | 'newsdata' | 'bing';
+export type ApiSourceType = 'newsapi' | 'newsdata';
 
 export type UnifiedApiItem = NormalizedItem; // Same format as RSS items
 
 /**
  * Convert API-specific items to unified format
  */
-function normalizeApiItem(item: NormalizedNewsAPIItem | NormalizedNewsDataItem | NormalizedBingNewsItem): UnifiedApiItem {
+function normalizeApiItem(item: NormalizedNewsAPIItem | NormalizedNewsDataItem): UnifiedApiItem {
   return {
     title: item.title,
     url: item.url,
@@ -95,33 +94,6 @@ export async function fetchFromNewsData(options?: {
 }
 
 /**
- * Fetch news from Bing News API
- */
-export async function fetchFromBingNews(options?: {
-  query?: string;
-  freshness?: 'Day' | 'Week' | 'Month';
-}): Promise<UnifiedApiItem[]> {
-  if (!env.BING_NEWS_SUBSCRIPTION_KEY) {
-    throw new Error('BING_NEWS_SUBSCRIPTION_KEY not configured');
-  }
-
-  let items: NormalizedBingNewsItem[];
-  
-  if (!options?.query) {
-    // Fetch all Sri Lanka news
-    items = await fetchSriLankaBingNews(env.BING_NEWS_SUBSCRIPTION_KEY);
-  } else {
-    items = await fetchBingNews({
-      query: options.query,
-      freshness: options.freshness || 'Day',
-      subscriptionKey: env.BING_NEWS_SUBSCRIPTION_KEY
-    });
-  }
-
-  return items.map(normalizeApiItem);
-}
-
-/**
  * Fetch from all configured API sources
  */
 export async function fetchFromAllApis(): Promise<UnifiedApiItem[]> {
@@ -153,20 +125,6 @@ export async function fetchFromAllApis(): Promise<UnifiedApiItem[]> {
       const message = error instanceof Error ? error.message : 'Unknown error';
       errors.push(`NewsData: ${message}`);
       console.error('[API Sources] NewsData error:', message);
-    }
-  }
-
-  // Fetch from Bing News
-  if (env.BING_NEWS_SUBSCRIPTION_KEY) {
-    try {
-      console.log('[API Sources] Fetching from Bing News...');
-      const bingItems = await fetchFromBingNews();
-      console.log(`[API Sources] Bing News: ${bingItems.length} articles`);
-      allItems.push(...bingItems);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      errors.push(`Bing News: ${message}`);
-      console.error('[API Sources] Bing News error:', message);
     }
   }
 
