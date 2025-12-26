@@ -29,14 +29,15 @@ const SRI_LANKA_CITIES = [
 ];
 
 const AVAILABLE_TOPICS = [
-  { id: 'home', label: 'Home', labelSi: 'මුල් පිටුව', labelTa: 'முகப்பு' },
-  { id: 'recent', label: 'Recent', labelSi: 'මෑත', labelTa: 'சமீபத்திய' },
-  { id: 'education', label: 'Education', labelSi: 'අධ්‍යාපනය', labelTa: 'கல்வி' },
+  { id: 'sri-lanka', label: 'Sri Lanka', labelSi: 'ශ්‍රී ලංකාව', labelTa: 'இலங்கை' },
+  { id: 'world', label: 'Global', labelSi: 'ලෝකය', labelTa: 'உலகம்' },
   { id: 'politics', label: 'Politics', labelSi: 'දේශපාලනය', labelTa: 'அரசியல்' },
   { id: 'economy', label: 'Economy', labelSi: 'ආර්ථිකය', labelTa: 'பொருளாதாரம்' },
+  { id: 'education', label: 'Education', labelSi: 'අධ්‍යාපනය', labelTa: 'கல்வி' },
+  { id: 'health', label: 'Health', labelSi: 'සෞඛ්‍ය', labelTa: 'சுகாதாரம்' },
   { id: 'sports', label: 'Sports', labelSi: 'ක්‍රීඩා', labelTa: 'விளையாட்டு' },
   { id: 'technology', label: 'Technology', labelSi: 'තාක්ෂණය', labelTa: 'தொழில்நுட்பம்' },
-  { id: 'health', label: 'Health', labelSi: 'සෞඛ්‍ය', labelTa: 'சுகாதாரம்' }
+  { id: 'society', label: 'Society', labelSi: 'සමාජය', labelTa: 'சமூகம்' }
 ];
 
 export default function OnboardingPage() {

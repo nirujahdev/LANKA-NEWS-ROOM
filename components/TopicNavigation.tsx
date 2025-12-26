@@ -23,19 +23,14 @@ const topics: Topic[] = [
   { id: 'home', label: 'Home', labelSi: 'මුල් පිටුව', labelTa: 'முகப்பு', href: 'home' },
   { id: 'for-you', label: 'For you', labelSi: 'ඔබ වෙනුවෙන්', labelTa: 'உங்களுக்காக', href: 'for-you' },
   { id: 'sri-lanka', label: 'Sri Lanka', labelSi: 'ශ්‍රී ලංකාව', labelTa: 'இலங்கை', href: 'sri-lanka' },
-  { id: 'world', label: 'World', labelSi: 'ලෝකය', labelTa: 'உலகம்', href: 'world' },
+  { id: 'world', label: 'Global', labelSi: 'ලෝකය', labelTa: 'உலகம்', href: 'world' },
   { id: 'politics', label: 'Politics', labelSi: 'දේශපාලනය', labelTa: 'அரசியல்', href: 'politics' },
   { id: 'economy', label: 'Economy', labelSi: 'ආර්ථිකය', labelTa: 'பொருளாதாரம்', href: 'economy' },
-  { id: 'business', label: 'Business', labelSi: 'ව්‍යාපාර', labelTa: 'வணிகம்', href: 'business' },
-  { id: 'technology', label: 'Technology', labelSi: 'තාක්ෂණය', labelTa: 'தொழில்நுட்பம்', href: 'technology' },
-  { id: 'health', label: 'Health', labelSi: 'සෞඛ්‍ය', labelTa: 'சுகாதாரம்', href: 'health' },
   { id: 'education', label: 'Education', labelSi: 'අධ්‍යාපනය', labelTa: 'கல்வி', href: 'education' },
+  { id: 'health', label: 'Health', labelSi: 'සෞඛ්‍ය', labelTa: 'சுகாதாரம்', href: 'health' },
   { id: 'sports', label: 'Sports', labelSi: 'ක්‍රීඩා', labelTa: 'விளையாட்டு', href: 'sports' },
-  { id: 'crime', label: 'Crime', labelSi: 'අපරාධ', labelTa: 'குற்றம்', href: 'crime' },
-  { id: 'environment', label: 'Environment', labelSi: 'පරිසරය', labelTa: 'சுற்றுச்சூழல்', href: 'environment' },
-  { id: 'society', label: 'Society', labelSi: 'සමාජය', labelTa: 'சமூகம்', href: 'society' },
-  { id: 'entertainment', label: 'Entertainment', labelSi: 'විනෝදාස්වාදය', labelTa: 'பொழுதுபோக்கு', href: 'entertainment' },
-  { id: 'science', label: 'Science', labelSi: 'විද්‍යාව', labelTa: 'அறிவியல்', href: 'science' }
+  { id: 'technology', label: 'Technology', labelSi: 'තාක්ෂණය', labelTa: 'தொழில்நுட்பம்', href: 'technology' },
+  { id: 'society', label: 'Society', labelSi: 'සමාජය', labelTa: 'சமூகம்', href: 'society' }
 ];
 
 const TopicNavigationContent: React.FC<TopicNavigationProps> = ({ 

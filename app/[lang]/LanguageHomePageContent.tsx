@@ -5,13 +5,11 @@ import Navigation from '@/components/Navigation';
 import TopicNavigation from '@/components/TopicNavigation';
 import Sidebar from '@/components/Sidebar';
 import MixedLayoutGrid from '@/components/MixedLayoutGrid';
-import TopicNewsCard from '@/components/TopicNewsCard';
 import { ClusterListItem, loadClusters, FeedType, CategoryType } from '@/lib/api';
 import { getSupabaseClient } from '@/lib/supabaseClient';
 import { useLanguage } from '@/lib/useLanguage';
 import { assignLayout, LayoutAssignment } from '@/lib/layoutAssigner';
 import { NewsCardData } from '@/lib/newsCardUtils';
-import { normalizeTopicSlug } from '@/lib/topics';
 
 export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 'ta' }) {
   // Use language hook for persistence
@@ -22,8 +20,6 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
   const [latestUpdates, setLatestUpdates] = useState<any[]>([]);
   const [userCity, setUserCity] = useState('Colombo');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [topicData, setTopicData] = useState<Record<string, ClusterListItem[]>>({});
-  const [topicLoading, setTopicLoading] = useState(true);
 
   useEffect(() => {
     // Only run on client side
@@ -75,22 +71,7 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
         }
       });
 
-    // Load topic data
-    const topics = ['politics', 'economy', 'sports', 'crime', 'education', 'health'];
-    Promise.all(
-      topics.map(topic =>
-        loadClusters(currentLanguage, null, topic as CategoryType)
-          .then(data => ({ topic, data }))
-          .catch(() => ({ topic, data: [] }))
-      )
-    ).then(results => {
-      const topicMap: Record<string, ClusterListItem[]> = {};
-      results.forEach(({ topic, data }) => {
-        topicMap[topic] = data;
-      });
-      setTopicData(topicMap);
-      setTopicLoading(false);
-    });
+    // Topic data loading removed - no topic selection widget
   }, [currentLanguage]);
 
   // Convert incidents to NewsCardData format and assign layouts
@@ -193,31 +174,6 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
             </aside>
           </div>
 
-          {/* Topic Cards Section - Full Width (No Ads) */}
-          {!topicLoading && Object.keys(topicData).length > 0 && (
-            <div className="mt-16 mb-8 w-full">
-              <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-                <h2 className="text-2xl font-semibold text-[#202124] mb-6">
-                  {currentLanguage === 'si' ? 'ඉහළ මාතෘකා' : currentLanguage === 'ta' ? 'முதன்மை தலைப்புகள்' : 'Top Topics'}
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {Object.entries(topicData).slice(0, 8).map(([topic, articles]) => {
-                    const normalizedTopic = normalizeTopicSlug(topic) || topic;
-                    const topicLabel = normalizedTopic.charAt(0).toUpperCase() + normalizedTopic.slice(1).replace(/-/g, ' ');
-                    return (
-                      <TopicNewsCard
-                        key={topic}
-                        topic={topicLabel}
-                        topicSlug={normalizedTopic}
-                        topArticles={articles.slice(0, 3)}
-                        language={currentLanguage}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </main>
     </div>

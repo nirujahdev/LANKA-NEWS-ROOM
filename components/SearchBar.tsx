@@ -72,7 +72,7 @@ export default function SearchBar({ language = 'en' }: SearchBarProps) {
       .then(res => res.json())
       .then(data => {
         setFilterOptions({
-          topics: data.topics || ['politics', 'economy', 'sports', 'technology', 'health', 'education', 'crime', 'environment', 'culture', 'other'],
+          topics: data.topics || ['politics', 'economy', 'education', 'health', 'sports', 'technology', 'society', 'sri-lanka', 'world'],
           cities: data.cities || ['colombo', 'kandy', 'galle', 'jaffna', 'trincomalee', 'batticaloa', 'matara', 'negombo', 'anuradhapura'],
           eventTypes: data.eventTypes || ['election', 'court', 'accident', 'protest', 'announcement', 'budget', 'policy', 'crime', 'disaster', 'sports_event', 'other'],
           dateMin: data.dateMin || new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],

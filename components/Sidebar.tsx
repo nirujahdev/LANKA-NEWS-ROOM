@@ -2,7 +2,6 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import NewsCard from './NewsCard';
-import RelatedTopics from './RelatedTopics';
 
 type SidebarUpdate = {
   id: string;
@@ -20,14 +19,12 @@ interface SidebarProps {
   latestUpdates?: SidebarUpdate[];
   language?: 'en' | 'si' | 'ta';
   currentTopic?: string;
-  showRelatedTopics?: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
   latestUpdates = [], 
   language = 'en',
-  currentTopic,
-  showRelatedTopics = true
+  currentTopic
 }) => {
   const getLabel = (en: string, si?: string, ta?: string) => {
     if (language === 'si' && si) return si;
@@ -37,14 +34,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside className="w-full space-y-6">
-      {/* Related Topics Widget */}
-      {showRelatedTopics && (
-        <RelatedTopics
-          currentTopic={currentTopic}
-          language={language}
-        />
-      )}
-
       {/* Sidebar Section - Personalized Picks */}
       {latestUpdates.length > 0 && (
         <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED]">

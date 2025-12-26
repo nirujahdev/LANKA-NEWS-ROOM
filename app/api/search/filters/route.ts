@@ -18,7 +18,7 @@ export async function GET(req: Request) {
       console.error('Filter options error:', error);
       // Fallback to default options
       return NextResponse.json({
-        topics: ['politics', 'economy', 'sports', 'technology', 'health', 'education', 'crime', 'environment', 'culture', 'other'],
+        topics: ['politics', 'economy', 'education', 'health', 'sports', 'technology', 'society', 'sri-lanka', 'world'],
         cities: ['colombo', 'kandy', 'galle', 'jaffna', 'trincomalee', 'batticaloa', 'matara', 'negombo', 'anuradhapura'],
         eventTypes: ['election', 'court', 'accident', 'protest', 'announcement', 'budget', 'policy', 'crime', 'disaster', 'sports_event', 'other'],
         dateMin: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days ago

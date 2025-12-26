@@ -3,20 +3,13 @@
 export const VALID_TOPICS = [
   'politics',
   'economy',
-  'business',
-  'sports',
-  'crime',
   'education',
   'health',
-  'environment',
+  'sports',
   'technology',
-  'culture',
-  'entertainment',
-  'science',
   'society',
   'sri-lanka',
-  'world',
-  'local'
+  'world'
 ] as const;
 
 export type ValidTopic = typeof VALID_TOPICS[number];
@@ -25,56 +18,35 @@ export const TOPIC_LABELS = {
   en: {
     politics: 'Politics',
     economy: 'Economy',
-    business: 'Business',
-    sports: 'Sports',
-    crime: 'Crime',
     education: 'Education',
     health: 'Health',
-    environment: 'Environment',
+    sports: 'Sports',
     technology: 'Technology',
-    culture: 'Culture',
-    entertainment: 'Entertainment',
-    science: 'Science',
+    society: 'Society',
     'sri-lanka': 'Sri Lanka',
-    world: 'World',
-    local: 'Local',
-    society: 'Society'
+    world: 'Global'
   },
   si: {
     politics: 'දේශපාලනය',
     economy: 'ආර්ථිකය',
-    business: 'ව්‍යාපාර',
-    sports: 'ක්‍රීඩා',
-    crime: 'අපරාධ',
     education: 'අධ්‍යාපනය',
     health: 'සෞඛ්‍යය',
-    environment: 'පරිසරය',
+    sports: 'ක්‍රීඩා',
     technology: 'තාක්ෂණය',
-    culture: 'සංස්කෘතිය',
-    entertainment: 'විනෝදාස්වාදය',
-    science: 'විද්‍යාව',
+    society: 'සමාජය',
     'sri-lanka': 'ශ්‍රී ලංකාව',
-    world: 'ලෝකය',
-    local: 'ප්‍රාදේශීය',
-    society: 'සමාජය'
+    world: 'ලෝකය'
   },
   ta: {
     politics: 'அரசியல்',
     economy: 'பொருளாதாரம்',
-    business: 'வணிகம்',
-    sports: 'விளையாட்டு',
-    crime: 'குற்றம்',
     education: 'கல்வி',
     health: 'சுகாதாரம்',
-    environment: 'சுற்றுச்சூழல்',
+    sports: 'விளையாட்டு',
     technology: 'தொழில்நுட்பம்',
-    culture: 'கலாச்சாரம்',
-    entertainment: 'பொழுதுபோக்கு',
-    science: 'அறிவியல்',
+    society: 'சமூகம்',
     'sri-lanka': 'இலங்கை',
-    world: 'உலகம்',
-    local: 'உள்ளூர்',
-    society: 'சமூகம்'
+    world: 'உலகம்'
   }
 } as const;
 
@@ -98,13 +70,9 @@ export function normalizeTopicSlug(topic: string | null | undefined): string | n
     'sri_lanka': 'sri-lanka',
     'global': 'world',
     'tech': 'technology',
-    'env': 'environment',
     'edu': 'education',
     'pol': 'politics',
-    'econ': 'economy',
-    'biz': 'business',
-    'ent': 'entertainment',
-    'sci': 'science'
+    'econ': 'economy'
   };
   
   if (specialCases[normalized]) {

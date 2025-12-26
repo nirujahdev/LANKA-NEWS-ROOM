@@ -38,12 +38,15 @@ export default function RelatedTopics({
         console.error('Error fetching topics:', error);
         // Fallback to default topics
         setTopics([
+          { topic: 'sri-lanka', count: 0 },
+          { topic: 'world', count: 0 },
           { topic: 'politics', count: 0 },
           { topic: 'economy', count: 0 },
+          { topic: 'education', count: 0 },
+          { topic: 'health', count: 0 },
           { topic: 'sports', count: 0 },
           { topic: 'technology', count: 0 },
-          { topic: 'health', count: 0 },
-          { topic: 'education', count: 0 }
+          { topic: 'society', count: 0 }
         ].slice(0, limit));
       } finally {
         setLoading(false);
