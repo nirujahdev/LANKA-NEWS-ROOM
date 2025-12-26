@@ -21,7 +21,6 @@ const Navigation: React.FC<NavigationProps> = ({
   const currentLanguage = propLanguage || hookLanguage;
   const onLanguageChange = propOnLanguageChange || setHookLanguage;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const languages = [
     { code: 'en' as const, label: 'EN' },
@@ -110,18 +109,8 @@ const Navigation: React.FC<NavigationProps> = ({
         {/* Mobile Search Bar */}
         {isMobileMenuOpen && (
           <div className="md:hidden pb-4 border-t border-[#E8EAED] pt-4">
-            <div className="relative mb-4">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#9AA0A6] w-4 h-4 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Search for topics, locations & sources"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-[#F1F3F4] rounded-full 
-                         focus:outline-none focus:bg-white focus:shadow-md
-                         text-sm placeholder-[#80868B] text-[#202124]
-                         transition-all duration-200 border border-transparent focus:border-[#E8EAED]"
-              />
+            <div className="mb-4">
+              <SearchBar language={currentLanguage} />
             </div>
             
             {/* Mobile Language Switcher */}

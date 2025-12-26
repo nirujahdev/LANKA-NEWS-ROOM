@@ -38,6 +38,7 @@ export default function SearchBar({ language = 'en' }: SearchBarProps) {
   const [showResults, setShowResults] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   
   // Filter state
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
@@ -168,39 +169,71 @@ export default function SearchBar({ language = 'en' }: SearchBarProps) {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#5F6368]" />
         <input
+          ref={inputRef}
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && query.trim().length >= 2) {
+              e.preventDefault();
+              window.location.href = `/search?q=${encodeURIComponent(query.trim())}&lang=${language}`;
+            }
+          }}
+          onFocus={() => {
+            if (query.length >= 2 && results.length > 0) {
+              setShowResults(true);
+            }
+          }}
           placeholder={getLabel('Search news...', 'පුවත් සොයන්න...', 'செய்திகளைத் தேடுங்கள்...')}
-          className="w-full pl-10 pr-20 py-2 border border-[#E8EAED] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1A73E8] focus:border-transparent"
+          className="w-full pl-10 pr-20 py-2.5 md:py-2 border border-[#E8EAED] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1A73E8] focus:border-transparent text-base md:text-sm"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck="false"
+          inputMode="search"
         />
         <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
           {hasActiveFilters && (
             <button
               onClick={clearAllFilters}
-              className="p-1 text-[#5F6368] hover:text-[#202124]"
+              className="p-1.5 md:p-1 text-[#5F6368] hover:text-[#202124] active:text-[#202124] touch-manipulation min-w-[32px] min-h-[32px] md:min-w-0 md:min-h-0 flex items-center justify-center"
               title={getLabel('Clear filters', 'පෙරහන් ඉවත් කරන්න', 'வடிகட்டிகளை அழிக்கவும்')}
+              aria-label={getLabel('Clear filters', 'පෙරහන් ඉවත් කරන්න', 'வடிகட்டிகளை அழிக்கவும்')}
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4 md:w-4 md:h-4" />
             </button>
           )}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`p-1 rounded ${hasActiveFilters ? 'text-[#1A73E8]' : 'text-[#5F6368]'} hover:text-[#202124]`}
+            className={`p-1.5 md:p-1 rounded touch-manipulation min-w-[32px] min-h-[32px] md:min-w-0 md:min-h-0 flex items-center justify-center ${hasActiveFilters ? 'text-[#1A73E8]' : 'text-[#5F6368]'} hover:text-[#202124] active:text-[#202124]`}
             title={getLabel('Filters', 'පෙරහන්', 'வடிகட்டிகள்')}
+            aria-label={getLabel('Filters', 'පෙරහන්', 'வடிகட்டிகள்')}
           >
-            <Filter className="w-4 h-4" />
+            <Filter className="w-4 h-4 md:w-4 md:h-4" />
           </button>
+          {query && query.length >= 2 && (
+            <button
+              onClick={() => {
+                window.location.href = `/search?q=${encodeURIComponent(query.trim())}&lang=${language}`;
+              }}
+              className="px-2 py-1 md:px-1.5 md:py-0.5 text-xs md:text-sm font-medium text-white bg-[#1A73E8] rounded-md hover:bg-[#1557B0] active:bg-[#1557B0] touch-manipulation min-h-[28px] md:min-h-0"
+              aria-label={getLabel('Search', 'සොයන්න', 'தேடு')}
+            >
+              {getLabel('Go', 'යන්න', 'செல்')}
+            </button>
+          )}
           {query && (
             <button
               onClick={() => {
                 setQuery('');
                 setResults([]);
                 setShowResults(false);
+                inputRef.current?.focus();
               }}
-              className="p-1 text-[#5F6368] hover:text-[#202124]"
+              className="p-1.5 md:p-1 text-[#5F6368] hover:text-[#202124] active:text-[#202124] touch-manipulation min-w-[32px] min-h-[32px] md:min-w-0 md:min-h-0 flex items-center justify-center"
+              aria-label={getLabel('Clear search', 'සෙවුම ඉවත් කරන්න', 'தேடலை அழிக்கவும்')}
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4 md:w-4 md:h-4" />
             </button>
           )}
         </div>
@@ -208,7 +241,7 @@ export default function SearchBar({ language = 'en' }: SearchBarProps) {
       
       {/* Filter Panel */}
       {showFilters && (
-        <div className="absolute top-full mt-2 w-full bg-white border border-[#E8EAED] rounded-lg shadow-lg z-50 p-5 md:p-4 max-h-[80vh] md:max-h-none overflow-y-auto">
+        <div className="absolute top-full mt-2 w-full bg-white border border-[#E8EAED] rounded-lg shadow-lg z-50 p-4 md:p-4 max-h-[80vh] md:max-h-[500px] overflow-y-auto">
           {/* Topics */}
           <div className="mb-4">
             <label className="text-sm font-medium text-[#202124] mb-2 block">
@@ -353,7 +386,7 @@ export default function SearchBar({ language = 'en' }: SearchBarProps) {
       
       {/* Search Results */}
       {showResults && (
-        <div className="absolute top-full mt-2 w-full bg-white border border-[#E8EAED] rounded-lg shadow-lg z-50 max-h-[80vh] md:max-h-[600px] overflow-y-auto">
+        <div className="absolute top-full mt-2 w-full bg-white border border-[#E8EAED] rounded-lg shadow-lg z-50 max-h-[70vh] md:max-h-[600px] overflow-y-auto scrollbar-hide">
           {loading ? (
             <div className="p-4 text-center text-[#5F6368]">{getLabel('Searching...', 'සොයමින්...', 'தேடுகிறது...')}</div>
           ) : results.length === 0 ? (
@@ -377,8 +410,11 @@ export default function SearchBar({ language = 'en' }: SearchBarProps) {
                         ? `/${language}/${normalizeTopicSlug(result.topic) || 'other'}/${result.slug}`
                         : `/${language}/other/${result.slug}`
                       }
-                      className="block px-4 py-4 md:py-3 hover:bg-[#F8F9FA] active:bg-[#F1F3F4] transition-colors group touch-manipulation"
-                      onClick={() => setShowResults(false)}
+                      className="block px-4 py-4 md:py-3 hover:bg-[#F8F9FA] active:bg-[#F1F3F4] transition-colors group touch-manipulation min-h-[60px] md:min-h-0"
+                      onClick={() => {
+                        setShowResults(false);
+                        setQuery('');
+                      }}
                     >
                       <div className="flex gap-4 md:gap-3">
                         {/* Thumbnail */}
@@ -425,11 +461,13 @@ export default function SearchBar({ language = 'en' }: SearchBarProps) {
               
               {/* View All Link */}
               {results.length > 0 && (
-                <div className="px-4 py-3 border-t border-[#E8EAED]">
+                <div className="px-4 py-3 border-t border-[#E8EAED] bg-[#F8F9FA]">
                   <Link
-                    href={`/search?q=${encodeURIComponent(query)}`}
-                    className="text-sm font-medium text-[#1A73E8] hover:underline"
-                    onClick={() => setShowResults(false)}
+                    href={`/search?q=${encodeURIComponent(query)}&lang=${language}`}
+                    className="block text-sm font-medium text-[#1A73E8] hover:text-[#1557B0] active:text-[#1557B0] touch-manipulation py-2"
+                    onClick={() => {
+                      setShowResults(false);
+                    }}
                   >
                     {getLabel('View all results', 'සියලුම ප්‍රතිඵල', 'அனைத்து முடிவுகளும்')} →
                   </Link>

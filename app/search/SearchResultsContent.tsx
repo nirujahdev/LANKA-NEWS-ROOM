@@ -123,23 +123,23 @@ export default function SearchResultsContent() {
         currentLanguage={currentLanguage}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex gap-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
+        <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
           {/* Main Content */}
           <div className="flex-1 min-w-0">
             {/* Search Bar */}
-            <div className="mb-6">
+            <div className="mb-4 md:mb-6">
               <SearchBar language={currentLanguage} />
             </div>
 
             {/* Results Header */}
             {query && (
               <div className="mb-4">
-                <h1 className="text-2xl font-semibold text-[#202124] mb-2">
+                <h1 className="text-xl md:text-2xl font-semibold text-[#202124] mb-2 break-words">
                   {getLabel('News about', 'පුවත්', 'செய்திகள்')} {query}
                 </h1>
                 {results.length > 0 && (
-                  <p className="text-sm text-[#5F6368]">
+                  <p className="text-xs md:text-sm text-[#5F6368]">
                     {results.length} {getLabel('results found', 'ප්‍රතිඵල හමු විය', 'முடிவுகள் கிடைத்தன')}
                   </p>
                 )}
@@ -148,15 +148,17 @@ export default function SearchResultsContent() {
 
             {/* Loading State */}
             {loading && (
-              <div className="bg-white rounded-xl p-12 text-center text-[#5F6368] shadow-sm border border-[#E8EAED]">
+              <div className="bg-white rounded-xl p-8 md:p-12 text-center text-[#5F6368] shadow-sm border border-[#E8EAED]">
                 {getLabel('Searching...', 'සොයමින්...', 'தேடுகிறது...')}
               </div>
             )}
 
             {/* Error State */}
             {error && (
-              <div className="bg-white rounded-xl p-12 text-center text-[#5F6368] shadow-sm border border-[#E8EAED]">
-                {getLabel('Error loading results. Please try again.', 'ප්‍රතිඵල පූරණය කිරීමේ දෝෂයකි. නැවත උත්සාහ කරන්න.', 'முடிவுகளை ஏற்றுவதில் பிழை. மீண்டும் முயற்சிக்கவும்.')}
+              <div className="bg-white rounded-xl p-8 md:p-12 text-center text-[#5F6368] shadow-sm border border-[#E8EAED]">
+                <p className="text-sm md:text-base">
+                  {getLabel('Error loading results. Please try again.', 'ප්‍රතිඵල පූරණය කිරීමේ දෝෂයකි. නැවත උත්සාහ කරන්න.', 'முடிவுகளை ஏற்றுவதில் பிழை. மீண்டும் முயற்சிக்கவும்.')}
+                </p>
               </div>
             )}
 
@@ -201,11 +203,11 @@ export default function SearchResultsContent() {
 
             {/* No Results */}
             {!loading && !error && results.length === 0 && query && (
-              <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-[#E8EAED]">
-                <p className="text-[#5F6368] mb-4">
+              <div className="bg-white rounded-xl p-8 md:p-12 text-center shadow-sm border border-[#E8EAED]">
+                <p className="text-sm md:text-base text-[#5F6368] mb-4 break-words">
                   {getLabel('No results found for', 'සඳහා ප්‍රතිඵල හමු නොවීය', 'முடிவுகள் இல்லை')} "{query}"
                 </p>
-                <p className="text-sm text-[#9AA0A6]">
+                <p className="text-xs md:text-sm text-[#9AA0A6]">
                   {getLabel('Try different keywords or check your filters', 'වෙනස් යතුරු වචන උත්සාහ කරන්න හෝ ඔබේ පෙරහන් පරීක්ෂා කරන්න', 'வேறு முக்கிய வார்த்தைகளை முயற்சிக்கவும் அல்லது உங்கள் வடிகட்டிகளை சரிபார்க்கவும்')}
                 </p>
               </div>
@@ -213,8 +215,8 @@ export default function SearchResultsContent() {
 
             {/* Empty State */}
             {!loading && !error && !query && (
-              <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-[#E8EAED]">
-                <p className="text-[#5F6368]">
+              <div className="bg-white rounded-xl p-8 md:p-12 text-center shadow-sm border border-[#E8EAED]">
+                <p className="text-sm md:text-base text-[#5F6368]">
                   {getLabel('Enter a search query to find news', 'පුවත් සොයා ගැනීමට සෙවුම් විමසුමක් ඇතුළත් කරන්න', 'செய்திகளைக் கண்டுபிடிக்க தேடல் வினவலை உள்ளிடவும்')}
                 </p>
               </div>
