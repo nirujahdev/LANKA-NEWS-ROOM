@@ -156,6 +156,9 @@ export type Database = {
           source_count: number | null
           status: Database["public"]["Enums"]["cluster_status"] | null
           topic: string | null
+          tweet_id: string | null
+          tweeted_at: string | null
+          tweet_status: string | null
           updated_at: string | null
         }
         Insert: {
@@ -188,6 +191,9 @@ export type Database = {
           source_count?: number | null
           status?: Database["public"]["Enums"]["cluster_status"] | null
           topic?: string | null
+          tweet_id?: string | null
+          tweeted_at?: string | null
+          tweet_status?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -220,6 +226,9 @@ export type Database = {
           source_count?: number | null
           status?: Database["public"]["Enums"]["cluster_status"] | null
           topic?: string | null
+          tweet_id?: string | null
+          tweeted_at?: string | null
+          tweet_status?: string | null
           updated_at?: string | null
         }
         Relationships: []
