@@ -66,14 +66,15 @@ export default function Footer() {
             <div className="text-sm text-gray-300">
               <p>© {currentYear} Lanka News Room, Apache License 2.0</p>
             </div>
-            <div className="text-sm">
+            <div className="text-sm text-white">
+              <span>Developed by </span>
               <a 
                 href="https://instagram.com/benaiah_4"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-red-500 hover:text-red-600 transition-colors inline-flex items-center gap-1"
+                className="text-white hover:underline hover:decoration-red-500 hover:decoration-2 transition-all inline-flex items-center gap-1"
               >
-                <span>Developed by Benaiah Nicholas Nimal</span>
+                <span>Benaiah Nicholas Nimal</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             </div>

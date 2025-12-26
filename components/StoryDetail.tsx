@@ -132,9 +132,14 @@ const StoryDetail: React.FC<StoryDetailProps> = ({
               fill
               className="object-cover"
               priority
+              unoptimized
               onError={(e) => {
+                console.error('Image failed to load:', imageUrl);
                 const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
+                const parent = target.closest('div');
+                if (parent) {
+                  parent.style.display = 'none';
+                }
               }}
             />
           </div>
@@ -179,7 +184,7 @@ const StoryDetail: React.FC<StoryDetailProps> = ({
       </div>
 
       {/* Summary - Mobile-optimized typography */}
-      <div className="mb-8 sm:mb-10 pb-12">
+      <div className="mb-8 sm:mb-10 pb-20 sm:pb-24 md:pb-28">
         <div className="prose prose-sm sm:prose-base md:prose-lg max-w-none">
           <p className="text-sm sm:text-base md:text-lg text-[#202124] leading-[1.6] sm:leading-[1.7] md:leading-[1.75] font-normal">
             {getSummary()}
@@ -236,13 +241,6 @@ const StoryDetail: React.FC<StoryDetailProps> = ({
             </a>
           ))}
         </div>
-      </div>
-
-      {/* Methodology Line */}
-      <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-[#E8EAED]">
-        <p className="text-xs sm:text-sm text-[#9AA0A6] leading-relaxed">
-          This is an AI-generated summary from multiple sources. We list sources so you can verify.
-        </p>
       </div>
 
       {/* Social Share Section */}
