@@ -9,10 +9,10 @@ type NewsArticleSchemaProps = {
   headline: string;
   description: string;
   datePublished: string;
-  dateModified?: string;
-  imageUrl?: string;
+  dateModified?: string | null;
+  imageUrl?: string | null;
   authorName?: string;
-  category?: string;
+  category?: string | null;
   topic?: string | null;
   keywords?: string[] | null;
   url: string;

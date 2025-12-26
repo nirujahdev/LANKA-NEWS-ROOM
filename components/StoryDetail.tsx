@@ -26,8 +26,8 @@ type StoryDetailProps = {
   currentLanguage?: 'en' | 'si' | 'ta';
   onLanguageChange?: (lang: 'en' | 'si' | 'ta') => void;
   needsReview?: boolean;
-  keyFacts?: string[];
-  confirmedVsDiffers?: string;
+  keyFacts?: string[] | null;
+  confirmedVsDiffers?: string | null;
   lastCheckedAt?: string | null;
   imageUrl?: string | null;
 };
