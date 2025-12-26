@@ -5,7 +5,7 @@ import { fetchRssFeed } from './rss';
 import { detectLanguage } from './language';
 import { makeArticleHash } from './hash';
 import { extractEntities, normalizeTitle, similarityScore, generateSlug } from './text';
-import { summarizeEnglish, translateSummary, generateSEOMetadata, generateComprehensiveSEO, summarizeInSourceLanguage, translateToMultipleLanguages, generateKeyFacts, generateConfirmedVsDiffers, generateKeywords, translateFromTo, translateHeadline, validateSummaryQuality, validateTranslationQuality } from './openaiClient';
+import { summarizeEnglish, translateSummary, generateSEOMetadata, generateComprehensiveSEO, summarizeInSourceLanguage, translateToMultipleLanguages, generateKeyFacts, generateConfirmedVsDiffers, generateKeywords, translateFromTo, translateHeadline, validateSummaryQuality, validateTranslationQuality, validateHeadlineTranslationQuality } from './openaiClient';
 import { categorizeCluster } from './categorize';
 import { normalizeTopicSlug } from './topics';
 import { updateLastSuccessfulRun } from './pipelineEarlyExit';
@@ -716,24 +716,81 @@ async function summarizeEligible(
       primaryEntity = comprehensiveSEO.primary_entity;
       eventType = comprehensiveSEO.event_type;
       
-      // Generate translated headlines
+      // Generate translated headlines with quality validation
       console.log('[Pipeline] Generating translated headlines...');
-      [headlineSi, headlineTa] = await Promise.all([
-        translateHeadline(cluster.headline, 'en', 'si').catch((err) => {
-          console.warn(`[Pipeline] Failed to translate headline to Sinhala: ${err.message}`);
-          return null;
-        }),
-        translateHeadline(cluster.headline, 'en', 'ta').catch((err) => {
-          console.warn(`[Pipeline] Failed to translate headline to Tamil: ${err.message}`);
-          return null;
-        })
-      ]);
       
-      if (headlineSi) {
-        console.log(`[Pipeline] Generated Sinhala headline: ${headlineSi}`);
+      // Translate Sinhala headline with validation
+      let headlineSiQuality = { score: 0, isValid: false, issues: [] as string[] };
+      try {
+        headlineSi = await translateHeadline(cluster.headline, 'en', 'si');
+        if (headlineSi) {
+          headlineSiQuality = validateHeadlineTranslationQuality(cluster.headline, headlineSi, 'en', 'si');
+          if (!headlineSiQuality.isValid || headlineSiQuality.score < 70) {
+            console.warn(`[Pipeline] Sinhala headline quality check failed (score: ${headlineSiQuality.score}):`, headlineSiQuality.issues);
+            // Retry translation if quality is poor
+            if (headlineSiQuality.score < 60) {
+              try {
+                console.log('[Pipeline] Retrying Sinhala headline translation due to poor quality...');
+                headlineSi = await translateHeadline(cluster.headline, 'en', 'si');
+                headlineSiQuality = validateHeadlineTranslationQuality(cluster.headline, headlineSi, 'en', 'si');
+                if (!headlineSiQuality.isValid || headlineSiQuality.score < 70) {
+                  console.warn(`[Pipeline] Retry Sinhala headline also failed quality check (score: ${headlineSiQuality.score})`);
+                } else {
+                  console.log(`[Pipeline] Retry Sinhala headline passed quality check (score: ${headlineSiQuality.score})`);
+                }
+              } catch (retryErr) {
+                console.error('[Pipeline] Sinhala headline translation retry failed:', retryErr);
+              }
+            }
+          } else {
+            console.log(`[Pipeline] Sinhala headline quality check passed (score: ${headlineSiQuality.score})`);
+          }
+          console.log(`[Pipeline] Generated Sinhala headline: ${headlineSi}`);
+        }
+      } catch (err) {
+        console.warn(`[Pipeline] Failed to translate headline to Sinhala: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        headlineSi = null;
       }
-      if (headlineTa) {
-        console.log(`[Pipeline] Generated Tamil headline: ${headlineTa}`);
+      
+      // Translate Tamil headline with validation
+      let headlineTaQuality = { score: 0, isValid: false, issues: [] as string[] };
+      try {
+        headlineTa = await translateHeadline(cluster.headline, 'en', 'ta');
+        if (headlineTa) {
+          headlineTaQuality = validateHeadlineTranslationQuality(cluster.headline, headlineTa, 'en', 'ta');
+          if (!headlineTaQuality.isValid || headlineTaQuality.score < 70) {
+            console.warn(`[Pipeline] Tamil headline quality check failed (score: ${headlineTaQuality.score}):`, headlineTaQuality.issues);
+            // Retry translation if quality is poor
+            if (headlineTaQuality.score < 60) {
+              try {
+                console.log('[Pipeline] Retrying Tamil headline translation due to poor quality...');
+                headlineTa = await translateHeadline(cluster.headline, 'en', 'ta');
+                headlineTaQuality = validateHeadlineTranslationQuality(cluster.headline, headlineTa, 'en', 'ta');
+                if (!headlineTaQuality.isValid || headlineTaQuality.score < 70) {
+                  console.warn(`[Pipeline] Retry Tamil headline also failed quality check (score: ${headlineTaQuality.score})`);
+                } else {
+                  console.log(`[Pipeline] Retry Tamil headline passed quality check (score: ${headlineTaQuality.score})`);
+                }
+              } catch (retryErr) {
+                console.error('[Pipeline] Tamil headline translation retry failed:', retryErr);
+              }
+            }
+          } else {
+            console.log(`[Pipeline] Tamil headline quality check passed (score: ${headlineTaQuality.score})`);
+          }
+          console.log(`[Pipeline] Generated Tamil headline: ${headlineTa}`);
+        }
+      } catch (err) {
+        console.warn(`[Pipeline] Failed to translate headline to Tamil: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        headlineTa = null;
+      }
+      
+      // Log headline quality warnings
+      if (headlineSiQuality.score < 70 && headlineSi) {
+        console.warn(`[Pipeline] ⚠️ Low Sinhala headline quality score (${headlineSiQuality.score}) for cluster ${cluster.id}`);
+      }
+      if (headlineTaQuality.score < 70 && headlineTa) {
+        console.warn(`[Pipeline] ⚠️ Low Tamil headline quality score (${headlineTaQuality.score}) for cluster ${cluster.id}`);
       }
 
       // Collect images from all sources

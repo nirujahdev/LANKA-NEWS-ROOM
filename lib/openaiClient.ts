@@ -1476,3 +1476,190 @@ export function validateTranslationQuality(
   };
 }
 
+/**
+ * Validate headline translation quality
+ * Optimized for headlines (shorter, more focused validation than full text)
+ * @param sourceHeadline - Original headline in source language
+ * @param translatedHeadline - Translated headline
+ * @param sourceLang - Source language code
+ * @param targetLang - Target language code
+ * @returns Object with validation result and score
+ */
+export function validateHeadlineTranslationQuality(
+  sourceHeadline: string,
+  translatedHeadline: string,
+  sourceLang: 'en' | 'si' | 'ta',
+  targetLang: 'en' | 'si' | 'ta'
+): {
+  isValid: boolean;
+  score: number;
+  issues: string[];
+} {
+  const issues: string[] = [];
+  let score = 100;
+
+  if (!translatedHeadline || translatedHeadline.trim().length === 0) {
+    return { isValid: false, score: 0, issues: ['Headline translation is empty'] };
+  }
+
+  if (!sourceHeadline || sourceHeadline.trim().length === 0) {
+    return { isValid: false, score: 0, issues: ['Source headline is empty'] };
+  }
+
+  // Check headline length (headlines should be 30-100 characters, more flexible than summaries)
+  const translatedLength = translatedHeadline.trim().length;
+  if (translatedLength < 20) {
+    issues.push(`Headline too short: ${translatedLength} characters (minimum 20)`);
+    score -= 15;
+  }
+  if (translatedLength > 120) {
+    issues.push(`Headline too long: ${translatedLength} characters (maximum 120)`);
+    score -= 10;
+  }
+
+  // Check length similarity (headlines can vary more than full text, but should be reasonable)
+  const sourceLength = sourceHeadline.trim().length;
+  const lengthRatio = translatedLength / sourceLength;
+  
+  if (sourceLength > 10) {
+    // Allow more flexibility for headlines (30-200% range)
+    if (lengthRatio < 0.3 || lengthRatio > 2.0) {
+      issues.push(`Headline length differs significantly from source (ratio: ${lengthRatio.toFixed(2)})`);
+      score -= 15;
+    } else if (lengthRatio < 0.5 || lengthRatio > 1.5) {
+      issues.push(`Headline length differs from source (ratio: ${lengthRatio.toFixed(2)})`);
+      score -= 5;
+    }
+  }
+
+  // Extract numbers from source and translation - all should be preserved
+  const sourceNumbers: string[] = sourceHeadline.match(/\b\d+(?:,\d{3})*(?:\.\d+)?\b/g) || [];
+  const translatedNumbers: string[] = translatedHeadline.match(/\b\d+(?:,\d{3})*(?:\.\d+)?\b/g) || [];
+  
+  if (sourceNumbers.length > 0) {
+    const missingNumbers = sourceNumbers.filter(num => !translatedNumbers.includes(num));
+    if (missingNumbers.length > 0) {
+      issues.push(`Missing numbers in headline translation: ${missingNumbers.slice(0, 3).join(', ')}`);
+      score -= 25; // More critical for headlines
+    }
+  }
+
+  // Extract dates from source and translation - all should be preserved
+  const sourceDates = sourceHeadline.match(/\b(?:\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}|(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},?\s+\d{4})\b/gi) || [];
+  const translatedDates = translatedHeadline.match(/\b(?:\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}|(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},?\s+\d{4})\b/gi) || [];
+  
+  if (sourceDates.length > 0) {
+    const sourceDateCount = sourceDates.length;
+    const translatedDateCount = translatedDates.length;
+    if (translatedDateCount < sourceDateCount) {
+      issues.push(`Missing dates in headline translation (source: ${sourceDateCount}, translation: ${translatedDateCount})`);
+      score -= 20;
+    }
+  }
+
+  // Check for proper nouns (names, places, organizations) - should be preserved
+  if (sourceLang === 'en') {
+    const properNouns = sourceHeadline.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b/g) || [];
+    const significantProperNouns = properNouns.filter(noun => 
+      !['The', 'A', 'An', 'This', 'That', 'These', 'Those', 'Sri', 'Lanka'].includes(noun) &&
+      noun.length > 2 &&
+      !noun.match(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|January|February|March|April|May|June|July|August|September|October|November|December)$/i)
+    );
+    
+    if (significantProperNouns.length > 0) {
+      const preservedCount = significantProperNouns.filter(noun => {
+        const nounLower = noun.toLowerCase();
+        return translatedHeadline.toLowerCase().includes(nounLower) || 
+               translatedHeadline.toLowerCase().includes(nounLower.replace(/\s+/g, ''));
+      }).length;
+      
+      const preservationRate = preservedCount / significantProperNouns.length;
+      if (preservationRate < 0.6) {
+        issues.push(`Many proper nouns missing in headline translation (${Math.round(preservationRate * 100)}% preserved, need 60%+)`);
+        score -= 20;
+      } else if (preservationRate < 0.8) {
+        issues.push(`Some proper nouns may be missing (${Math.round(preservationRate * 100)}% preserved)`);
+        score -= 10;
+      }
+    }
+  }
+
+  // Check for formal language (for Sinhala and Tamil)
+  if (targetLang === 'si') {
+    // Sinhala: Check for proper Sinhala script usage
+    const hasSinhalaScript = /[ක-ෆ]/.test(translatedHeadline);
+    if (!hasSinhalaScript && translatedHeadline.length > 10) {
+      issues.push('May not contain proper Sinhala script');
+      score -= 15;
+    }
+    // Check for too many English words (informal)
+    const englishWords = translatedHeadline.match(/\b[A-Za-z]{3,}\b/g) || [];
+    if (englishWords.length > translatedHeadline.split(/\s+/).length * 0.3) {
+      issues.push('Too many English words in Sinhala headline (should be formal Sinhala)');
+      score -= 10;
+    }
+  }
+  
+  if (targetLang === 'ta') {
+    // Tamil: Check for proper Tamil script usage
+    const hasTamilScript = /[அ-ஹ]/.test(translatedHeadline);
+    if (!hasTamilScript && translatedHeadline.length > 10) {
+      issues.push('May not contain proper Tamil script');
+      score -= 15;
+    }
+    // Check for too many English words (informal)
+    const englishWords = translatedHeadline.match(/\b[A-Za-z]{3,}\b/g) || [];
+    if (englishWords.length > translatedHeadline.split(/\s+/).length * 0.3) {
+      issues.push('Too many English words in Tamil headline (should be formal Tamil)');
+      score -= 10;
+    }
+  }
+
+  // Check for placeholder text or errors
+  const placeholderPatterns = [
+    /\[.*?\]/g,
+    /TODO/i,
+    /FIXME/i,
+    /XXX/i,
+    /placeholder/i,
+    /lorem ipsum/i
+  ];
+
+  for (const pattern of placeholderPatterns) {
+    if (pattern.test(translatedHeadline)) {
+      issues.push('Contains placeholder text');
+      score -= 30;
+      break;
+    }
+  }
+
+  // Check for basic structure (should have some content, not just punctuation)
+  const contentWords = translatedHeadline.trim().split(/\s+/).filter(w => w.length > 1);
+  if (contentWords.length < 2) {
+    issues.push('Headline too short or lacks content (needs at least 2 words)');
+    score -= 20;
+  }
+
+  // Check for emotional/sensational language (should be neutral)
+  const emotionalPatterns = [
+    /\b(?:shocking|devastating|horrific|terrible|amazing|incredible|unbelievable|outrageous|scandalous)\b/i,
+    /!{2,}/, // Multiple exclamation marks
+    /\b(?:OMG|WOW|WTF)\b/i
+  ];
+  
+  for (const pattern of emotionalPatterns) {
+    if (pattern.test(translatedHeadline)) {
+      issues.push('Contains emotional or sensational language (should be neutral)');
+      score -= 10;
+      break;
+    }
+  }
+
+  const isValid = score >= 60 && issues.length < 4;
+
+  return {
+    isValid,
+    score: Math.max(0, score),
+    issues
+  };
+}

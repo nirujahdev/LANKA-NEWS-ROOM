@@ -249,12 +249,13 @@ async function main() {
   try {
     // Query all published clusters
     console.log('📊 Fetching published clusters from Supabase...');
+    const now = new Date().toISOString();
     const { data: clusters, error } = await supabase
       .from('clusters')
       .select('id, slug, topic, published_at, updated_at, created_at')
       .eq('status', 'published')
       .not('slug', 'is', null)
-      .gte('expires_at', new Date().toISOString())
+      .or(`expires_at.is.null,expires_at.gte.${now}`) // Include clusters that haven't expired or have no expiry
       .returns<Cluster[]>();
 
     if (error) {
