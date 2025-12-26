@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Share2, Twitter, Facebook, Linkedin, Link as LinkIcon, Copy, Check } from 'lucide-react';
 
 interface SocialShareProps {
@@ -22,7 +22,7 @@ export default function SocialShare({ url, title, description, imageUrl, languag
   const shareText = description ? `${title} - ${description}` : title;
   
   // Update Open Graph meta tags for sharing
-  React.useEffect(() => {
+  useEffect(() => {
     if (typeof window !== 'undefined' && imageUrl) {
       // Update og:image meta tag
       let ogImage = document.querySelector('meta[property="og:image"]');
