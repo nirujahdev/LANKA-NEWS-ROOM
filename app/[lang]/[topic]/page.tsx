@@ -117,22 +117,36 @@ export default async function TopicPage({ params }: Props) {
   // Use case-insensitive matching with ilike for better compatibility
   // TypeScript: topic is guaranteed to be a string here due to validation above
   const topicString: string = topic;
-  const { data: clusters } = await supabaseAdmin
-    .from('clusters')
-    .select(`
-      *,
-      summaries (*),
-      articles (
-        sources (
-          name,
-          feed_url
+  
+  let clusters: any[] | null = null;
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('clusters')
+      .select(`
+        *,
+        summaries (*),
+        articles (
+          sources (
+            name,
+            feed_url
+          )
         )
-      )
-    `)
-    .eq('status', 'published')
-    .ilike('topic', topicString) // Case-insensitive matching
-    .order('last_seen_at', { ascending: false })
-    .limit(20);
+      `)
+      .eq('status', 'published')
+      .ilike('topic', topicString) // Case-insensitive matching
+      .order('last_seen_at', { ascending: false })
+      .limit(20);
+    
+    if (error) {
+      console.error('Error fetching clusters:', error);
+      clusters = [];
+    } else {
+      clusters = data || [];
+    }
+  } catch (error) {
+    console.error('Error in topic page query:', error);
+    clusters = [];
+  }
 
   const topicLabel = getTopicLabel(topic, lang);
   const countryRef = lang === 'en' ? 'Sri Lanka' : lang === 'si' ? 'ශ්‍රී ලංකා' : 'இலங்கை';
