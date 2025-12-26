@@ -1,0 +1,77 @@
+================================================================================
+GOOGLE SEARCH CONSOLE - SITEMAP SUBMISSION LIST
+================================================================================
+
+IMPORTANT: You only need to submit ONE URL to Google Search Console!
+
+⭐ SUBMIT THIS URL:
+   https://lankanewsroom.xyz/sitemap.xml
+
+Google will automatically discover all other sitemaps from this main index.
+
+================================================================================
+COMPLETE LIST OF SITEMAP FILES (for reference only)
+================================================================================
+
+Main Sitemap Index (SUBMIT THIS):
+  https://lankanewsroom.xyz/sitemap.xml
+
+Static Pages Sitemap:
+  https://lankanewsroom.xyz/sitemaps/static.xml
+
+Topic Sitemaps (automatically discovered):
+  https://lankanewsroom.xyz/sitemaps/politics.xml
+  https://lankanewsroom.xyz/sitemaps/economy.xml
+  https://lankanewsroom.xyz/sitemaps/business.xml
+  https://lankanewsroom.xyz/sitemaps/sports.xml
+  https://lankanewsroom.xyz/sitemaps/crime.xml
+  https://lankanewsroom.xyz/sitemaps/education.xml
+  https://lankanewsroom.xyz/sitemaps/health.xml
+  https://lankanewsroom.xyz/sitemaps/environment.xml
+  https://lankanewsroom.xyz/sitemaps/technology.xml
+  https://lankanewsroom.xyz/sitemaps/culture.xml
+  https://lankanewsroom.xyz/sitemaps/entertainment.xml
+  https://lankanewsroom.xyz/sitemaps/science.xml
+  https://lankanewsroom.xyz/sitemaps/sri-lanka.xml
+  https://lankanewsroom.xyz/sitemaps/world.xml
+  https://lankanewsroom.xyz/sitemaps/local.xml
+  https://lankanewsroom.xyz/sitemaps/other.xml
+
+Note: If any topic exceeds 50,000 URLs, it will be split into multiple files
+(e.g., politics-1.xml, politics-2.xml). These will be automatically discovered.
+
+================================================================================
+ROBOTS.TXT
+================================================================================
+
+The robots.txt file is automatically generated and includes:
+  - Allow rules for all user agents
+  - Disallow rules for /api/ and /admin/
+  - Reference to main sitemap
+
+URL: https://lankanewsroom.xyz/robots.txt
+
+You don't need to submit robots.txt separately - Google will automatically
+discover it.
+
+================================================================================
+HOW TO SUBMIT
+================================================================================
+
+1. Go to Google Search Console: https://search.google.com/search-console
+2. Select your property: https://lankanewsroom.xyz
+3. Click "Sitemaps" in the left sidebar
+4. Enter: sitemap.xml (or the full URL)
+5. Click "Submit"
+6. Wait for Google to process (usually a few hours)
+
+================================================================================
+AUTOMATION
+================================================================================
+
+The sitemaps are automatically updated every 1 hour via GitHub Actions.
+No manual intervention needed - just submit once and Google will keep discovering
+new URLs automatically.
+
+================================================================================
+
