@@ -613,24 +613,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://lankanewsroom.xyz/en/other/21st-anniversary-of-2004-tsunami</loc>
-    <lastmod>2025-12-26T16:52:21.844Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://lankanewsroom.xyz/si/other/21st-anniversary-of-2004-tsunami</loc>
-    <lastmod>2025-12-26T16:52:21.844Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://lankanewsroom.xyz/ta/other/21st-anniversary-of-2004-tsunami</loc>
-    <lastmod>2025-12-26T16:52:21.844Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://lankanewsroom.xyz/en/other/sri-lanka-struggles-after-cyclone</loc>
     <lastmod>2025-12-26T16:52:33.655Z</lastmod>
     <changefreq>daily</changefreq>
@@ -699,6 +681,24 @@
   <url>
     <loc>https://lankanewsroom.xyz/ta/other/mass-graves-sri-lanka-bloody-past</loc>
     <lastmod>2025-12-26T16:56:50.057Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/en/other/21st-anniversary-of-2004-tsunami</loc>
+    <lastmod>2025-12-26T22:53:44.368Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/si/other/21st-anniversary-of-2004-tsunami</loc>
+    <lastmod>2025-12-26T22:53:44.368Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/ta/other/21st-anniversary-of-2004-tsunami</loc>
+    <lastmod>2025-12-26T22:53:44.368Z</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1797,6 +1797,24 @@
   <url>
     <loc>https://lankanewsroom.xyz/ta/other/leveraging-technology-sri-lankan-elephant-research</loc>
     <lastmod>2025-12-26T20:19:31.391Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/en/other/enhancing-drug-trafficking-capacity-sri-lanka</loc>
+    <lastmod>2025-12-26T21:44:18.458Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/si/other/enhancing-drug-trafficking-capacity-sri-lanka</loc>
+    <lastmod>2025-12-26T21:44:18.458Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/ta/other/enhancing-drug-trafficking-capacity-sri-lanka</loc>
+    <lastmod>2025-12-26T21:44:18.458Z</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
