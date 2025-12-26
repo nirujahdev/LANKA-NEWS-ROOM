@@ -73,13 +73,9 @@ export default function ConditionalAdSense() {
     return () => clearInterval(checkContent);
   }, [pathname]);
 
-  // Only load AdSense script if all checks pass
-  if (!shouldLoadAds) {
-    return null;
-  }
-
   // Use useEffect to inject script directly to avoid data-nscript attribute warning
   // This is a known Next.js Script component issue with AdSense
+  // IMPORTANT: This hook must always be called (Rules of Hooks), so we check shouldLoadAds inside
   useEffect(() => {
     if (!shouldLoadAds) return;
     
@@ -111,6 +107,7 @@ export default function ConditionalAdSense() {
     };
   }, [shouldLoadAds]);
   
+  // Only render nothing if ads shouldn't load (but hooks must always be called)
   return null;
 }
 
