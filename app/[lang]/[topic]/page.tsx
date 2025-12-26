@@ -123,109 +123,119 @@ export default async function TopicPage({ params, searchParams }: Props) {
   
   let clusters: any[] | null = null;
   try {
-    let query = supabaseAdmin
-      .from('clusters')
-      .select(`
-        *,
-        summaries (*),
-        articles (
-          sources (
-            name,
-            feed_url
-          )
-        )
-      `)
-      .eq('status', 'published');
+    // Check if Supabase is properly configured before making queries
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
-    // Support both single topic (backward compatibility) and topics array
-    // First try to match single topic field, then filter by topics array in memory if needed
-    // For now, use single topic matching (topics array matching will be added via RPC if needed)
-    query = query.ilike('topic', topicString);
-    
-    // Note: For topics array matching, we'll need to either:
-    // 1. Create an RPC function that uses PostgreSQL array operators, or
-    // 2. Fetch all and filter in memory (less efficient but works)
-    // For initial implementation, single topic matching should work
-
-    // Apply date filter
-    if (date && date !== 'all') {
-      const now = new Date();
-      let dateFrom: Date;
-      switch (date) {
-        case 'today':
-          dateFrom = new Date(now.setHours(0, 0, 0, 0));
-          break;
-        case 'week':
-          dateFrom = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case 'month':
-          dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-        default:
-          dateFrom = new Date(0);
-      }
-      query = query.gte('published_at', dateFrom.toISOString());
-    }
-
-    // Apply district filter (from articles)
-    if (city) { // Note: city param is now used for district
-      const { data: articlesWithDistrict } = await supabaseAdmin
-        .from('articles')
-        .select('cluster_id')
-        .ilike('district', city);
-      
-      if (articlesWithDistrict && articlesWithDistrict.length > 0) {
-        const clusterIds = articlesWithDistrict.map(a => a.cluster_id).filter((id): id is string => id !== null && id !== undefined);
-        if (clusterIds.length > 0) {
-          query = query.in('id', clusterIds);
-        } else {
-          // No clusters match, return empty result
-          clusters = [];
-          return clusters;
-        }
-      } else {
-        // No articles with this district, return empty result
-        clusters = [];
-        return clusters;
-      }
-    }
-
-    // Apply sorting
-    const sortOption = sort || 'newest';
-    switch (sortOption) {
-      case 'oldest':
-        query = query.order('published_at', { ascending: true });
-        break;
-      case 'sources':
-        query = query.order('source_count', { ascending: false });
-        break;
-      case 'newest':
-      default:
-        query = query.order('published_at', { ascending: false });
-        break;
-    }
-
-    const { data, error } = await query.limit(50); // Fetch more to filter by topics array
-    
-    if (error) {
-      console.error('Error fetching clusters:', error);
+    if (!supabaseUrl || !supabaseServiceKey || supabaseUrl.includes('placeholder')) {
+      console.error('Supabase admin credentials not configured. Cannot fetch topic data.');
       clusters = [];
     } else {
-      // Filter by topics array if single topic didn't match
-      // This supports multi-topic categorization
-      clusters = (data || []).filter((cluster: any) => {
-        // Check if topic matches single topic field
-        if (cluster.topic && cluster.topic.toLowerCase() === topicString.toLowerCase()) {
-          return true;
+      let query = supabaseAdmin
+        .from('clusters')
+        .select(`
+          *,
+          summaries (*),
+          articles (
+            sources (
+              name,
+              feed_url
+            )
+          )
+        `)
+        .eq('status', 'published');
+    
+      // Support both single topic (backward compatibility) and topics array
+      // First try to match single topic field, then filter by topics array in memory if needed
+      // For now, use single topic matching (topics array matching will be added via RPC if needed)
+      query = query.ilike('topic', topicString);
+      
+      // Note: For topics array matching, we'll need to either:
+      // 1. Create an RPC function that uses PostgreSQL array operators, or
+      // 2. Fetch all and filter in memory (less efficient but works)
+      // For initial implementation, single topic matching should work
+
+      // Apply date filter
+      if (date && date !== 'all') {
+        const now = new Date();
+        let dateFrom: Date;
+        switch (date) {
+          case 'today':
+            dateFrom = new Date(now.setHours(0, 0, 0, 0));
+            break;
+          case 'week':
+            dateFrom = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case 'month':
+            dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            break;
+          default:
+            dateFrom = new Date(0);
         }
-        // Check if topic exists in topics array
-        if (cluster.topics && Array.isArray(cluster.topics)) {
-          return cluster.topics.some((t: string) => 
-            t && t.toLowerCase() === topicString.toLowerCase()
-          );
+        query = query.gte('published_at', dateFrom.toISOString());
+      }
+
+      // Apply district filter (from articles)
+      if (city) { // Note: city param is now used for district
+        const { data: articlesWithDistrict } = await supabaseAdmin
+          .from('articles')
+          .select('cluster_id')
+          .ilike('district', city);
+        
+        if (articlesWithDistrict && articlesWithDistrict.length > 0) {
+          const clusterIds = articlesWithDistrict.map(a => a.cluster_id).filter((id): id is string => id !== null && id !== undefined);
+          if (clusterIds.length > 0) {
+            query = query.in('id', clusterIds);
+          } else {
+            // No clusters match, return empty result
+            clusters = [];
+          }
+        } else {
+          // No articles with this district, return empty result
+          clusters = [];
         }
-        return false;
-      }).slice(0, 20); // Limit to 20 after filtering
+      }
+
+      // Only proceed with query if we haven't already set clusters to empty
+      if (clusters === null) {
+        // Apply sorting
+        const sortOption = sort || 'newest';
+        switch (sortOption) {
+          case 'oldest':
+            query = query.order('published_at', { ascending: true });
+            break;
+          case 'sources':
+            query = query.order('source_count', { ascending: false });
+            break;
+          case 'newest':
+          default:
+            query = query.order('published_at', { ascending: false });
+            break;
+        }
+
+        const { data, error } = await query.limit(50); // Fetch more to filter by topics array
+        
+        if (error) {
+          console.error('Error fetching clusters:', error);
+          clusters = [];
+        } else {
+          // Filter by topics array if single topic didn't match
+          // This supports multi-topic categorization
+          clusters = (data || []).filter((cluster: any) => {
+            // Check if topic matches single topic field
+            if (cluster.topic && cluster.topic.toLowerCase() === topicString.toLowerCase()) {
+              return true;
+            }
+            // Check if topic exists in topics array
+            if (cluster.topics && Array.isArray(cluster.topics)) {
+              return cluster.topics.some((t: string) => 
+                t && t.toLowerCase() === topicString.toLowerCase()
+              );
+            }
+            return false;
+          }).slice(0, 20); // Limit to 20 after filtering
+        }
+      }
     }
   } catch (error) {
     console.error('Error in topic page query:', error);

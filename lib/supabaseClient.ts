@@ -9,8 +9,8 @@ export function createSupabaseClient() {
   // During build time or if env vars are missing, return a mock client that won't crash
   // This prevents React errors during hydration when env vars aren't set
   if (!supabaseUrl || !supabaseAnonKey) {
-    // Log warning in both development and production
-    if (typeof window !== 'undefined') {
+    // Log warning only in development to reduce console noise in production
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
       console.warn('⚠️ Missing Supabase environment variables - some features may not work');
       console.warn('   Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel environment variables.');
     }

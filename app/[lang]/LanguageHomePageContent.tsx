@@ -29,7 +29,10 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.warn('Missing Supabase environment variables - some features may not work');
+      // Only log in development to reduce console noise in production
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Missing Supabase environment variables - some features may not work');
+      }
       // Continue loading - getSupabaseClient returns a placeholder client
     }
 

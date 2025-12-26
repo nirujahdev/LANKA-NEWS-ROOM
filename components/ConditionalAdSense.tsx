@@ -84,6 +84,11 @@ export default function ConditionalAdSense() {
       src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
       strategy="afterInteractive"
       crossOrigin="anonymous"
+      onError={(e) => {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[AdSense] Script failed to load:', e);
+        }
+      }}
     />
   );
 }

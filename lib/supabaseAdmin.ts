@@ -10,7 +10,10 @@ function createSupabaseAdmin() {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     // Return a mock client that will fail gracefully on API calls
     // This prevents crashes during build or when env vars are missing
-    console.warn('⚠️  Supabase admin credentials not found. Using placeholder client.');
+    // Only log in development to reduce console noise in production
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('⚠️  Supabase admin credentials not found. Using placeholder client.');
+    }
     return createClient<Database>('https://placeholder.supabase.co', 'placeholder-key', {
       auth: {
         autoRefreshToken: false,
