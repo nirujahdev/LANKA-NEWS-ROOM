@@ -188,16 +188,34 @@ export async function GET(req: Request) {
           }
         }
         
+        // Helper function to safely serialize date values
+        const serializeDate = (value: any): string | null => {
+          if (!value) return null;
+          if (value instanceof Date) {
+            return value.toISOString();
+          }
+          if (typeof value === 'string') {
+            // Validate it's a valid date string
+            try {
+              const date = new Date(value);
+              if (!isNaN(date.getTime())) {
+                return date.toISOString();
+              }
+            } catch {
+              // If parsing fails, return null
+            }
+            return null;
+          }
+          return null;
+        };
+        
         // Ensure all date values are strings (serializable)
-        const firstSeen = cluster.first_seen_at 
-          ? (typeof cluster.first_seen_at === 'string' ? cluster.first_seen_at : new Date(cluster.first_seen_at).toISOString())
-          : null;
-        const lastUpdated = cluster.updated_at
-          ? (typeof cluster.updated_at === 'string' ? cluster.updated_at : new Date(cluster.updated_at).toISOString())
-          : null;
-        const createdAt = cluster.created_at
-          ? (typeof cluster.created_at === 'string' ? cluster.created_at : new Date(cluster.created_at).toISOString())
-          : null;
+        const firstSeen = serializeDate(cluster.first_seen_at);
+        const lastUpdated = serializeDate(cluster.updated_at);
+        const createdAt = serializeDate(cluster.created_at);
+        // Also serialize any other date fields that might exist
+        const publishedAt = serializeDate((cluster as any).published_at);
+        const lastSeenAt = serializeDate((cluster as any).last_seen_at);
         
         // Get image URL - prefer cluster image_url, fallback to article images
         const clusterImageUrl = cluster.image_url || null;
@@ -228,6 +246,8 @@ export async function GET(req: Request) {
           first_seen: firstSeen,
           last_updated: lastUpdated,
           created_at: createdAt,
+          published_at: publishedAt, // Include if exists
+          last_seen_at: lastSeenAt, // Include if exists
           source_count: typeof cluster.source_count === 'number' ? cluster.source_count : 0,
           summary: String(summaryText || ''),
           summary_version: summary && typeof summary.version === 'number' ? summary.version : null,
