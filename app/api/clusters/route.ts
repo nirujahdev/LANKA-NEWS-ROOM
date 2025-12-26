@@ -179,22 +179,40 @@ export async function GET(req: Request) {
           ? (typeof cluster.created_at === 'string' ? cluster.created_at : new Date(cluster.created_at).toISOString())
           : null;
         
+        // Get image URL - prefer cluster image_url, fallback to article images
+        const clusterImageUrl = cluster.image_url || null;
+        const articleImageUrl = imagesByCluster.get(cluster.id) || null;
+        const finalImageUrl = clusterImageUrl || articleImageUrl;
+        
+        // Ensure image_url is a valid string or null (not undefined)
+        const safeImageUrl = finalImageUrl && typeof finalImageUrl === 'string' && finalImageUrl.trim().length > 0
+          ? finalImageUrl.trim()
+          : null;
+        
+        // Ensure sources array is properly formatted
+        const clusterSources = sourcesByCluster.get(cluster.id) || [];
+        const safeSources = Array.isArray(clusterSources) 
+          ? clusterSources.filter(s => s && typeof s === 'object' && s.name && s.feed_url)
+          : [];
+        
         return {
-          id: cluster.id || '',
-          slug: cluster.slug || null, // Add slug for SEO-friendly URLs
-          headline: headlineText || '',
-          status: cluster.status || 'published',
-          category: cluster.category || null,
-          topic: cluster.topic || cluster.category || null, // Use topic field if available, fallback to category
-          topics: topicsArray, // Add topics array
+          id: String(cluster.id || ''),
+          slug: cluster.slug && typeof cluster.slug === 'string' ? cluster.slug : null,
+          headline: String(headlineText || ''),
+          status: (cluster.status === 'draft' || cluster.status === 'published') ? cluster.status : 'published',
+          category: cluster.category && typeof cluster.category === 'string' ? cluster.category : null,
+          topic: (cluster.topic || cluster.category) && typeof (cluster.topic || cluster.category) === 'string' 
+            ? (cluster.topic || cluster.category) 
+            : null,
+          topics: Array.isArray(topicsArray) ? topicsArray.filter(t => typeof t === 'string') : [],
           first_seen: firstSeen,
           last_updated: lastUpdated,
           created_at: createdAt,
-          source_count: cluster.source_count || 0,
-          summary: summaryText || '',
-          summary_version: summary?.version || null,
-          sources: Array.isArray(sourcesByCluster.get(cluster.id)) ? sourcesByCluster.get(cluster.id) : [],
-          image_url: imagesByCluster.get(cluster.id) || null
+          source_count: typeof cluster.source_count === 'number' ? cluster.source_count : 0,
+          summary: String(summaryText || ''),
+          summary_version: summary && typeof summary.version === 'number' ? summary.version : null,
+          sources: safeSources,
+          image_url: safeImageUrl
         };
       } catch (error) {
         console.error(`Error processing cluster ${cluster.id}:`, error);

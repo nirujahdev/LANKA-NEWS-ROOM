@@ -845,27 +845,53 @@ async function summarizeEligible(
       // Collect images from all sources with priority scoring
       const availableImages: Array<{ url: string; source: string; priority: number }> = [];
       
-      // 1. Collect images from article image_url fields (Priority 1.0 - highest)
-      articles?.forEach(article => {
-        if (article.image_url) {
+      // 0. Check if cluster already has a good image_url (Priority 1.5 - highest, reuse existing)
+      if (cluster.image_url && typeof cluster.image_url === 'string' && cluster.image_url.startsWith('http')) {
+        // Validate existing image is still valid
+        try {
+          new URL(cluster.image_url);
           availableImages.push({
-            url: article.image_url,
-            source: 'RSS Feed',
-            priority: 1.0
+            url: cluster.image_url,
+            source: 'Existing Cluster',
+            priority: 1.5
           });
+          console.log(`[Pipeline] Found existing image for cluster ${cluster.id}: ${cluster.image_url.substring(0, 60)}...`);
+        } catch {
+          // Invalid URL, ignore
+        }
+      }
+      
+      // 1. Collect images from article image_url fields (Priority 1.0 - high)
+      articles?.forEach(article => {
+        if (article.image_url && typeof article.image_url === 'string' && article.image_url.startsWith('http')) {
+          try {
+            new URL(article.image_url); // Validate URL
+            availableImages.push({
+              url: article.image_url,
+              source: 'RSS Feed',
+              priority: 1.0
+            });
+          } catch {
+            // Invalid URL, skip
+          }
         }
       });
       
-      // 1b. Collect images from image_urls array (Priority 1.0 - highest)
+      // 1b. Collect images from image_urls array (Priority 1.0 - high)
       articles?.forEach(article => {
         if ((article as any).image_urls && Array.isArray((article as any).image_urls)) {
           (article as any).image_urls.forEach((imgUrl: string) => {
-            if (imgUrl && imgUrl.startsWith('http')) {
-              availableImages.push({
-                url: imgUrl,
-                source: 'RSS Feed',
-                priority: 1.0
-              });
+            if (imgUrl && typeof imgUrl === 'string' && imgUrl.startsWith('http')) {
+              try {
+                new URL(imgUrl); // Validate URL
+                availableImages.push({
+                  url: imgUrl,
+                  source: 'RSS Feed',
+                  priority: 1.0
+                });
+              } catch {
+                // Invalid URL, skip
+              }
             }
           });
         }
@@ -876,15 +902,22 @@ async function summarizeEligible(
         // Use content_html if available, fallback to content_text/content_excerpt
         const html = (article as any).content_html || article.content_text || article.content_excerpt || '';
         const articleUrl = (article as any).url || '';
-        if (html && articleUrl && html.includes('<img')) {
+        if (html && articleUrl && typeof html === 'string' && html.includes('<img')) {
           try {
             const extractedImages = extractAllImagesFromHtml(html, articleUrl);
             extractedImages.forEach(imgUrl => {
-              availableImages.push({
-                url: imgUrl,
-                source: 'Article Content',
-                priority: 0.8
-              });
+              if (imgUrl && typeof imgUrl === 'string' && imgUrl.startsWith('http')) {
+                try {
+                  new URL(imgUrl); // Validate URL
+                  availableImages.push({
+                    url: imgUrl,
+                    source: 'Article Content',
+                    priority: 0.8
+                  });
+                } catch {
+                  // Invalid URL, skip
+                }
+              }
             });
           } catch (error) {
             console.warn('[Pipeline] Error extracting images from HTML:', error);
@@ -893,23 +926,31 @@ async function summarizeEligible(
       });
       
       // 3. Optionally fetch article pages if we have few images (rate-limited, Priority 0.6)
-      const rssImageCount = availableImages.filter(img => img.source === 'RSS Feed').length;
+      const rssImageCount = availableImages.filter(img => img.source === 'RSS Feed' || img.source === 'Existing Cluster').length;
       const contentImageCount = availableImages.filter(img => img.source === 'Article Content').length;
       
-      if ((rssImageCount + contentImageCount) < 2 && articles && articles.length > 0) {
+      // Only fetch if we have less than 3 images total (need more options for better selection)
+      if ((rssImageCount + contentImageCount) < 3 && articles && articles.length > 0) {
         // Only fetch from first article to avoid rate limiting
         const firstArticle = articles[0];
         const articleUrl = (firstArticle as any).url;
-        if (articleUrl) {
+        if (articleUrl && typeof articleUrl === 'string' && articleUrl.startsWith('http')) {
           try {
             console.log(`[Pipeline] Fetching article page (only ${rssImageCount + contentImageCount} images found): ${articleUrl}`);
             const pageImages = await fetchArticleImages(articleUrl);
             pageImages.forEach(imgUrl => {
-              availableImages.push({
-                url: imgUrl,
-                source: 'Article Page',
-                priority: 0.6
-              });
+              if (imgUrl && typeof imgUrl === 'string' && imgUrl.startsWith('http')) {
+                try {
+                  new URL(imgUrl); // Validate URL
+                  availableImages.push({
+                    url: imgUrl,
+                    source: 'Article Page',
+                    priority: 0.6
+                  });
+                } catch {
+                  // Invalid URL, skip
+                }
+              }
             });
             console.log(`[Pipeline] Found ${pageImages.length} additional images from article page`);
           } catch (error) {
@@ -935,19 +976,58 @@ async function summarizeEligible(
       if (uniqueImages.length > 0) {
         try {
           // Use English summary for image selection, or fallback to headline
-          const summaryForImage = summaryEn || cluster.headline;
-          // Convert to format expected by selectBestImage (remove priority field)
-          const imagesForSelection = uniqueImages.map(img => ({ url: img.url, source: img.source }));
-          imageUrl = await selectBestImage(imagesForSelection, cluster.headline, summaryForImage);
-          if (imageUrl) {
-            console.log(`[Pipeline] ✅ Selected best image from ${uniqueImages.length} options for cluster ${cluster.id}: ${imageUrl.substring(0, 80)}...`);
+          const summaryForImage = summaryEn || cluster.headline || '';
+          const headlineForImage = cluster.headline || '';
+          
+          // Only use AI selection if we have multiple images and a meaningful summary/headline
+          if (uniqueImages.length > 1 && (summaryForImage.length > 50 || headlineForImage.length > 20)) {
+            // Convert to format expected by selectBestImage (remove priority field)
+            const imagesForSelection = uniqueImages.map(img => ({ url: img.url, source: img.source }));
+            imageUrl = await selectBestImage(imagesForSelection, headlineForImage, summaryForImage);
+            if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim().length > 0) {
+              console.log(`[Pipeline] ✅ AI selected best image from ${uniqueImages.length} options for cluster ${cluster.id}: ${imageUrl.substring(0, 80)}...`);
+            } else {
+              console.warn(`[Pipeline] ⚠️ AI image selection returned invalid result, using highest priority image`);
+              imageUrl = uniqueImages[0].url; // Already sorted by priority
+            }
           } else {
-            console.warn(`[Pipeline] ⚠️ Image selection returned null, using highest priority image`);
-            imageUrl = uniqueImages[0].url; // Already sorted by priority
+            // Use highest priority image if only one image or insufficient context
+            imageUrl = uniqueImages[0].url;
+            console.log(`[Pipeline] Using highest priority image (${uniqueImages.length} available, priority: ${uniqueImages[0].priority}): ${imageUrl.substring(0, 80)}...`);
+          }
+          
+          // Final validation of selected image URL
+          if (imageUrl && typeof imageUrl === 'string') {
+            try {
+              new URL(imageUrl);
+              // Ensure it's a valid HTTP(S) URL
+              if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+                console.warn(`[Pipeline] ⚠️ Selected image URL is not HTTP(S), using fallback`);
+                imageUrl = uniqueImages.find(img => img.url.startsWith('http'))?.url || null;
+              }
+            } catch {
+              console.warn(`[Pipeline] ⚠️ Selected image URL is invalid, using fallback`);
+              imageUrl = uniqueImages.find(img => {
+                try {
+                  new URL(img.url);
+                  return img.url.startsWith('http');
+                } catch {
+                  return false;
+                }
+              })?.url || null;
+            }
           }
         } catch (error) {
           console.error('[Pipeline] ❌ Image selection failed, using highest priority image:', error);
-          imageUrl = uniqueImages[0].url; // Already sorted by priority
+          // Find first valid HTTP(S) URL as fallback
+          imageUrl = uniqueImages.find(img => {
+            try {
+              new URL(img.url);
+              return img.url.startsWith('http');
+            } catch {
+              return false;
+            }
+          })?.url || null;
         }
       } else {
         imageUrl = null;
