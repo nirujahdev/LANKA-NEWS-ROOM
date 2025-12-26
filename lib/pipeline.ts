@@ -2,6 +2,7 @@
 import { supabaseAdmin } from './supabaseAdmin';
 import { env } from './env';
 import { fetchRssFeed } from './rss';
+import { fetchFromAllApis } from './apiSources';
 import { detectLanguage } from './language';
 import { makeArticleHash } from './hash';
 import { extractEntities, normalizeTitle, similarityScore, generateSlug } from './text';
@@ -129,6 +130,7 @@ async function fetchAllSources(
   const queue = [...sources];
   const workers: Promise<void>[] = [];
 
+  // Fetch from RSS feeds (existing sources)
   for (let i = 0; i < env.RSS_CONCURRENCY; i += 1) {
     const worker = (async () => {
       while (queue.length) {
@@ -147,6 +149,86 @@ async function fetchAllSources(
   }
 
   await Promise.all(workers);
+
+  // Fetch from API sources (NewsAPI, NewsData, Bing)
+  // Load API aggregator sources from database
+  const { data: apiSources } = await supabaseAdmin
+    .from('sources')
+    .select('*')
+    .eq('type', 'api')
+    .eq('active', true)
+    .eq('enabled', true);
+
+  if (apiSources && apiSources.length > 0) {
+    console.log(`[Pipeline] Found ${apiSources.length} API source(s)`);
+    
+    for (const apiSource of apiSources) {
+      try {
+        const apiConfig = apiSource.api_config as { provider?: string } | null;
+        const provider = apiConfig?.provider;
+
+        let apiItems: Awaited<ReturnType<typeof fetchFromAllApis>> = [];
+        
+        if (provider === 'newsapi' && env.NEWSAPI_KEY) {
+          console.log(`[Pipeline] Fetching from NewsAPI.org (source: ${apiSource.name})...`);
+          const { fetchFromNewsAPI } = await import('./apiSources');
+          apiItems = await fetchFromNewsAPI({ country: 'lk' });
+        } else if (provider === 'newsdata' && env.NEWSDATA_API_KEY) {
+          console.log(`[Pipeline] Fetching from NewsData.io (source: ${apiSource.name})...`);
+          const { fetchFromNewsData } = await import('./apiSources');
+          apiItems = await fetchFromNewsData({ country: 'lk' });
+        } else if (provider === 'bing' && env.BING_NEWS_SUBSCRIPTION_KEY) {
+          console.log(`[Pipeline] Fetching from Bing News (source: ${apiSource.name})...`);
+          const { fetchFromBingNews } = await import('./apiSources');
+          apiItems = await fetchFromBingNews();
+        } else {
+          console.warn(`[Pipeline] API source ${apiSource.name} (${provider}) skipped - API key not configured`);
+          continue;
+        }
+
+        if (apiItems.length > 0) {
+          // Convert to RSS format for insertion
+          const rssFormatItems = apiItems.map(item => ({
+            title: item.title,
+            url: item.url,
+            guid: item.guid,
+            publishedAt: item.publishedAt,
+            content: item.content,
+            contentSnippet: item.contentSnippet,
+            imageUrl: item.imageUrl,
+            imageUrls: item.imageUrls
+          }));
+          
+          results.push({ source_id: apiSource.id, items: rssFormatItems });
+          console.log(`[Pipeline] ✅ ${apiSource.name}: ${apiItems.length} articles`);
+        } else {
+          console.log(`[Pipeline] ⚠️ ${apiSource.name}: No articles found`);
+        }
+      } catch (err: any) {
+        errors.push({ 
+          sourceId: apiSource.id, 
+          stage: 'api_fetch', 
+          message: err?.message || 'API fetch failed' 
+        });
+        await logError(undefined, apiSource.id, 'api_fetch', err?.message || 'API fetch failed');
+        console.error(`[Pipeline] ❌ ${apiSource.name} failed:`, err);
+      }
+    }
+  } else {
+    // Fallback: Try fetching from all APIs if no API sources configured
+    try {
+      console.log('[Pipeline] No API sources in database, trying direct API fetch...');
+      const apiItems = await fetchFromAllApis();
+      if (apiItems.length > 0) {
+        console.log(`[Pipeline] ⚠️ Fetched ${apiItems.length} API articles but no API source configured in database`);
+        console.log(`[Pipeline] ⚠️ These articles will not be inserted. Please add API sources to the database.`);
+      }
+    } catch (err: any) {
+      errors.push({ stage: 'api_fetch', message: err?.message || 'API fetch failed' });
+      console.error('[Pipeline] Direct API fetch failed:', err);
+    }
+  }
+
   return results;
 }
 

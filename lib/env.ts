@@ -17,7 +17,12 @@ const serverEnvSchema = z.object({
   RSS_CONCURRENCY: z.coerce.number().default(4),
   LOCK_TTL_MINUTES: z.coerce.number().default(10),
   CACHE_TTL_SECONDS: z.coerce.number().default(300),
-  RETRY_MAX_ATTEMPTS: z.coerce.number().default(3)
+  RETRY_MAX_ATTEMPTS: z.coerce.number().default(3),
+  // News API keys (optional)
+  NEWSAPI_KEY: z.string().optional(),
+  NEWSDATA_API_KEY: z.string().optional(),
+  BING_NEWS_SUBSCRIPTION_KEY: z.string().optional(),
+  BING_CUSTOM_CONFIG_ID: z.string().optional()
 });
 
 // Client-safe environment variables (only validate these on client)
@@ -79,7 +84,11 @@ if (isClient) {
     RSS_CONCURRENCY: process.env.RSS_CONCURRENCY,
     LOCK_TTL_MINUTES: process.env.LOCK_TTL_MINUTES,
     CACHE_TTL_SECONDS: process.env.CACHE_TTL_SECONDS,
-    RETRY_MAX_ATTEMPTS: process.env.RETRY_MAX_ATTEMPTS
+    RETRY_MAX_ATTEMPTS: process.env.RETRY_MAX_ATTEMPTS,
+    NEWSAPI_KEY: process.env.NEWSAPI_KEY,
+    NEWSDATA_API_KEY: process.env.NEWSDATA_API_KEY,
+    BING_NEWS_SUBSCRIPTION_KEY: process.env.BING_NEWS_SUBSCRIPTION_KEY,
+    BING_CUSTOM_CONFIG_ID: process.env.BING_CUSTOM_CONFIG_ID
   });
 }
 
