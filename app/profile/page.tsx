@@ -7,6 +7,7 @@ import { User, Mail, Calendar, Globe, ArrowLeft, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabaseClient';
 import SignInPrompt from '@/components/SignInPrompt';
+import SignInPrompt from '@/components/SignInPrompt';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [savedArticles, setSavedArticles] = useState(0);
   const [readingHistory, setReadingHistory] = useState(0);
+  const [showSignInPrompt, setShowSignInPrompt] = useState(false);
 
   useEffect(() => {
     async function fetchUserData() {
@@ -170,7 +172,34 @@ export default function ProfilePage() {
   }
 
   if (!userData) {
-    return null;
+    // Show sign-in prompt if not authenticated
+    return (
+      <div className="min-h-screen bg-[#F5F5F5]">
+        <Navigation 
+          currentLanguage={currentLanguage}
+          onLanguageChange={setCurrentLanguage}
+        />
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+            <h1 className="text-2xl font-medium text-[#202124] mb-4">
+              Sign in to view your profile
+            </h1>
+            <p className="text-sm text-[#5F6368] mb-6">
+              Please sign in with Google to access your profile and preferences.
+            </p>
+            <button
+              onClick={() => setShowSignInPrompt(true)}
+              className="inline-flex items-center px-4 py-2 bg-[#1A73E8] text-white rounded-lg font-medium hover:bg-[#1557B0] transition-colors"
+            >
+              Sign in with Google
+            </button>
+          </div>
+        </main>
+        {showSignInPrompt && (
+          <SignInPrompt onClose={() => setShowSignInPrompt(false)} />
+        )}
+      </div>
+    );
   }
 
   const formatDate = (date: Date): string => {
