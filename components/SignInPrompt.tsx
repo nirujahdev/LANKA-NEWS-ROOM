@@ -13,13 +13,16 @@ const SignInPrompt: React.FC<SignInPromptProps> = ({ onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if Supabase is configured
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const isConfigured = supabaseUrl && !supabaseUrl.includes('placeholder');
+  // Check if Supabase is configured by checking the actual client URL
+  // This works even if env vars aren't available at build time
+  const supabaseUrl = supabase.supabaseUrl || '';
+  const isConfigured = supabaseUrl && 
+                       !supabaseUrl.includes('placeholder') && 
+                       supabaseUrl.includes('supabase.co');
 
   const handleGoogleSignIn = async () => {
     if (!isConfigured) {
-      setError('Supabase is not configured. Please set NEXT_PUBLIC_SUPABASE_URL in Vercel environment variables and redeploy.');
+      setError('Supabase is not configured. Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel environment variables, then redeploy your application.');
       return;
     }
 
