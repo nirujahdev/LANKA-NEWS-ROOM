@@ -58,21 +58,46 @@ export default function FilterMenu({
     const updated = { ...filters, ...newFilters };
     setFilters(updated);
     
-    // Update URL with new filters
-    const params = new URLSearchParams();
-    if (updated.date !== 'all') params.set('date', updated.date);
-    if (updated.city) params.set('city', updated.city);
-    if (updated.sort !== 'newest') params.set('sort', updated.sort);
+    // Update URL with new filters, preserving existing query parameters
+    const params = new URLSearchParams(searchParams.toString());
+    
+    // Update filter params
+    if (updated.date !== 'all') {
+      params.set('date', updated.date);
+    } else {
+      params.delete('date');
+    }
+    
+    if (updated.city) {
+      params.set('city', updated.city);
+    } else {
+      params.delete('city');
+    }
+    
+    if (updated.sort !== 'newest') {
+      params.set('sort', updated.sort);
+    } else {
+      params.delete('sort');
+    }
     
     const queryString = params.toString();
     const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
     router.push(newUrl, { scroll: false });
-  }, [filters, pathname, router]);
+  }, [filters, pathname, router, searchParams]);
 
   const clearFilters = useCallback(() => {
     setFilters({ date: 'all', city: null, sort: 'newest' });
-    router.push(pathname, { scroll: false });
-  }, [pathname, router]);
+    
+    // Preserve existing query parameters (like q, lang) when clearing filters
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('date');
+    params.delete('city');
+    params.delete('sort');
+    
+    const queryString = params.toString();
+    const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
+    router.push(newUrl, { scroll: false });
+  }, [pathname, router, searchParams]);
 
   const hasActiveFilters = filters.date !== 'all' || filters.city !== null || filters.sort !== 'newest';
 

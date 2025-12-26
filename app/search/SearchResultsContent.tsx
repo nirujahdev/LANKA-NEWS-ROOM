@@ -6,7 +6,7 @@ import Link from 'next/link';
 import NavigationWrapper from '@/components/NavigationWrapper';
 import SearchBar from '@/components/SearchBar';
 import TopicCard from '@/components/TopicCard';
-import RelatedTopics from '@/components/RelatedTopics';
+import FilterMenu from '@/components/FilterMenu';
 import Sidebar from '@/components/Sidebar';
 import MixedLayoutGrid from '@/components/MixedLayoutGrid';
 import { loadClusters, ClusterListItem } from '@/lib/api';
@@ -18,10 +18,12 @@ export default function SearchResultsContent() {
   const query = searchParams.get('q') || '';
   const lang = (searchParams.get('lang') as 'en' | 'si' | 'ta') || 'en';
   const topicFilter = searchParams.get('topic');
+  const dateFilter = searchParams.get('date'); // From FilterMenu: 'all', 'today', 'week', 'month'
   const dateFrom = searchParams.get('dateFrom');
   const dateTo = searchParams.get('dateTo');
   const cityFilter = searchParams.get('city');
   const eventTypeFilter = searchParams.get('eventType');
+  const sortFilter = searchParams.get('sort'); // From FilterMenu: 'newest', 'oldest', 'sources'
 
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'si' | 'ta'>(lang);
   const [results, setResults] = useState<ClusterListItem[]>([]);
@@ -33,7 +35,7 @@ export default function SearchResultsContent() {
   }, [lang]);
 
   useEffect(() => {
-    if (!query && !topicFilter && !dateFrom && !dateTo && !cityFilter && !eventTypeFilter) {
+    if (!query && !topicFilter && !dateFilter && !dateFrom && !dateTo && !cityFilter && !eventTypeFilter) {
       setResults([]);
       setLoading(false);
       return;
@@ -47,10 +49,33 @@ export default function SearchResultsContent() {
         if (query) params.append('q', query);
         params.append('lang', currentLanguage);
         if (topicFilter) params.append('topic', topicFilter);
-        if (dateFrom) params.append('dateFrom', dateFrom);
+        
+        // Convert FilterMenu date filter to dateFrom/dateTo
+        if (dateFilter && dateFilter !== 'all') {
+          const now = new Date();
+          let fromDate: Date;
+          switch (dateFilter) {
+            case 'today':
+              fromDate = new Date(now.setHours(0, 0, 0, 0));
+              break;
+            case 'week':
+              fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+              break;
+            case 'month':
+              fromDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+              break;
+            default:
+              fromDate = new Date(0);
+          }
+          params.append('dateFrom', fromDate.toISOString());
+        } else if (dateFrom) {
+          params.append('dateFrom', dateFrom);
+        }
+        
         if (dateTo) params.append('dateTo', dateTo);
         if (cityFilter) params.append('city', cityFilter);
         if (eventTypeFilter) params.append('eventType', eventTypeFilter);
+        if (sortFilter) params.append('sort', sortFilter);
 
         const response = await fetch(`/api/search?${params.toString()}`);
         const data = await response.json();
@@ -64,7 +89,7 @@ export default function SearchResultsContent() {
     }
 
     fetchResults();
-  }, [query, currentLanguage, topicFilter, dateFrom, dateTo, cityFilter, eventTypeFilter]);
+  }, [query, currentLanguage, topicFilter, dateFilter, dateFrom, dateTo, cityFilter, eventTypeFilter, sortFilter]);
 
   const getLabel = (en: string, si?: string, ta?: string) => {
     if (currentLanguage === 'si' && si) return si;
@@ -212,8 +237,8 @@ export default function SearchResultsContent() {
               />
             )}
 
-            {/* Related Topics */}
-            <RelatedTopics
+            {/* Filter Menu */}
+            <FilterMenu
               currentTopic={topicFilter || undefined}
               language={currentLanguage}
             />
