@@ -6,6 +6,7 @@ import Navigation from '@/components/Navigation';
 import { User, Mail, Calendar, Globe, ArrowLeft, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabaseClient';
+import SignInPrompt from '@/components/SignInPrompt';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +33,8 @@ export default function ProfilePage() {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
         if (userError || !user) {
-          router.push('/');
+          // Don't redirect immediately - let the page show sign-in prompt
+          setLoading(false);
           return;
         }
 
@@ -45,7 +47,9 @@ export default function ProfilePage() {
 
         if (profileError) {
           console.error('Error fetching profile:', profileError);
-          router.push('/');
+          // If profile doesn't exist, user might need to complete onboarding
+          // Don't redirect, show error state instead
+          setLoading(false);
           return;
         }
 
