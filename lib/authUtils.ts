@@ -15,6 +15,7 @@ export interface UserMetadata {
   avatar_url?: string;
   language?: string;
   city?: string;
+  district?: string;
 }
 
 export interface ProfileData {
