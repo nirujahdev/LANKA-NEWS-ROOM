@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import NavigationWrapper from '@/components/NavigationWrapper';
 import SearchBar from '@/components/SearchBar';
-import TopicCard from '@/components/TopicCard';
 import FilterMenu from '@/components/FilterMenu';
 import Sidebar from '@/components/Sidebar';
 import MixedLayoutGrid from '@/components/MixedLayoutGrid';
@@ -21,7 +20,7 @@ export default function SearchResultsContent() {
   const dateFilter = searchParams.get('date'); // From FilterMenu: 'all', 'today', 'week', 'month'
   const dateFrom = searchParams.get('dateFrom');
   const dateTo = searchParams.get('dateTo');
-  const cityFilter = searchParams.get('city');
+  const districtFilter = searchParams.get('district');
   const eventTypeFilter = searchParams.get('eventType');
   const sortFilter = searchParams.get('sort'); // From FilterMenu: 'newest', 'oldest', 'sources'
 
@@ -35,7 +34,7 @@ export default function SearchResultsContent() {
   }, [lang]);
 
   useEffect(() => {
-    if (!query && !topicFilter && !dateFilter && !dateFrom && !dateTo && !cityFilter && !eventTypeFilter) {
+    if (!query && !topicFilter && !dateFilter && !dateFrom && !dateTo && !districtFilter && !eventTypeFilter) {
       setResults([]);
       setLoading(false);
       return;
@@ -73,7 +72,7 @@ export default function SearchResultsContent() {
         }
         
         if (dateTo) params.append('dateTo', dateTo);
-        if (cityFilter) params.append('city', cityFilter);
+        if (districtFilter) params.append('district', districtFilter);
         if (eventTypeFilter) params.append('eventType', eventTypeFilter);
         if (sortFilter) params.append('sort', sortFilter);
 
@@ -89,7 +88,7 @@ export default function SearchResultsContent() {
     }
 
     fetchResults();
-  }, [query, currentLanguage, topicFilter, dateFilter, dateFrom, dateTo, cityFilter, eventTypeFilter, sortFilter]);
+  }, [query, currentLanguage, topicFilter, dateFilter, dateFrom, dateTo, districtFilter, eventTypeFilter, sortFilter]);
 
   const getLabel = (en: string, si?: string, ta?: string) => {
     if (currentLanguage === 'si' && si) return si;
@@ -117,10 +116,6 @@ export default function SearchResultsContent() {
       return date.toLocaleDateString();
     }
   };
-
-  // Check if query is a topic
-  const isTopic = results.length > 0 && results[0]?.topic === query.toLowerCase();
-  const topicSlug = isTopic ? query.toLowerCase() : '';
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
@@ -228,15 +223,6 @@ export default function SearchResultsContent() {
 
           {/* Sidebar */}
           <div className="hidden lg:block w-80 flex-shrink-0 space-y-6">
-            {/* Topic Card (if query is a topic) */}
-            {isTopic && topicSlug && (
-              <TopicCard
-                topic={query}
-                topicSlug={topicSlug}
-                language={currentLanguage}
-              />
-            )}
-
             {/* Filter Menu */}
             <FilterMenu
               currentTopic={topicFilter || undefined}

@@ -14,24 +14,37 @@ type SortOption = 'newest' | 'oldest' | 'sources';
 
 interface FilterState {
   date: DateFilter;
-  city: string | null;
+  district: string | null;
   sort: SortOption;
 }
 
-const SRI_LANKA_CITIES = [
+// All 25 districts of Sri Lanka
+const SRI_LANKA_DISTRICTS = [
   'colombo',
   'kandy',
   'galle',
   'jaffna',
-  'trincomalee',
-  'batticaloa',
-  'matara',
-  'negombo',
   'anuradhapura',
-  'polonnaruwa',
   'kurunegala',
+  'batticaloa',
+  'badulla',
+  'hambantota',
+  'gampaha',
+  'kalutara',
+  'matale',
+  'nuwara-eliya',
+  'matara',
+  'kilinochchi',
+  'mannar',
+  'vavuniya',
+  'mullaitivu',
+  'ampara',
+  'trincomalee',
+  'puttalam',
+  'polonnaruwa',
+  'moneragala',
   'ratnapura',
-  'badulla'
+  'kegalle'
 ];
 
 export default function FilterMenu({
@@ -44,7 +57,7 @@ export default function FilterMenu({
   
   const [filters, setFilters] = useState<FilterState>({
     date: (searchParams.get('date') as DateFilter) || 'all',
-    city: searchParams.get('city') || null,
+    district: searchParams.get('district') || null,
     sort: (searchParams.get('sort') as SortOption) || 'newest'
   });
 
@@ -68,10 +81,10 @@ export default function FilterMenu({
       params.delete('date');
     }
     
-    if (updated.city) {
-      params.set('city', updated.city);
+    if (updated.district) {
+      params.set('district', updated.district);
     } else {
-      params.delete('city');
+      params.delete('district');
     }
     
     if (updated.sort !== 'newest') {
@@ -91,7 +104,7 @@ export default function FilterMenu({
     // Preserve existing query parameters (like q, lang) when clearing filters
     const params = new URLSearchParams(searchParams.toString());
     params.delete('date');
-    params.delete('city');
+    params.delete('district');
     params.delete('sort');
     
     const queryString = params.toString();
@@ -99,7 +112,7 @@ export default function FilterMenu({
     router.push(newUrl, { scroll: false });
   }, [pathname, router, searchParams]);
 
-  const hasActiveFilters = filters.date !== 'all' || filters.city !== null || filters.sort !== 'newest';
+  const hasActiveFilters = filters.date !== 'all' || filters.district !== null || filters.sort !== 'newest';
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-[#E8EAED] overflow-hidden">
@@ -149,21 +162,21 @@ export default function FilterMenu({
           </div>
         </div>
 
-        {/* Location Filter */}
+        {/* District Filter */}
         <div>
           <label className="flex items-center gap-2 text-sm font-medium text-[#5F6368] mb-2">
             <MapPin className="w-4 h-4" />
-            {getLabel('Location', 'ස්ථානය', 'இடம்')}
+            {getLabel('District', 'දිස්ත්‍රික්කය', 'மாவட்டம்')}
           </label>
           <select
-            value={filters.city || ''}
-            onChange={(e) => updateFilters({ city: e.target.value || null })}
+            value={filters.district || ''}
+            onChange={(e) => updateFilters({ district: e.target.value || null })}
             className="w-full px-3 py-2 rounded-lg border border-[#E8EAED] bg-white text-[#202124] text-sm focus:outline-none focus:ring-2 focus:ring-[#1A73E8] focus:border-transparent"
           >
-            <option value="">{getLabel('All Locations', 'සියලු ස්ථාන', 'அனைத்து இடங்கள்')}</option>
-            {SRI_LANKA_CITIES.map((city) => (
-              <option key={city} value={city}>
-                {city.charAt(0).toUpperCase() + city.slice(1)}
+            <option value="">{getLabel('All Districts', 'සියලු දිස්ත්‍රික්ක', 'அனைத்து மாவட்டங்கள்')}</option>
+            {SRI_LANKA_DISTRICTS.map((district) => (
+              <option key={district} value={district}>
+                {district.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
               </option>
             ))}
           </select>

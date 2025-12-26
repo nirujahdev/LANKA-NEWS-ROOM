@@ -5,8 +5,6 @@ import NavigationWrapper from '@/components/NavigationWrapper';
 import StoryDetail from '@/components/StoryDetail';
 import NewsArticleSchema from '@/components/NewsArticleSchema';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
-import TopicCard from '@/components/TopicCard';
-import RelatedTopics from '@/components/RelatedTopics';
 import { normalizeTopicSlug, isValidTopic } from '@/lib/topics';
 
 export const dynamic = 'force-dynamic';
@@ -354,22 +352,6 @@ export default async function StoryPage({ params }: Props) {
           {/* Right Sidebar - Widgets */}
           <aside className="hidden lg:block w-80 flex-shrink-0">
             <div className="sticky top-24 space-y-6">
-              {/* Topic Card (if article has a topic) */}
-              {cluster.topic && (
-                <TopicCard
-                  topic={cluster.topic}
-                  topicSlug={cluster.topic}
-                  imageUrl={cluster.image_url}
-                  language={lang}
-                  articleCount={cluster.source_count || undefined}
-                />
-              )}
-
-              {/* Related Topics */}
-              <RelatedTopics
-                currentTopic={cluster.topic || undefined}
-                language={lang}
-              />
 
               {/* Ad Placeholder */}
               <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] p-4 h-48 flex items-center justify-center bg-gray-50">

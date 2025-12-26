@@ -683,10 +683,10 @@ async function summarizeEligible(
       summaryTa = summaryEn;
     }
 
-    // Generate comprehensive SEO metadata with topic/city/entity extraction
-    let seoEn, seoSi, seoTa, topic, city, primaryEntity, eventType, imageUrl;
+    // Generate comprehensive SEO metadata with topic/district/entity extraction
+    let seoEn, seoSi, seoTa, topic, district, primaryEntity, eventType, imageUrl;
     try {
-      // Generate comprehensive SEO for English (includes topic, city, entities)
+      // Generate comprehensive SEO for English (includes topic, district, entities)
       const comprehensiveSEO = await generateComprehensiveSEO(
         summaryEn,
         cluster.headline,
@@ -700,7 +700,7 @@ async function summarizeEligible(
       };
 
       topic = comprehensiveSEO.topic;
-      city = comprehensiveSEO.city;
+      district = comprehensiveSEO.district;
       primaryEntity = comprehensiveSEO.primary_entity;
       eventType = comprehensiveSEO.event_type;
 
@@ -805,7 +805,7 @@ async function summarizeEligible(
       seoSi = { title: cluster.headline.slice(0, 60), description: summarySi.slice(0, 160) };
       seoTa = { title: cluster.headline.slice(0, 60), description: summaryTa.slice(0, 160) };
       topic = 'other';
-      city = null;
+      district = null;
       primaryEntity = null;
       eventType = null;
       imageUrl = articles?.find(a => a.image_url)?.image_url || null;
@@ -874,14 +874,14 @@ async function summarizeEligible(
         cluster.headline,
         summaryEn,
         topic,
-        city,
+        district,
         primaryEntity,
         eventType
       ).catch(() => {
         // Fallback keywords
         const fallback: string[] = ['Sri Lanka'];
         if (topic) fallback.push(topic);
-        if (city) fallback.push(city);
+        if (district) fallback.push(district);
         return fallback;
       });
 
@@ -935,7 +935,7 @@ async function summarizeEligible(
       slug: slug,
       published_at: publishedAt,
       topic: topic,
-      city: city,
+      city: district, // Keep city field for backward compatibility, but use district value
       primary_entity: primaryEntity,
       event_type: eventType,
       image_url: imageUrl,
@@ -946,6 +946,17 @@ async function summarizeEligible(
 
     if (updateResult.error) {
       errors.push({ stage: 'seo', message: `Failed to update cluster SEO metadata: ${updateResult.error.message}` });
+    }
+
+    // Update all articles in this cluster with district information
+    if (district && articles && articles.length > 0) {
+      const articleIds = articles.map(a => a.id).filter(Boolean);
+      if (articleIds.length > 0) {
+        await supabaseAdmin
+          .from('articles')
+          .update({ district })
+          .in('id', articleIds);
+      }
     }
 
     summarized += 1;

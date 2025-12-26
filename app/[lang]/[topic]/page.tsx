@@ -10,7 +10,6 @@ import { notFound, redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import NavigationWrapper from '@/components/NavigationWrapper';
 import NewsCard from '@/components/NewsCard';
-import TopicCard from '@/components/TopicCard';
 import FilterMenu from '@/components/FilterMenu';
 import { normalizeTopicSlug, getTopicLabel, VALID_TOPICS, isValidTopic } from '@/lib/topics';
 
@@ -158,9 +157,27 @@ export default async function TopicPage({ params, searchParams }: Props) {
       query = query.gte('published_at', dateFrom.toISOString());
     }
 
-    // Apply city filter
-    if (city) {
-      query = query.ilike('city', city);
+    // Apply district filter (from articles)
+    if (city) { // Note: city param is now used for district
+      const { data: articlesWithDistrict } = await supabaseAdmin
+        .from('articles')
+        .select('cluster_id')
+        .ilike('district', city);
+      
+      if (articlesWithDistrict && articlesWithDistrict.length > 0) {
+        const clusterIds = articlesWithDistrict.map(a => a.cluster_id).filter(Boolean);
+        if (clusterIds.length > 0) {
+          query = query.in('id', clusterIds);
+        } else {
+          // No clusters match, return empty result
+          clusters = [];
+          return clusters;
+        }
+      } else {
+        // No articles with this district, return empty result
+        clusters = [];
+        return clusters;
+      }
     }
 
     // Apply sorting
@@ -269,14 +286,6 @@ export default async function TopicPage({ params, searchParams }: Props) {
           {/* Sidebar */}
           <div className="hidden lg:block w-80 flex-shrink-0">
             <div className="sticky top-24 space-y-6">
-              {/* Topic Card */}
-              <TopicCard
-                topic={topicLabel}
-                topicSlug={topic}
-                language={lang}
-                articleCount={clusters?.length || 0}
-              />
-
               {/* Filter Menu */}
               <FilterMenu
                 currentTopic={topic}

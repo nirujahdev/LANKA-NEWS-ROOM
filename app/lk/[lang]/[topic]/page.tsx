@@ -10,8 +10,6 @@ import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import NavigationWrapper from '@/components/NavigationWrapper';
 import NewsCard from '@/components/NewsCard';
-import TopicCard from '@/components/TopicCard';
-import RelatedTopics from '@/components/RelatedTopics';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 300;
@@ -207,16 +205,8 @@ export default async function TopicPage({ params }: Props) {
           {/* Sidebar */}
           <div className="hidden lg:block w-80 flex-shrink-0">
             <div className="sticky top-24 space-y-6">
-              {/* Topic Card */}
-              <TopicCard
-                topic={topicLabel}
-                topicSlug={topic}
-                language={lang}
-                articleCount={clusters?.length || 0}
-              />
-
-              {/* Related Topics */}
-              <RelatedTopics
+              {/* Filter Menu */}
+              <FilterMenu
                 currentTopic={topic}
                 language={lang}
               />

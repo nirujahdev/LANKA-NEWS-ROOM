@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     const topics = topicParam ? topicParam.split(',').filter(t => t.trim()) : undefined;
     const dateFrom = searchParams.get('dateFrom') || undefined;
     const dateTo = searchParams.get('dateTo') || undefined;
-    const city = searchParams.get('city') || undefined;
+    const district = searchParams.get('district') || undefined;
     const eventType = searchParams.get('eventType') || undefined;
     
     // Build filter options
@@ -22,7 +22,7 @@ export async function GET(req: Request) {
     if (topics && topics.length > 0) filters.topic = topics;
     if (dateFrom) filters.dateFrom = dateFrom;
     if (dateTo) filters.dateTo = dateTo;
-    if (city) filters.city = city;
+    if (district) filters.district = district;
     if (eventType) filters.eventType = eventType;
     
     // Allow empty query if filters are provided
@@ -54,7 +54,7 @@ export async function GET(req: Request) {
       topic_filter: topics || undefined,
       date_from: dateFrom ? new Date(dateFrom).toISOString() : undefined,
       date_to: dateTo ? new Date(dateTo).toISOString() : undefined,
-      city_filter: city || undefined,
+      district_filter: district || undefined,
       event_type_filter: eventType || undefined,
       result_limit: limit
     });

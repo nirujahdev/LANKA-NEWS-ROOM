@@ -575,7 +575,7 @@ export async function generateComprehensiveSEO(
   og_title: string;
   og_description: string;
   topic: string;
-  city: string | null;
+  district: string | null;
   primary_entity: string | null;
   event_type: string | null;
 }> {
@@ -602,7 +602,7 @@ RULES:
 4. og_title: can be slightly longer than seo_title (up to 70 chars)
 5. og_description: same as meta_description
 6. topic: ONE of [politics, economy, sports, crime, education, health, environment, technology, culture, other]
-7. city: ONE of [colombo, kandy, galle, jaffna, trincomalee, batticaloa, matara, negombo, anuradhapura, other] or null
+7. district: ONE of [colombo, kandy, galle, jaffna, anuradhapura, kurunegala, batticaloa, badulla, hambantota, gampaha, kalutara, matale, nuwara-eliya, matara, kilinochchi, mannar, vavuniya, mullaitivu, ampara, trincomalee, puttalam, polonnaruwa, moneragala, ratnapura, kegalle] or null
 8. primary_entity: main person/organization mentioned (or null)
 9. event_type: ONE of [election, court, accident, protest, announcement, budget, policy, crime, disaster, sports_event, other] or null
 
@@ -621,7 +621,7 @@ OUTPUT JSON format:
   "og_title": "...",
   "og_description": "...",
   "topic": "...",
-  "city": "..." or null,
+  "district": "..." or null,
   "primary_entity": "..." or null,
   "event_type": "..." or null
 }`
@@ -657,7 +657,7 @@ Generate comprehensive SEO pack in ${langLabel} following the rules above.`
       og_title: result.og_title || validateAndCleanTitle(result.seo_title || headline, language),
       og_description: result.og_description || validateAndCleanDescription(result.meta_description || summary, language),
       topic: validateTopic(result.topic),
-      city: validateCity(result.city),
+      district: validateDistrict(result.district),
       primary_entity: result.primary_entity || null,
       event_type: validateEventType(result.event_type)
     };
@@ -671,7 +671,7 @@ Generate comprehensive SEO pack in ${langLabel} following the rules above.`
       og_title: validateAndCleanTitle(headline, language),
       og_description: validateAndCleanDescription(summary, language),
       topic: 'other',
-      city: null,
+      district: null,
       primary_entity: null,
       event_type: null
     };
@@ -708,13 +708,18 @@ function validateTopic(topic: string | null | undefined): string {
 }
 
 /**
- * Validate city against allowed list
+ * Validate district against allowed list (all 25 districts of Sri Lanka)
  */
-function validateCity(city: string | null | undefined): string | null {
-  if (!city) return null;
-  const validCities = ['colombo', 'kandy', 'galle', 'jaffna', 'trincomalee', 'batticaloa', 'matara', 'negombo', 'anuradhapura', 'other'];
-  const normalized = city.toLowerCase().trim();
-  return validCities.includes(normalized) ? normalized : null;
+function validateDistrict(district: string | null | undefined): string | null {
+  if (!district) return null;
+  const validDistricts = [
+    'colombo', 'kandy', 'galle', 'jaffna', 'anuradhapura', 'kurunegala',
+    'batticaloa', 'badulla', 'hambantota', 'gampaha', 'kalutara', 'matale',
+    'nuwara-eliya', 'matara', 'kilinochchi', 'mannar', 'vavuniya', 'mullaitivu',
+    'ampara', 'trincomalee', 'puttalam', 'polonnaruwa', 'moneragala', 'ratnapura', 'kegalle'
+  ];
+  const normalized = district.toLowerCase().trim().replace(/\s+/g, '-');
+  return validDistricts.includes(normalized) ? normalized : null;
 }
 
 /**
@@ -864,7 +869,7 @@ export async function generateKeywords(
   headline: string,
   summary: string,
   topic: string | null,
-  city: string | null,
+  district: string | null,
   primaryEntity: string | null,
   eventType: string | null
 ): Promise<string[]> {
@@ -877,7 +882,7 @@ export async function generateKeywords(
 RULES:
 - Always include "Sri Lanka"
 - Include topic if provided
-- Include city if provided
+- Include district if provided
 - Include primary entity if provided
 - Include event type if provided
 - Add 2-4 related terms from headline/summary
@@ -890,7 +895,7 @@ RULES:
       content: `Headline: ${headline}
 Summary: ${summary.slice(0, 300)}
 Topic: ${topic || 'N/A'}
-City: ${city || 'N/A'}
+District: ${district || 'N/A'}
 Primary Entity: ${primaryEntity || 'N/A'}
 Event Type: ${eventType || 'N/A'}
 
@@ -916,7 +921,7 @@ Generate 5-12 SEO keywords. Return ONLY a JSON array of strings, no other text.`
     // Build base keywords
     const baseKeywords: string[] = ['Sri Lanka'];
     if (topic) baseKeywords.push(topic);
-    if (city) baseKeywords.push(city);
+    if (district) baseKeywords.push(district);
     if (primaryEntity) baseKeywords.push(primaryEntity);
     if (eventType) baseKeywords.push(eventType);
     
@@ -937,7 +942,7 @@ Generate 5-12 SEO keywords. Return ONLY a JSON array of strings, no other text.`
     // Fallback: basic keywords
     const fallback: string[] = ['Sri Lanka'];
     if (topic) fallback.push(topic);
-    if (city) fallback.push(city);
+    if (district) fallback.push(district);
     if (primaryEntity) fallback.push(primaryEntity);
     return fallback;
   }
