@@ -584,16 +584,17 @@ async function summarizeEligible(
       console.log(`[Pipeline] Using existing summary for cluster ${cluster.id}`);
     }
 
-    // Translate to all 3 languages - ensure all are always generated
+    // Translate to all 3 languages - ensure all are always generated (only if summary was regenerated)
     let summaryEn: string, summarySi: string, summaryTa: string;
     const translationStatus: { en: boolean; si: boolean; ta: boolean } = { en: false, si: false, ta: false };
     
-    try {
-      console.log(`[Pipeline] Starting translation from ${sourceLang} to all languages...`);
-      const translations = await translateToMultipleLanguages(summaryInSource, sourceLang);
-      summaryEn = translations.en;
-      summarySi = translations.si;
-      summaryTa = translations.ta;
+    if (needsSummary) {
+      try {
+        console.log(`[Pipeline] Starting translation from ${sourceLang} to all languages...`);
+        const translations = await translateToMultipleLanguages(summaryInSource, sourceLang);
+        summaryEn = translations.en;
+        summarySi = translations.si;
+        summaryTa = translations.ta;
       
       // Track which translations succeeded
       translationStatus.en = !!summaryEn && summaryEn.trim().length > 0;
@@ -713,67 +714,68 @@ async function summarizeEligible(
         }
       }
       
-      console.log(`[Pipeline] Translation complete: en=${translationStatus.en}, si=${translationStatus.si}, ta=${translationStatus.ta}`);
-    } catch (error) {
-      console.error('[Pipeline] Multi-language translation failed, using fallback:', error);
-      // Fallback: Always ensure all 3 languages are set
-      // If source was English, translate to Si/Ta; otherwise translate to English first
-      if (sourceLang === 'en') {
-        summaryEn = summaryInSource;
-        translationStatus.en = true;
-        // Try to translate to Si and Ta, fallback to English if fails
-        try {
-          summarySi = await translateSummary(summaryEn, 'si');
-          translationStatus.si = !!summarySi && summarySi.trim().length > 0;
-        } catch {
-          console.warn('[Pipeline] Sinhala translation failed, using English fallback');
-          summarySi = summaryEn;
-        }
-        try {
-          summaryTa = await translateSummary(summaryEn, 'ta');
-          translationStatus.ta = !!summaryTa && summaryTa.trim().length > 0;
-        } catch {
-          console.warn('[Pipeline] Tamil translation failed, using English fallback');
-          summaryTa = summaryEn;
-        }
-      } else {
-        // Source is Si or Ta - translate to English first, then to other languages
-        try {
-          // First translate to English
-          summaryEn = await translateFromTo(summaryInSource, sourceLang, 'en');
-          translationStatus.en = !!summaryEn && summaryEn.trim().length > 0;
-          
-          // Set source language summary
-          if (sourceLang === 'si') {
-            summarySi = summaryInSource;
-            translationStatus.si = true;
-            // Translate English to Tamil
-            try {
-              summaryTa = await translateFromTo(summaryEn, 'en', 'ta');
-              translationStatus.ta = !!summaryTa && summaryTa.trim().length > 0;
-            } catch {
-              console.warn('[Pipeline] Tamil translation failed, using English fallback');
-              summaryTa = summaryEn;
-            }
-          } else {
-            // Tamil source
-            summaryTa = summaryInSource;
-            translationStatus.ta = true;
-            // Translate English to Sinhala
-            try {
-              summarySi = await translateFromTo(summaryEn, 'en', 'si');
-              translationStatus.si = !!summarySi && summarySi.trim().length > 0;
-            } catch {
-              console.warn('[Pipeline] Sinhala translation failed, using English fallback');
-              summarySi = summaryEn;
-            }
-          }
-        } catch {
-          // Ultimate fallback - use source for all
-          console.error('[Pipeline] All translation attempts failed, using source language for all');
+        console.log(`[Pipeline] Translation complete: en=${translationStatus.en}, si=${translationStatus.si}, ta=${translationStatus.ta}`);
+      } catch (error) {
+        console.error('[Pipeline] Multi-language translation failed, using fallback:', error);
+        // Fallback: Always ensure all 3 languages are set
+        // If source was English, translate to Si/Ta; otherwise translate to English first
+        if (sourceLang === 'en') {
           summaryEn = summaryInSource;
-          summarySi = summaryInSource;
-          summaryTa = summaryInSource;
+          translationStatus.en = true;
+          // Try to translate to Si and Ta, fallback to English if fails
+          try {
+            summarySi = await translateSummary(summaryEn, 'si');
+            translationStatus.si = !!summarySi && summarySi.trim().length > 0;
+          } catch {
+            console.warn('[Pipeline] Sinhala translation failed, using English fallback');
+            summarySi = summaryEn;
+          }
+          try {
+            summaryTa = await translateSummary(summaryEn, 'ta');
+            translationStatus.ta = !!summaryTa && summaryTa.trim().length > 0;
+          } catch {
+            console.warn('[Pipeline] Tamil translation failed, using English fallback');
+            summaryTa = summaryEn;
+          }
+        } else {
+          // Source is Si or Ta - translate to English first, then to other languages
+          try {
+            // First translate to English
+            summaryEn = await translateFromTo(summaryInSource, sourceLang, 'en');
+            translationStatus.en = !!summaryEn && summaryEn.trim().length > 0;
+            
+            // Set source language summary
+            if (sourceLang === 'si') {
+              summarySi = summaryInSource;
+              translationStatus.si = true;
+              // Translate English to Tamil
+              try {
+                summaryTa = await translateFromTo(summaryEn, 'en', 'ta');
+                translationStatus.ta = !!summaryTa && summaryTa.trim().length > 0;
+              } catch {
+                console.warn('[Pipeline] Tamil translation failed, using English fallback');
+                summaryTa = summaryEn;
+              }
+            } else {
+              // Tamil source
+              summaryTa = summaryInSource;
+              translationStatus.ta = true;
+              // Translate English to Sinhala
+              try {
+                summarySi = await translateFromTo(summaryEn, 'en', 'si');
+                translationStatus.si = !!summarySi && summarySi.trim().length > 0;
+              } catch {
+                console.warn('[Pipeline] Sinhala translation failed, using English fallback');
+                summarySi = summaryEn;
+              }
+            }
+          } catch {
+            // Ultimate fallback - use source for all
+            console.error('[Pipeline] All translation attempts failed, using source language for all');
+            summaryEn = summaryInSource;
+            summarySi = summaryInSource;
+            summaryTa = summaryInSource;
+          }
         }
       }
     } else {
