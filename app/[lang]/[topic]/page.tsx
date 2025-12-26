@@ -11,7 +11,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import NavigationWrapper from '@/components/NavigationWrapper';
 import NewsCard from '@/components/NewsCard';
 import TopicCard from '@/components/TopicCard';
-import RelatedTopics from '@/components/RelatedTopics';
+import FilterMenu from '@/components/FilterMenu';
 import { normalizeTopicSlug, getTopicLabel, VALID_TOPICS, isValidTopic } from '@/lib/topics';
 
 export const dynamic = 'force-dynamic';
@@ -19,6 +19,7 @@ export const revalidate = 300;
 
 type Props = {
   params: Promise<{ lang: 'en' | 'si' | 'ta'; topic: string }>;
+  searchParams: Promise<{ date?: string; city?: string; sort?: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -97,9 +98,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function TopicPage({ params }: Props) {
+export default async function TopicPage({ params, searchParams }: Props) {
   const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
   const { lang, topic: rawTopic } = resolvedParams;
+  const { date, city, sort } = resolvedSearchParams;
 
   // Normalize topic slug
   const topic = normalizeTopicSlug(rawTopic);
@@ -120,7 +123,7 @@ export default async function TopicPage({ params }: Props) {
   
   let clusters: any[] | null = null;
   try {
-    const { data, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('clusters')
       .select(`
         *,
@@ -133,9 +136,49 @@ export default async function TopicPage({ params }: Props) {
         )
       `)
       .eq('status', 'published')
-      .ilike('topic', topicString) // Case-insensitive matching
-      .order('last_seen_at', { ascending: false })
-      .limit(20);
+      .ilike('topic', topicString); // Case-insensitive matching
+
+    // Apply date filter
+    if (date && date !== 'all') {
+      const now = new Date();
+      let dateFrom: Date;
+      switch (date) {
+        case 'today':
+          dateFrom = new Date(now.setHours(0, 0, 0, 0));
+          break;
+        case 'week':
+          dateFrom = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'month':
+          dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          dateFrom = new Date(0);
+      }
+      query = query.gte('published_at', dateFrom.toISOString());
+    }
+
+    // Apply city filter
+    if (city) {
+      query = query.ilike('city', city);
+    }
+
+    // Apply sorting
+    const sortOption = sort || 'newest';
+    switch (sortOption) {
+      case 'oldest':
+        query = query.order('published_at', { ascending: true });
+        break;
+      case 'sources':
+        query = query.order('source_count', { ascending: false });
+        break;
+      case 'newest':
+      default:
+        query = query.order('published_at', { ascending: false });
+        break;
+    }
+
+    const { data, error } = await query.limit(20);
     
     if (error) {
       console.error('Error fetching clusters:', error);
@@ -234,8 +277,8 @@ export default async function TopicPage({ params }: Props) {
                 articleCount={clusters?.length || 0}
               />
 
-              {/* Related Topics */}
-              <RelatedTopics
+              {/* Filter Menu */}
+              <FilterMenu
                 currentTopic={topic}
                 language={lang}
               />
