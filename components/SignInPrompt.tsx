@@ -13,9 +13,11 @@ const SignInPrompt: React.FC<SignInPromptProps> = ({ onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if Supabase is configured by checking the actual client URL
+  // Check if Supabase is configured by checking environment variable
   // This works even if env vars aren't available at build time
-  const supabaseUrl = supabase.supabaseUrl || '';
+  const supabaseUrl = typeof window !== 'undefined' 
+    ? (process.env.NEXT_PUBLIC_SUPABASE_URL || '')
+    : '';
   const isConfigured = supabaseUrl && 
                        !supabaseUrl.includes('placeholder') && 
                        supabaseUrl.includes('supabase.co');
