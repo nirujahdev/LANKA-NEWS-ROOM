@@ -86,7 +86,7 @@ const TopicNavigationContent: React.FC<TopicNavigationProps> = ({
       {/* Topic Tabs - Centered and Scrollable on Mobile */}
       <div>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-          <div className="flex overflow-x-auto scrollbar-hide touch-scroll -mb-px justify-center md:justify-center">
+          <div className="flex overflow-x-auto scrollbar-hide touch-scroll -mb-px justify-start md:justify-center">
             <div className="flex min-w-max gap-0">
               {topics.map((topic) => {
                 const active = isActive(topic.href);
@@ -129,7 +129,7 @@ const TopicNavigation: React.FC<TopicNavigationProps> = (props) => {
     <Suspense fallback={
       <div className="bg-white border-b border-[#E8EAED]">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-          <div className="flex overflow-x-auto scrollbar-hide touch-scroll -mb-px justify-center">
+          <div className="flex overflow-x-auto scrollbar-hide touch-scroll -mb-px justify-start md:justify-center">
             <div className="flex min-w-max">
               {topics.map((topic) => (
                 <div

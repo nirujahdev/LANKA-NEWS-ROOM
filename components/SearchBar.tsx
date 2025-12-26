@@ -208,21 +208,21 @@ export default function SearchBar({ language = 'en' }: SearchBarProps) {
       
       {/* Filter Panel */}
       {showFilters && (
-        <div className="absolute top-full mt-2 w-full bg-white border border-[#E8EAED] rounded-lg shadow-lg z-50 p-4">
+        <div className="absolute top-full mt-2 w-full bg-white border border-[#E8EAED] rounded-lg shadow-lg z-50 p-4 md:p-4 p-5 max-h-[80vh] md:max-h-none overflow-y-auto">
           {/* Topics */}
           <div className="mb-4">
             <label className="text-sm font-medium text-[#202124] mb-2 block">
               {getLabel('Topics', 'මාතෘකා', 'தலைப்புகள்')}
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 md:gap-2 gap-3">
               {filterOptions.topics.map(topic => (
                 <button
                   key={topic}
                   onClick={() => toggleTopic(topic)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  className={`px-3 py-1 md:px-3 md:py-1 px-4 py-2 rounded-full text-xs md:text-xs text-sm font-medium transition-colors touch-manipulation ${
                     selectedTopics.includes(topic)
                       ? 'bg-[#1A73E8] text-white'
-                      : 'bg-[#F1F3F4] text-[#5F6368] hover:bg-[#E8EAED]'
+                      : 'bg-[#F1F3F4] text-[#5F6368] hover:bg-[#E8EAED] active:bg-[#E8EAED]'
                   }`}
                 >
                   {topic}
@@ -353,7 +353,7 @@ export default function SearchBar({ language = 'en' }: SearchBarProps) {
       
       {/* Search Results */}
       {showResults && (
-        <div className="absolute top-full mt-2 w-full bg-white border border-[#E8EAED] rounded-lg shadow-lg z-50 max-h-[600px] overflow-y-auto">
+        <div className="absolute top-full mt-2 w-full bg-white border border-[#E8EAED] rounded-lg shadow-lg z-50 max-h-[600px] md:max-h-[600px] max-h-[80vh] overflow-y-auto md:overflow-y-auto">
           {loading ? (
             <div className="p-4 text-center text-[#5F6368]">{getLabel('Searching...', 'සොයමින්...', 'தேடுகிறது...')}</div>
           ) : results.length === 0 ? (
@@ -377,13 +377,13 @@ export default function SearchBar({ language = 'en' }: SearchBarProps) {
                         ? `/${language}/${normalizeTopicSlug(result.topic) || 'other'}/${result.slug}`
                         : `/${language}/other/${result.slug}`
                       }
-                      className="block px-4 py-3 hover:bg-[#F8F9FA] transition-colors group"
+                      className="block px-4 py-3 md:py-3 py-4 hover:bg-[#F8F9FA] active:bg-[#F1F3F4] transition-colors group touch-manipulation"
                       onClick={() => setShowResults(false)}
                     >
-                      <div className="flex gap-3">
+                      <div className="flex gap-3 md:gap-3 gap-4">
                         {/* Thumbnail */}
                         {result.imageUrl && (
-                          <div className="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-[#F1F3F4]">
+                          <div className="flex-shrink-0 w-20 h-20 md:w-20 md:h-20 w-24 h-24 rounded-lg overflow-hidden bg-[#F1F3F4]">
                             <img
                               src={result.imageUrl}
                               alt={result.headline}
@@ -396,18 +396,18 @@ export default function SearchBar({ language = 'en' }: SearchBarProps) {
                         <div className="flex-1 min-w-0">
                           {/* Source */}
                           {result.sources && result.sources.length > 0 && (
-                            <div className="text-xs text-[#5F6368] mb-1">
+                            <div className="text-xs md:text-xs text-sm text-[#5F6368] mb-1">
                               {result.sources[0].name}
                             </div>
                           )}
                           
                           {/* Headline */}
-                          <h3 className="font-medium text-[#202124] mb-1 line-clamp-2 group-hover:text-[#1A73E8] transition-colors">
+                          <h3 className="font-medium text-[#202124] mb-1 md:line-clamp-2 line-clamp-3 text-sm md:text-sm text-base group-hover:text-[#1A73E8] group-active:text-[#1A73E8] transition-colors">
                             {result.headline}
                           </h3>
                           
                           {/* Meta Info */}
-                          <div className="flex items-center gap-2 text-xs text-[#9AA0A6] mt-1">
+                          <div className="flex items-center gap-2 text-xs md:text-xs text-sm text-[#9AA0A6] mt-1 md:mt-1 mt-2">
                             <span>{formatTime(result.publishedAt)}</span>
                             {result.sourceCount > 1 && (
                               <>
