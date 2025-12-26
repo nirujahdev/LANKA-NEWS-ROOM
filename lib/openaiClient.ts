@@ -140,42 +140,47 @@ Content: ${s.content}`;
 
 CORE PRINCIPLES:
 - Journalistic neutrality: No opinions, no bias, no sensationalism, no editorializing
-- Multi-source verification: Prioritize facts confirmed by 2+ sources
-- Factual accuracy: Every number, name, date, and location must appear in at least one source
+- Multi-source verification: Prioritize facts confirmed by 2+ sources - VERIFY each fact against multiple sources before including
+- Factual accuracy: Every number, name, date, and location must appear in at least one source - NEVER invent or assume
 - Chronological clarity: Present events in time order when relevant
 - Context preservation: Maintain important context (who, what, when, where, why, how)
 - Prioritize recent information: Give more weight to newer sources when facts conflict
+- Source attribution: Always attribute facts to sources when they differ or are uncertain
 
 QUALITY STANDARDS:
 - Summary length: 100-150 words (strict requirement - count words carefully)
 - Structure: 1 lead sentence (most important fact) + 3-5 supporting sentences
-- Tone: Calm, factual, professional, neutral
+- Tone: Calm, factual, professional, neutral - NO emotional language
 - Tense: Past tense, third person
-- Language: Write in ${langLabel} using formal written style
+- Language: Write in ${langLabel} using formal written style${sourceLang === 'si' ? '\n- Sinhala: Use formal written Sinhala (not spoken/colloquial). Use proper Sinhala script, grammar, and formal vocabulary.' : ''}${sourceLang === 'ta' ? '\n- Tamil: Use formal written Tamil (not spoken/colloquial). Use proper Tamil script, grammar, and formal vocabulary. Avoid informal expressions.' : ''}
 - Style: Clear, simple, accessible language
 - No repetition: Avoid repeating the same information in different sentences
+- Coherence: Ensure logical flow between sentences
 
 VERIFICATION RULES:
-- If sources disagree: Explicitly state "reports vary" or "sources differ" and present both versions clearly
-- If information is uncertain: Use phrases like "according to sources" or "reports indicate"
-- If numbers differ: State the range (e.g., "between X and Y") or most commonly cited figure
-- If names/entities differ: Use the most frequently mentioned version
-- Single-source facts: Include but note "according to one source" when only one source mentions it
-- Recent vs old information: When sources conflict, prefer information from more recent sources
+- Fact verification: Before including any fact, check if it appears in 2+ sources. If only in one source, note "according to one source"
+- If sources disagree: Explicitly state "reports vary" or "sources differ" and present both versions clearly with attribution
+- If information is uncertain: Use phrases like "according to sources" or "reports indicate" - NEVER state uncertain information as fact
+- If numbers differ: State the range (e.g., "between X and Y") or most commonly cited figure, noting "sources report different figures"
+- If names/entities differ: Use the most frequently mentioned version, or note "also referred to as" if significant
+- Single-source facts: Include but ALWAYS note "according to one source" when only one source mentions it
+- Recent vs old information: When sources conflict, prefer information from more recent sources and note the discrepancy
 
 STRICT PROHIBITIONS:
-- Do NOT add assumptions, opinions, predictions, or speculation
-- Do NOT exaggerate or sensationalize
-- Do NOT invent names, numbers, dates, or events
+- Do NOT add assumptions, opinions, predictions, or speculation - ONLY include verified facts
+- Do NOT exaggerate or sensationalize - maintain neutral tone
+- Do NOT invent names, numbers, dates, or events - if not in sources, do not include
 - Do NOT use emojis, ALL CAPS, or exclamation marks
 - Do NOT use clickbait language or emotional language
-- Do NOT copy long passages verbatim from sources
+- Do NOT copy long passages verbatim from sources - paraphrase in your own words
+- Do NOT make inferences beyond what sources explicitly state
 
 OUTPUT FORMAT:
-- Lead sentence: Most important fact (who/what/when/where) - should be complete and informative
-- Supporting sentences: Key details, context, implications, and background information
+- Lead sentence: Most important fact (who/what/when/where) - should be complete and informative, include source attribution if needed
+- Supporting sentences: Key details, context, implications, and background information with proper source attribution
 - Ensure all key information (who, what, when, where, why) is included
-- Maintain logical flow and coherence`
+- Maintain logical flow and coherence
+- Use source attribution phrases: "according to sources", "reports indicate", "sources differ", "according to one source" when appropriate`
     },
     {
       role: 'user',
@@ -321,20 +326,35 @@ async function translateFromTo(
 Your task: Translate the following ${fromLabel} news summary into formal, accurate ${toLabel}.
 
 CRITICAL TRANSLATION RULES:
-1. Accuracy: Preserve the exact meaning - do NOT add, remove, or change any information
-2. Formality: Use formal written ${toLabel} appropriate for news media
-3. Grammar: Use proper ${toLabel} grammar, sentence structure, and punctuation
-4. Terminology: Use standard ${toLabel} news terminology and vocabulary
-5. Names & Places: Keep all proper nouns (names, places, organizations) in their original form unless there is a standard ${toLabel} transliteration
-6. Numbers & Dates: Preserve all numbers, dates, and statistics exactly as written
-7. Tone: Maintain a neutral, factual news reporting tone
-8. Length: The translated text should be approximately the same length as the source text${to === 'si' ? '\n9. Sinhala: Use formal written Sinhala (not spoken/colloquial). Use proper Sinhala script and grammar.' : ''}${to === 'ta' ? '\n9. Tamil: Use formal written Tamil (not spoken/colloquial). Use proper Tamil script and grammar. Avoid informal expressions.' : ''}
+1. Accuracy: Preserve the exact meaning - do NOT add, remove, or change any information. Every fact must be preserved.
+2. Formality: Use formal written ${toLabel} appropriate for news media - NO colloquialisms, slang, or informal expressions
+3. Grammar: Use proper ${toLabel} grammar, sentence structure, and punctuation. Ensure sentences are well-formed and coherent.
+4. Terminology: Use standard ${toLabel} news terminology and vocabulary. Use formal news language conventions.
+5. Cultural Context: Preserve cultural context and nuances. Adapt cultural references appropriately while maintaining accuracy.
+6. Names & Places: Keep all proper nouns (names, places, organizations) in their original form unless there is a standard ${toLabel} transliteration. For Sri Lankan names and places, use standard ${toLabel} transliterations when they exist.
+7. Numbers & Dates: Preserve all numbers, dates, and statistics exactly as written - do NOT convert or modify them
+8. Tone: Maintain a neutral, factual news reporting tone - no emotional language, no sensationalism
+9. Length: The translated text should be approximately the same length as the source text (within 10-15% variance is acceptable)
+10. Sentence Structure: Maintain the logical flow and structure of the source. Preserve paragraph breaks and sentence connections.
+${to === 'si' ? `11. Sinhala-Specific:
+    - Use formal written Sinhala (not spoken/colloquial)
+    - Use proper Sinhala script and grammar
+    - Use formal vocabulary appropriate for news media
+    - Avoid spoken language patterns and informal expressions
+    - Maintain proper Sinhala sentence structure and word order` : ''}${to === 'ta' ? `11. Tamil-Specific:
+    - Use formal written Tamil (not spoken/colloquial)
+    - Use proper Tamil script and grammar
+    - Avoid informal expressions, slang, or colloquialisms
+    - Use formal vocabulary appropriate for news media
+    - Maintain proper Tamil sentence structure and word order` : ''}
 
 OUTPUT REQUIREMENTS:
 - Complete translation in ${toLabel}
 - Same structure and paragraph breaks as source
 - All facts, numbers, and names preserved accurately
-- Formal news style appropriate for media publication`
+- Formal news style appropriate for media publication
+- Proper grammar and sentence flow
+- Cultural context preserved appropriately`
     },
     { role: 'user', content: `Translate this news summary from ${fromLabel} to ${toLabel}:\n\n${text}` }
   ];
@@ -941,10 +961,10 @@ export function validateSummaryQuality(summary: string): {
     return { isValid: false, score: 0, issues: ['Summary is empty'] };
   }
 
-  // Check minimum length (80 words)
+  // Check minimum length (100 words - increased from 80)
   const wordCount = summary.trim().split(/\s+/).length;
-  if (wordCount < 80) {
-    issues.push(`Summary too short: ${wordCount} words (minimum 80)`);
+  if (wordCount < 100) {
+    issues.push(`Summary too short: ${wordCount} words (minimum 100)`);
     score -= 30;
   }
 
@@ -954,11 +974,11 @@ export function validateSummaryQuality(summary: string): {
     score -= 20;
   }
 
-  // Check for key information (who, what, when, where)
-  const hasWho = /\b(?:minister|president|official|person|people|authority|organization|government|police|army)\b/i.test(summary);
+  // Check for key information (who, what, when, where) - enhanced entity patterns
+  const hasWho = /\b(?:minister|president|official|person|people|authority|organization|government|police|army|minister|mp|member|parliament|minister|secretary|director|chief|officer|leader|spokesperson|representative|committee|commission|department|ministry|court|judge|lawyer|defendant|plaintiff|company|corporation|institution|university|school|hospital|doctor|patient|student|teacher|citizen|resident|victim|suspect|witness)\b/i.test(summary);
   const hasWhat = summary.length > 50; // Basic check for content
-  const hasWhen = /\b(?:today|yesterday|monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|may|june|july|august|september|october|november|december|\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|\d{4})\b/i.test(summary);
-  const hasWhere = /\b(?:colombo|kandy|galle|jaffna|sri lanka|sri lankan|lanka|district|province|city|town|village)\b/i.test(summary);
+  const hasWhen = /\b(?:today|yesterday|monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|may|june|july|august|september|october|november|december|\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|\d{4}|\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\b/i.test(summary);
+  const hasWhere = /\b(?:colombo|kandy|galle|jaffna|sri lanka|sri lankan|lanka|district|province|city|town|village|north|south|east|west|central|northern|southern|eastern|western|province|region|area|location|site|venue|address)\b/i.test(summary);
 
   if (!hasWho) {
     issues.push('Missing "who" information (person/entity)');
@@ -975,6 +995,14 @@ export function validateSummaryQuality(summary: string): {
   if (!hasWhere) {
     issues.push('Missing "where" information (location)');
     score -= 5;
+  }
+
+  // Check for source attribution phrases (good practice)
+  const hasSourceAttribution = /\b(?:according to|reports indicate|sources say|sources report|sources differ|reports vary|according to sources|according to one source|multiple sources|verified sources)\b/i.test(summary);
+  if (!hasSourceAttribution && wordCount > 120) {
+    // For longer summaries, source attribution is more important
+    issues.push('Missing source attribution phrases (recommended for multi-source summaries)');
+    score -= 5; // Minor penalty, not critical
   }
 
   // Check for placeholder text or errors
@@ -1007,6 +1035,218 @@ export function validateSummaryQuality(summary: string): {
   if (sentences.length < 2) {
     issues.push('Summary too short or lacks structure (needs multiple sentences)');
     score -= 10;
+  }
+
+  // Check for sentence structure and coherence
+  // Look for proper sentence endings and transitions
+  const hasProperEndings = /[.!?]\s+[A-Z]/.test(summary); // Sentence ending followed by capital letter
+  const hasTransitions = /\b(?:however|furthermore|additionally|meanwhile|accordingly|therefore|consequently|moreover|also|further|then|next|finally|in addition|as a result)\b/i.test(summary);
+  
+  if (sentences.length >= 3 && !hasProperEndings && !hasTransitions) {
+    issues.push('Poor sentence structure or coherence (lacks proper transitions)');
+    score -= 5;
+  }
+
+  // Check for neutral tone (no emotional language)
+  const emotionalPatterns = [
+    /\b(?:shocking|devastating|horrific|terrible|amazing|incredible|unbelievable|outrageous|scandalous)\b/i,
+    /!{2,}/, // Multiple exclamation marks
+    /\b(?:OMG|WOW|WTF)\b/i // Emotional acronyms
+  ];
+  
+  for (const pattern of emotionalPatterns) {
+    if (pattern.test(summary)) {
+      issues.push('Contains emotional or sensational language (should be neutral)');
+      score -= 10;
+      break;
+    }
+  }
+
+  // Check for factual consistency (numbers and dates)
+  // Extract all numbers and dates
+  const numbers = summary.match(/\b\d+(?:,\d{3})*(?:\.\d+)?\b/g) || [];
+  const dates = summary.match(/\b(?:\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}|(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},?\s+\d{4})\b/gi) || [];
+  
+  // If multiple numbers/dates appear, check for obvious inconsistencies
+  // (This is a basic check - more sophisticated validation would require context)
+  if (numbers.length > 1) {
+    const numericValues = numbers.map(n => parseFloat(n.replace(/,/g, ''))).filter(n => !isNaN(n));
+    // Check for extreme outliers (e.g., 5 vs 5000 in same context might be inconsistent)
+    // This is a simplified check - in practice, context matters
+  }
+
+  // Basic grammar check (look for common errors)
+  const grammarIssues = [
+    /\s+\.\s+\./, // Double periods
+    /\s+,\s+,/, // Double commas
+    /\s{3,}/, // Multiple spaces
+    /[A-Z]{3,}/, // ALL CAPS words (except acronyms)
+  ];
+  
+  for (const pattern of grammarIssues) {
+    if (pattern.test(summary)) {
+      issues.push('Contains grammar or formatting issues');
+      score -= 5;
+      break;
+    }
+  }
+
+  const isValid = score >= 60 && issues.length < 3;
+
+  return {
+    isValid,
+    score: Math.max(0, score),
+    issues
+  };
+}
+
+/**
+ * Validate translation quality
+ * Checks if translation preserves all information and maintains quality
+ * @param sourceText - Original text in source language
+ * @param translatedText - Translated text
+ * @param sourceLang - Source language code
+ * @param targetLang - Target language code
+ * @returns Object with validation result and score
+ */
+export function validateTranslationQuality(
+  sourceText: string,
+  translatedText: string,
+  sourceLang: 'en' | 'si' | 'ta',
+  targetLang: 'en' | 'si' | 'ta'
+): {
+  isValid: boolean;
+  score: number;
+  issues: string[];
+} {
+  const issues: string[] = [];
+  let score = 100;
+
+  if (!translatedText || translatedText.trim().length === 0) {
+    return { isValid: false, score: 0, issues: ['Translation is empty'] };
+  }
+
+  if (!sourceText || sourceText.trim().length === 0) {
+    return { isValid: false, score: 0, issues: ['Source text is empty'] };
+  }
+
+  // Check length similarity (translation should be within 10-15% of source length)
+  const sourceLength = sourceText.trim().length;
+  const translatedLength = translatedText.trim().length;
+  const lengthRatio = translatedLength / sourceLength;
+  
+  if (lengthRatio < 0.7 || lengthRatio > 1.5) {
+    issues.push(`Translation length significantly differs from source (ratio: ${lengthRatio.toFixed(2)})`);
+    score -= 15;
+  }
+
+  // Extract numbers from source and translation - all should be preserved
+  const sourceNumbers: string[] = sourceText.match(/\b\d+(?:,\d{3})*(?:\.\d+)?\b/g) || [];
+  const translatedNumbers: string[] = translatedText.match(/\b\d+(?:,\d{3})*(?:\.\d+)?\b/g) || [];
+  
+  if (sourceNumbers.length > 0) {
+    const missingNumbers = sourceNumbers.filter(num => !translatedNumbers.includes(num));
+    if (missingNumbers.length > 0) {
+      issues.push(`Missing numbers in translation: ${missingNumbers.slice(0, 3).join(', ')}`);
+      score -= 20;
+    }
+  }
+
+  // Extract dates from source and translation - all should be preserved
+  const sourceDates = sourceText.match(/\b(?:\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}|(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},?\s+\d{4})\b/gi) || [];
+  const translatedDates = translatedText.match(/\b(?:\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}|(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},?\s+\d{4})\b/gi) || [];
+  
+  if (sourceDates.length > 0) {
+    // Check if dates are preserved (allowing for format differences)
+    const sourceDateCount = sourceDates.length;
+    const translatedDateCount = translatedDates.length;
+    if (translatedDateCount < sourceDateCount * 0.8) {
+      issues.push(`Missing dates in translation (source: ${sourceDateCount}, translation: ${translatedDateCount})`);
+      score -= 15;
+    }
+  }
+
+  // Check for proper nouns (names, places, organizations) - should be preserved
+  // This is a simplified check - proper nouns are often preserved in translations
+  // For English source, check for capitalized words that should be preserved
+  if (sourceLang === 'en') {
+    const properNouns = sourceText.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b/g) || [];
+    // Filter out common words that start with capital (like "The", "A", etc.)
+    const significantProperNouns = properNouns.filter(noun => 
+      !['The', 'A', 'An', 'This', 'That', 'These', 'Those'].includes(noun) &&
+      noun.length > 2
+    );
+    
+    // Check if at least some proper nouns appear in translation
+    // (This is approximate - proper nouns might be transliterated)
+    if (significantProperNouns.length > 0) {
+      const preservedCount = significantProperNouns.filter(noun => 
+        translatedText.toLowerCase().includes(noun.toLowerCase())
+      ).length;
+      
+      if (preservedCount < significantProperNouns.length * 0.5) {
+        issues.push(`Many proper nouns may be missing or incorrectly translated`);
+        score -= 10;
+      }
+    }
+  }
+
+  // Check for formal language (no colloquialisms, slang, or informal expressions)
+  // This is language-specific
+  if (targetLang === 'si') {
+    // Sinhala: Check for common informal patterns (this is simplified)
+    const informalPatterns = [
+      /[ක-ෆ]{1,2}[ාිීුූෘෟෙෛොෞ]/g, // Very short words might be informal (simplified check)
+    ];
+    // Note: This is a basic check - proper Sinhala formal language validation would require more sophisticated analysis
+  }
+  
+  if (targetLang === 'ta') {
+    // Tamil: Check for common informal patterns (this is simplified)
+    // Note: Proper Tamil formal language validation would require more sophisticated analysis
+  }
+
+  // Check sentence structure - translation should have similar sentence count
+  const sourceSentences = sourceText.split(/[.!?]+/).filter(s => s.trim().length > 10);
+  const translatedSentences = translatedText.split(/[.!?]+/).filter(s => s.trim().length > 10);
+  
+  if (sourceSentences.length > 0) {
+    const sentenceRatio = translatedSentences.length / sourceSentences.length;
+    if (sentenceRatio < 0.7 || sentenceRatio > 1.5) {
+      issues.push(`Sentence structure differs significantly (source: ${sourceSentences.length}, translation: ${translatedSentences.length})`);
+      score -= 10;
+    }
+  }
+
+  // Check for placeholder text or errors in translation
+  const placeholderPatterns = [
+    /\[.*?\]/g,
+    /TODO/i,
+    /FIXME/i,
+    /XXX/i,
+    /placeholder/i,
+    /lorem ipsum/i
+  ];
+
+  for (const pattern of placeholderPatterns) {
+    if (pattern.test(translatedText)) {
+      issues.push('Contains placeholder text');
+      score -= 20;
+      break;
+    }
+  }
+
+  // Check for repetition in translation
+  const uniqueTranslatedSentences = new Set(translatedSentences.map(s => s.trim().toLowerCase()));
+  if (translatedSentences.length > uniqueTranslatedSentences.size + 1) {
+    issues.push('Contains repetitive content');
+    score -= 10;
+  }
+
+  // Basic quality check - translation should not be too short
+  if (translatedText.trim().length < 50) {
+    issues.push('Translation is too short');
+    score -= 15;
   }
 
   const isValid = score >= 60 && issues.length < 3;

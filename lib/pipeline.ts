@@ -5,7 +5,7 @@ import { fetchRssFeed } from './rss';
 import { detectLanguage } from './language';
 import { makeArticleHash } from './hash';
 import { extractEntities, normalizeTitle, similarityScore, generateSlug } from './text';
-import { summarizeEnglish, translateSummary, generateSEOMetadata, generateComprehensiveSEO, summarizeInSourceLanguage, translateToMultipleLanguages, generateKeyFacts, generateConfirmedVsDiffers, generateKeywords, translateFromTo, validateSummaryQuality } from './openaiClient';
+import { summarizeEnglish, translateSummary, generateSEOMetadata, generateComprehensiveSEO, summarizeInSourceLanguage, translateToMultipleLanguages, generateKeyFacts, generateConfirmedVsDiffers, generateKeywords, translateFromTo, validateSummaryQuality, validateTranslationQuality } from './openaiClient';
 import { categorizeCluster } from './categorize';
 import { updateLastSuccessfulRun } from './pipelineEarlyExit';
 import { selectBestImage } from './imageSelection';
@@ -489,6 +489,83 @@ async function summarizeEligible(
       translationStatus.en = !!summaryEn && summaryEn.trim().length > 0;
       translationStatus.si = !!summarySi && summarySi.trim().length > 0;
       translationStatus.ta = !!summaryTa && summaryTa.trim().length > 0;
+      
+      // Validate translation quality for each language
+      if (translationStatus.en && sourceLang !== 'en') {
+        const enQuality = validateTranslationQuality(summaryInSource, summaryEn, sourceLang, 'en');
+        if (!enQuality.isValid || enQuality.score < 70) {
+          console.warn(`[Pipeline] English translation quality check failed (score: ${enQuality.score}):`, enQuality.issues);
+          // Retry translation if quality is poor
+          if (enQuality.score < 60) {
+            try {
+              console.log('[Pipeline] Retrying English translation due to poor quality...');
+              summaryEn = await translateFromTo(summaryInSource, sourceLang, 'en');
+              const retryQuality = validateTranslationQuality(summaryInSource, summaryEn, sourceLang, 'en');
+              if (!retryQuality.isValid || retryQuality.score < 70) {
+                console.warn(`[Pipeline] Retry English translation also failed quality check (score: ${retryQuality.score})`);
+              } else {
+                console.log(`[Pipeline] Retry English translation passed quality check (score: ${retryQuality.score})`);
+              }
+            } catch (err) {
+              console.error('[Pipeline] English translation retry failed:', err);
+            }
+          }
+        } else {
+          console.log(`[Pipeline] English translation quality check passed (score: ${enQuality.score})`);
+        }
+      }
+      
+      if (translationStatus.si && sourceLang !== 'si') {
+        const siQuality = validateTranslationQuality(summaryInSource, summarySi, sourceLang, 'si');
+        if (!siQuality.isValid || siQuality.score < 70) {
+          console.warn(`[Pipeline] Sinhala translation quality check failed (score: ${siQuality.score}):`, siQuality.issues);
+          // Retry translation if quality is poor
+          if (siQuality.score < 60) {
+            try {
+              console.log('[Pipeline] Retrying Sinhala translation due to poor quality...');
+              const sourceForSi = sourceLang === 'en' ? summaryEn : summaryInSource;
+              const sourceLangForSi = sourceLang === 'en' ? 'en' : sourceLang;
+              summarySi = await translateFromTo(sourceForSi, sourceLangForSi, 'si');
+              const retryQuality = validateTranslationQuality(sourceForSi, summarySi, sourceLangForSi, 'si');
+              if (!retryQuality.isValid || retryQuality.score < 70) {
+                console.warn(`[Pipeline] Retry Sinhala translation also failed quality check (score: ${retryQuality.score})`);
+              } else {
+                console.log(`[Pipeline] Retry Sinhala translation passed quality check (score: ${retryQuality.score})`);
+              }
+            } catch (err) {
+              console.error('[Pipeline] Sinhala translation retry failed:', err);
+            }
+          }
+        } else {
+          console.log(`[Pipeline] Sinhala translation quality check passed (score: ${siQuality.score})`);
+        }
+      }
+      
+      if (translationStatus.ta && sourceLang !== 'ta') {
+        const taQuality = validateTranslationQuality(summaryInSource, summaryTa, sourceLang, 'ta');
+        if (!taQuality.isValid || taQuality.score < 70) {
+          console.warn(`[Pipeline] Tamil translation quality check failed (score: ${taQuality.score}):`, taQuality.issues);
+          // Retry translation if quality is poor
+          if (taQuality.score < 60) {
+            try {
+              console.log('[Pipeline] Retrying Tamil translation due to poor quality...');
+              const sourceForTa = sourceLang === 'en' ? summaryEn : summaryInSource;
+              const sourceLangForTa = sourceLang === 'en' ? 'en' : sourceLang;
+              summaryTa = await translateFromTo(sourceForTa, sourceLangForTa, 'ta');
+              const retryQuality = validateTranslationQuality(sourceForTa, summaryTa, sourceLangForTa, 'ta');
+              if (!retryQuality.isValid || retryQuality.score < 70) {
+                console.warn(`[Pipeline] Retry Tamil translation also failed quality check (score: ${retryQuality.score})`);
+              } else {
+                console.log(`[Pipeline] Retry Tamil translation passed quality check (score: ${retryQuality.score})`);
+              }
+            } catch (err) {
+              console.error('[Pipeline] Tamil translation retry failed:', err);
+            }
+          }
+        } else {
+          console.log(`[Pipeline] Tamil translation quality check passed (score: ${taQuality.score})`);
+        }
+      }
       
       // Validate all 3 languages are present and non-empty
       if (!translationStatus.en || !translationStatus.si || !translationStatus.ta) {
