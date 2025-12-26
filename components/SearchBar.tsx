@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, Filter, Calendar, MapPin, Tag, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
+import { normalizeTopicSlug } from '@/lib/topics';
 
 interface SearchResult {
   id: string;
@@ -373,7 +374,7 @@ export default function SearchBar({ language = 'en' }: SearchBarProps) {
                     {index > 0 && <hr className="border-t border-[#E8EAED] mx-4" />}
                     <Link
                       href={result.topic 
-                        ? `/${language}/${result.topic}/${result.slug}`
+                        ? `/${language}/${normalizeTopicSlug(result.topic) || 'other'}/${result.slug}`
                         : `/${language}/other/${result.slug}`
                       }
                       className="block px-4 py-3 hover:bg-[#F8F9FA] transition-colors group"
