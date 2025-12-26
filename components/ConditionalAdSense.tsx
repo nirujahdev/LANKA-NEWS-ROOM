@@ -78,18 +78,39 @@ export default function ConditionalAdSense() {
     return null;
   }
 
-  return (
-    <Script
-      id="google-adsense"
-      src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
-      strategy="afterInteractive"
-      crossOrigin="anonymous"
-      onError={(e) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('[AdSense] Script failed to load:', e);
-        }
-      }}
-    />
-  );
+  // Use useEffect to inject script directly to avoid data-nscript attribute warning
+  // This is a known Next.js Script component issue with AdSense
+  useEffect(() => {
+    if (!shouldLoadAds) return;
+    
+    // Check if script already exists
+    if (document.querySelector(`script[src*="adsbygoogle.js?client=${ADSENSE_CLIENT_ID}"]`)) {
+      return;
+    }
+    
+    const script = document.createElement('script');
+    script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`;
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    script.id = 'google-adsense';
+    
+    script.onerror = (e) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[AdSense] Script failed to load:', e);
+      }
+    };
+    
+    document.head.appendChild(script);
+    
+    return () => {
+      // Cleanup on unmount
+      const existingScript = document.querySelector(`script#google-adsense`);
+      if (existingScript) {
+        existingScript.remove();
+      }
+    };
+  }, [shouldLoadAds]);
+  
+  return null;
 }
 

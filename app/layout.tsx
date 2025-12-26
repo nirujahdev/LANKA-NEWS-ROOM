@@ -6,6 +6,7 @@ import GoogleCMP from '@/components/GoogleCMP';
 import ConditionalAdSense from '@/components/ConditionalAdSense';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
 import Footer from '@/components/Footer';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const montserrat = Montserrat({
   subsets: ['latin'],
@@ -159,12 +160,14 @@ export default function RootLayout({
         {/* Google AdSense - Conditionally loaded after consent for EEA/UK/CH users */}
         <ConditionalAdSense />
         
-        <SignInPromptManager>
-          <div className="flex-1">
-            {children}
-          </div>
-          <Footer />
-        </SignInPromptManager>
+        <ErrorBoundary>
+          <SignInPromptManager>
+            <div className="flex-1">
+              {children}
+            </div>
+            <Footer />
+          </SignInPromptManager>
+        </ErrorBoundary>
       </body>
     </html>
   );
