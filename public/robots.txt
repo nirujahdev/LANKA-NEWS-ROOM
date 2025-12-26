@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+User-agent: Googlebot-News
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+Sitemap: https://lankanewsroom.xyz/sitemap.xml
