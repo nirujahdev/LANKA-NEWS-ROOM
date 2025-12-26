@@ -13,6 +13,7 @@ type ClusterRow = Database['public']['Tables']['clusters']['Row'] & {
   meta_description_ta?: string | null;
   published_at?: string | null;
   topic?: string | null; // Primary topic from OpenAI
+  topics?: string[] | null; // Multi-topic array
   headline_si?: string | null; // Sinhala headline translation
   headline_ta?: string | null; // Tamil headline translation
 };
