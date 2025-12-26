@@ -115,6 +115,8 @@ export default async function TopicPage({ params }: Props) {
 
   // Get latest articles for this topic with sources
   // Use case-insensitive matching with ilike for better compatibility
+  // TypeScript: topic is guaranteed to be a string here due to validation above
+  const topicString: string = topic;
   const { data: clusters } = await supabaseAdmin
     .from('clusters')
     .select(`
@@ -128,7 +130,7 @@ export default async function TopicPage({ params }: Props) {
       )
     `)
     .eq('status', 'published')
-    .ilike('topic', topic) // Case-insensitive matching
+    .ilike('topic', topicString) // Case-insensitive matching
     .order('last_seen_at', { ascending: false })
     .limit(20);
 

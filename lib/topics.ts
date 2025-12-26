@@ -3,6 +3,7 @@
 export const VALID_TOPICS = [
   'politics',
   'economy',
+  'business',
   'sports',
   'crime',
   'education',
@@ -10,7 +11,11 @@ export const VALID_TOPICS = [
   'environment',
   'technology',
   'culture',
-  'sri-lanka'
+  'entertainment',
+  'science',
+  'sri-lanka',
+  'world',
+  'local'
 ] as const;
 
 export type ValidTopic = typeof VALID_TOPICS[number];
@@ -19,6 +24,7 @@ export const TOPIC_LABELS = {
   en: {
     politics: 'Politics',
     economy: 'Economy',
+    business: 'Business',
     sports: 'Sports',
     crime: 'Crime',
     education: 'Education',
@@ -26,11 +32,16 @@ export const TOPIC_LABELS = {
     environment: 'Environment',
     technology: 'Technology',
     culture: 'Culture',
-    'sri-lanka': 'Sri Lanka'
+    entertainment: 'Entertainment',
+    science: 'Science',
+    'sri-lanka': 'Sri Lanka',
+    world: 'World',
+    local: 'Local'
   },
   si: {
     politics: 'දේශපාලනය',
     economy: 'ආර්ථිකය',
+    business: 'ව්‍යාපාර',
     sports: 'ක්‍රීඩා',
     crime: 'අපරාධ',
     education: 'අධ්‍යාපනය',
@@ -38,11 +49,16 @@ export const TOPIC_LABELS = {
     environment: 'පරිසරය',
     technology: 'තාක්ෂණය',
     culture: 'සංස්කෘතිය',
-    'sri-lanka': 'ශ්‍රී ලංකාව'
+    entertainment: 'විනෝදාස්වාදය',
+    science: 'විද්‍යාව',
+    'sri-lanka': 'ශ්‍රී ලංකාව',
+    world: 'ලෝකය',
+    local: 'ප්‍රාදේශීය'
   },
   ta: {
     politics: 'அரசியல்',
     economy: 'பொருளாதாரம்',
+    business: 'வணிகம்',
     sports: 'விளையாட்டு',
     crime: 'குற்றம்',
     education: 'கல்வி',
@@ -50,7 +66,11 @@ export const TOPIC_LABELS = {
     environment: 'சுற்றுச்சூழல்',
     technology: 'தொழில்நுட்பம்',
     culture: 'கலாச்சாரம்',
-    'sri-lanka': 'இலங்கை'
+    entertainment: 'பொழுதுபோக்கு',
+    science: 'அறிவியல்',
+    'sri-lanka': 'இலங்கை',
+    world: 'உலகம்',
+    local: 'உள்ளூர்'
   }
 } as const;
 
@@ -76,7 +96,10 @@ export function normalizeTopicSlug(topic: string | null | undefined): string | n
     'env': 'environment',
     'edu': 'education',
     'pol': 'politics',
-    'econ': 'economy'
+    'econ': 'economy',
+    'biz': 'business',
+    'ent': 'entertainment',
+    'sci': 'science'
   };
   
   if (specialCases[normalized]) {
