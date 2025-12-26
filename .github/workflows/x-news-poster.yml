@@ -1,0 +1,87 @@
+name: X News Poster
+
+# ============================================
+# SETUP INSTRUCTIONS
+# ============================================
+# Before this workflow can run, you must:
+# 1. Go to GitHub Repo → Settings → Secrets and variables → Actions
+# 2. Add the following secrets (if not already set):
+#    - SUPABASE_URL: Your Supabase project URL
+#    - SUPABASE_SERVICE_ROLE_KEY: Your Supabase service role key
+#    - X_API_BEARER_TOKEN: Your X (Twitter) API v2 Bearer token
+# 3. Optionally set:
+#    - NEXT_PUBLIC_SITE_URL: Your site URL (default: https://lankanewsroom.xyz)
+# ============================================
+
+on:
+  # Schedule: Every 30 minutes
+  schedule:
+    - cron: '*/30 * * * *'
+  
+  # Manual trigger (for testing)
+  workflow_dispatch:
+
+# Prevent concurrent runs - queue new runs instead of canceling
+# This ensures all runs complete, even if triggered multiple times
+concurrency:
+  group: x-news-poster
+  cancel-in-progress: false
+
+jobs:
+  post-to-x:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+
+      - name: Verify environment variables
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          X_API_BEARER_TOKEN: ${{ secrets.X_API_BEARER_TOKEN }}
+        run: |
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "❌ SUPABASE_URL secret is not set"
+            exit 1
+          fi
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "❌ SUPABASE_SERVICE_ROLE_KEY secret is not set"
+            exit 1
+          fi
+          if [ -z "$X_API_BEARER_TOKEN" ]; then
+            echo "❌ X_API_BEARER_TOKEN secret is not set"
+            exit 1
+          fi
+          echo "✅ All required secrets are set"
+
+      - name: Run X posting automation
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          X_API_BEARER_TOKEN: ${{ secrets.X_API_BEARER_TOKEN }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz' }}
+        run: |
+          echo "🚀 Starting X posting automation..."
+          npx tsx scripts/x-post-automation.ts
+
+      - name: Posting summary
+        if: always()
+        run: |
+          echo "📊 X posting automation completed"
+          echo "Check the logs above for details"
+

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News Card</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 1200px;
+      height: 675px;
+      position: relative;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    /* Background Image */
+    .background-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      z-index: 1;
+    }
+
+    /* Top Gradient Overlay */
+    .gradient-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 30%;
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3), transparent);
+      z-index: 2;
+    }
+
+    /* Bottom Gradient Overlay */
+    .gradient-bottom {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 50%;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent);
+      z-index: 2;
+    }
+
+    /* Logo Container */
+    .logo-container {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 60px;
+      height: 60px;
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-size: 24px;
+      font-weight: 600;
+      color: white;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+      letter-spacing: -0.5px;
+    }
+
+    /* Content Container */
+    .content {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      padding: 40px;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    /* Title */
+    .title {
+      font-size: 48px;
+      font-weight: 700;
+      color: white;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 0, 0, 0.5);
+      max-width: 90%;
+      margin-bottom: 20px;
+      line-height: 1.2;
+      word-wrap: break-word;
+    }
+
+    /* Divider */
+    .divider {
+      width: 80%;
+      height: 1px;
+      background: white;
+      margin: 20px 0;
+      opacity: 0.9;
+    }
+
+    /* Date and Domain Container */
+    .meta {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .date {
+      font-size: 18px;
+      color: white;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+      font-weight: 500;
+    }
+
+    .domain {
+      font-size: 16px;
+      color: white;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+      font-weight: 400;
+      opacity: 0.95;
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Image -->
+  <img src="{{IMAGE_URL}}" alt="News Image" class="background-image" />
+
+  <!-- Gradient Overlays -->
+  <div class="gradient-top"></div>
+  <div class="gradient-bottom"></div>
+
+  <!-- Logo -->
+  <div class="logo-container">
+    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M3 6C3 4.89543 3.89543 4 5 4H9.58579C9.851 4 10.1054 4.10536 10.2929 4.29289L12.7071 6.70711C12.8946 6.89464 13.149 7 13.4142 7H19C20.1046 7 21 7.89543 21 9V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V6Z"
+        fill="#2563EB"
+      />
+      <path
+        d="M9.58579 4H5C3.89543 4 3 4.89543 3 6V7H10.2929L9.58579 4Z"
+        fill="#3B82F6"
+        opacity="0.85"
+      />
+    </svg>
+    <span class="logo-text">Lanka News Room</span>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <h1 class="title">{{HEADLINE}}</h1>
+    <div class="divider"></div>
+    <div class="meta">
+      <div class="date">{{DATE}}</div>
+      <div class="domain">lankanewsroom.xyz</div>
+    </div>
+  </div>
+</body>
+</html>
+
