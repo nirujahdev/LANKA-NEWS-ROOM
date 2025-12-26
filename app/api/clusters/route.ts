@@ -13,6 +13,8 @@ type ClusterRow = Database['public']['Tables']['clusters']['Row'] & {
   meta_description_ta?: string | null;
   published_at?: string | null;
   topic?: string | null; // Primary topic from OpenAI
+  headline_si?: string | null; // Sinhala headline translation
+  headline_ta?: string | null; // Tamil headline translation
 };
 type SummaryRow = Database['public']['Tables']['summaries']['Row'];
 type ArticleRow = Database['public']['Tables']['articles']['Row'] & {
