@@ -239,6 +239,12 @@ export default async function TopicPage({ params, searchParams }: Props) {
     }
   } catch (error) {
     console.error('Error in topic page query:', error);
+    // Ensure clusters is always an array, never null
+    clusters = [];
+  }
+  
+  // Ensure clusters is always an array (never null)
+  if (!clusters || !Array.isArray(clusters)) {
     clusters = [];
   }
 

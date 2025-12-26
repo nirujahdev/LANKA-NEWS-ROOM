@@ -35,11 +35,25 @@ export async function GET(req: Request) {
     const category = searchParams.get('category'); // Filter by category
     const feed = searchParams.get('feed'); // 'home' (24h) or 'recent' (30d) or null (all)
     
+    // Check if Supabase is properly configured
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !supabaseServiceKey || supabaseUrl.includes('placeholder')) {
+      console.error('[API] Supabase admin credentials not configured. Returning empty clusters.');
+      return NextResponse.json({ clusters: [] });
+    }
+    
     // Check cache first
     const cacheKey = CacheKeys.clusters(lang, feed, category);
-    const cached = cache.get(cacheKey);
-    if (cached) {
-      return NextResponse.json({ clusters: cached });
+    try {
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        return NextResponse.json({ clusters: cached });
+      }
+    } catch (cacheError) {
+      // If cache fails, continue without cache
+      console.warn('[API] Cache check failed, continuing without cache:', cacheError);
     }
 
     // Build time filter based on feed type
@@ -172,14 +186,21 @@ export async function GET(req: Request) {
       };
     });
 
-    // Cache result for 5 minutes
-    cache.set(cacheKey, payload, 300);
+    // Cache result for 5 minutes (with error handling)
+    try {
+      cache.set(cacheKey, payload, 300);
+    } catch (cacheError) {
+      // If cache fails, log but don't fail the request
+      console.warn('[API] Failed to cache result:', cacheError);
+    }
     
     return NextResponse.json({ clusters: payload });
   } catch (error) {
     console.error('Error in GET /api/clusters:', error);
+    // Always return a valid response, even on error
+    // This prevents Server Components from crashing
     return NextResponse.json(
-      { error: 'Internal server error', clusters: [] },
+      { error: error instanceof Error ? error.message : 'Internal server error', clusters: [] },
       { status: 500 }
     );
   }

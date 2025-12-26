@@ -33,12 +33,20 @@ export async function loadClusters(
   feed: FeedType = null,
   category: CategoryType = null
 ): Promise<ClusterListItem[]> {
-  // Check cache first
+  // Check cache first (with error handling for client-side)
   const cacheKey = CacheKeys.clusters(lang, feed, category);
-  const cached = cache.get<ClusterListItem[]>(cacheKey);
-  if (cached) {
-    console.log(`[Cache] Hit for ${cacheKey}`);
-    return cached;
+  let cached: ClusterListItem[] | null = null;
+  try {
+    cached = cache.get<ClusterListItem[]>(cacheKey);
+    if (cached) {
+      console.log(`[Cache] Hit for ${cacheKey}`);
+      return cached;
+    }
+  } catch (cacheError) {
+    // If cache fails (e.g., env not available on client), continue without cache
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[API] Cache check failed, continuing without cache:', cacheError);
+    }
   }
   
   const params = new URLSearchParams({ lang });
@@ -61,9 +69,16 @@ export async function loadClusters(
   const json = await res.json();
   const clusters = (json.clusters || []) as ClusterListItem[];
   
-  // Cache for 5 minutes
-  cache.set(cacheKey, clusters, 300);
-  console.log(`[Cache] Set for ${cacheKey}`);
+  // Cache for 5 minutes (with error handling)
+  try {
+    cache.set(cacheKey, clusters, 300);
+    console.log(`[Cache] Set for ${cacheKey}`);
+  } catch (cacheError) {
+    // If cache fails, log but don't fail the request
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[API] Failed to cache result:', cacheError);
+    }
+  }
   
   return clusters;
 }

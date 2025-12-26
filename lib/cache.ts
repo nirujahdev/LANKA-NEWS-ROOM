@@ -46,7 +46,15 @@ class SimpleCache {
       }
     }
     
-    const ttl = ttlSeconds ?? env.CACHE_TTL_SECONDS;
+    // Safely get TTL - use default if env is not available (e.g., on client)
+    let ttl: number;
+    try {
+      ttl = ttlSeconds ?? env.CACHE_TTL_SECONDS;
+    } catch {
+      // Fallback to default if env parsing fails (e.g., on client side)
+      ttl = ttlSeconds ?? 300; // 5 minutes default
+    }
+    
     this.cache.set(key, {
       data,
       expiresAt: Date.now() + (ttl * 1000)
