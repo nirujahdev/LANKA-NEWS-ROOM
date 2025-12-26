@@ -714,7 +714,7 @@ async function summarizeEligible(
         }
       }
       
-        console.log(`[Pipeline] Translation complete: en=${translationStatus.en}, si=${translationStatus.si}, ta=${translationStatus.ta}`);
+      console.log(`[Pipeline] Translation complete: en=${translationStatus.en}, si=${translationStatus.si}, ta=${translationStatus.ta}`);
       } catch (error) {
         console.error('[Pipeline] Multi-language translation failed, using fallback:', error);
         // Fallback: Always ensure all 3 languages are set
