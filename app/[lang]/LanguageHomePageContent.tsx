@@ -57,8 +57,10 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
     // Load clusters using current language (from hook, which respects user preference)
     loadClusters(currentLanguage, null, null)
       .then(data => {
-        setIncidents(data || []);
-        setLatestUpdates((data || []).slice(0, 10));
+        // Ensure data is always an array
+        const clusters = Array.isArray(data) ? data : [];
+        setIncidents(clusters);
+        setLatestUpdates(clusters.slice(0, 10));
         setLoading(false);
         setError(false);
       })
@@ -69,7 +71,7 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
         setLatestUpdates([]);
         setLoading(false);
         // Only set error if it's a real failure, not just empty results
-        if (err.message && !err.message.includes('Failed to fetch')) {
+        if (err && err.message && !err.message.includes('Failed to fetch')) {
           setError(true);
         }
       });
@@ -80,6 +82,11 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
   // Convert incidents to NewsCardData format and assign layouts
   // MUST be called before any early returns to follow React hooks rules
   const newsFeedContent = useMemo(() => {
+    // Ensure incidents is always an array
+    if (!Array.isArray(incidents)) {
+      return <div data-news-content="true">No articles available.</div>;
+    }
+    
     // Convert incidents to NewsCardData format
     const newsCards: NewsCardData[] = incidents.map(incident => ({
       id: incident.id,
