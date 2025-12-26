@@ -372,7 +372,10 @@ export default function SearchBar({ language = 'en' }: SearchBarProps) {
                   <React.Fragment key={result.id}>
                     {index > 0 && <hr className="border-t border-[#E8EAED] mx-4" />}
                     <Link
-                      href={`/${language}/story/${result.slug}`}
+                      href={result.topic 
+                        ? `/${language}/${result.topic}/${result.slug}`
+                        : `/${language}/other/${result.slug}`
+                      }
                       className="block px-4 py-3 hover:bg-[#F8F9FA] transition-colors group"
                       onClick={() => setShowResults(false)}
                     >
