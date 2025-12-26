@@ -1,7 +1,7 @@
 /**
  * Programmatic SEO: Topic Pages
  * 
- * URL format: /en/topic/politics, /ta/topic/economy, /si/topic/sports
+ * URL format: /en/politics, /ta/economy, /si/sports
  * These pages rank for "[topic] news Sri Lanka" searches
  */
 
@@ -44,9 +44,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : `${countryRef} ${topicLabel} செய்திகள். சரிபார்க்கப்பட்ட பல ஆதாரங்களிலிருந்து நேரடி புதுப்பிப்புகள்.`;
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
-  const enUrl = `${baseUrl}/en/topic/${topic}`;
-  const siUrl = `${baseUrl}/si/topic/${topic}`;
-  const taUrl = `${baseUrl}/ta/topic/${topic}`;
+  const enUrl = `${baseUrl}/en/${topic}`;
+  const siUrl = `${baseUrl}/si/${topic}`;
+  const taUrl = `${baseUrl}/ta/${topic}`;
   const canonicalUrl = lang === 'si' ? siUrl : lang === 'ta' ? taUrl : enUrl;
 
   return {
@@ -108,8 +108,10 @@ export default async function TopicPage({ params }: Props) {
     notFound();
   }
 
-  // Redirect to new URL format: /{lang}/{topic} (removed /topic/ segment)
-  redirect(`/${lang}/${topic}`);
+  // Redirect if the URL topic doesn't match normalized topic (e.g., "Sri Lanka" -> "sri-lanka")
+  if (rawTopic !== topic) {
+    redirect(`/${lang}/${topic}`);
+  }
 
   // Get latest articles for this topic with sources
   // Use case-insensitive matching with ilike for better compatibility
@@ -159,9 +161,9 @@ export default async function TopicPage({ params }: Props) {
               {clusters?.map((cluster: any) => {
                 const summary = cluster.summaries?.[0];
                 const summaryText =
-                  lang === 'si' ? summary?.summary_si || summary?.summary_en :
-                  lang === 'ta' ? summary?.summary_ta || summary?.summary_en :
-                  summary?.summary_en;
+                  lang === 'si' ? summary?.summary_si || summary?.summary_en || '' :
+                  lang === 'ta' ? summary?.summary_ta || summary?.summary_en || '' :
+                  summary?.summary_en || '';
 
                 // Extract unique sources from articles
                 const sourcesMap = new Map<string, { name: string; feed_url: string }>();
@@ -183,12 +185,14 @@ export default async function TopicPage({ params }: Props) {
                     key={cluster.id}
                     id={cluster.id}
                     headline={cluster.headline}
-                    summary={summaryText || ''}
+                    summary={summaryText}
                     sourceCount={cluster.source_count || 0}
                     updatedAt={cluster.last_seen_at}
                     slug={cluster.slug}
                     language={lang}
                     sources={sources.length > 0 ? sources : [{ name: 'Multiple Sources', feed_url: '#' }]}
+                    category={cluster.topic || null}
+                    topics={cluster.topic ? [cluster.topic] : []}
                   />
                 );
               })}

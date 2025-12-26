@@ -2,11 +2,12 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import NavigationWrapper from '@/components/NavigationWrapper';
-import IncidentDetail from '@/components/IncidentDetail';
+import StoryDetail from '@/components/StoryDetail';
 import NewsArticleSchema from '@/components/NewsArticleSchema';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 import TopicCard from '@/components/TopicCard';
 import RelatedTopics from '@/components/RelatedTopics';
+import { normalizeTopicSlug } from '@/lib/topics';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 300; // Revalidate every 5 minutes
@@ -228,6 +229,10 @@ export default async function StoryPage({ params }: Props) {
       notFound();
     }
 
+    // Redirect to new URL format: /{lang}/{topic}/{slug}
+    const clusterTopic = normalizeTopicSlug(data.cluster.topic) || 'other';
+    redirect(`/${lang}/${clusterTopic}/${slug}`);
+
     const { cluster, summary, articles } = data;
     
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
@@ -299,7 +304,7 @@ export default async function StoryPage({ params }: Props) {
           {/* Center Content - Full width on mobile, constrained on desktop */}
           <main className="flex-1 min-w-0 w-full lg:max-w-3xl lg:mx-auto">
             <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 md:p-8 lg:p-10">
-              <IncidentDetail
+              <StoryDetail
                 id={cluster.id}
                 slug={cluster.slug}
                 headline={cluster.headline}

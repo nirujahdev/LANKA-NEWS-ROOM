@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { normalizeTopicSlug } from '@/lib/topics';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600; // Revalidate every hour
@@ -13,7 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const { data: clusters, error } = await supabaseAdmin
     .from('clusters')
-    .select('slug, published_at, updated_at')
+    .select('slug, topic, published_at, updated_at')
     .eq('status', 'published')
     .not('slug', 'is', null)
     .gte('published_at', thirtyDaysAgo.toISOString())
@@ -21,6 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .limit(1000)
     .returns<Array<{
       slug: string;
+      topic: string | null;
       published_at: string | null;
       updated_at: string | null;
     }>>(); // Limit to prevent sitemap from being too large
@@ -72,22 +74,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   ];
 
-  // Add programmatic SEO pages (topics)
+  // Add programmatic SEO pages (topics) - New format: /{lang}/{topic}
   const topics = ['politics', 'economy', 'sports', 'crime', 'education', 'health', 'environment', 'technology', 'culture'];
   const languages = ['en', 'si', 'ta'];
   for (const topic of topics) {
     for (const lang of languages) {
       entries.push({
-        url: `${baseUrl}/${lang}/topic/${topic}`,
+        url: `${baseUrl}/${lang}/${topic}`,
         lastModified: new Date(),
         changeFrequency: 'hourly',
-        priority: 0.8,
+        priority: 0.9,
         alternates: {
           languages: {
-            'en-LK': `${baseUrl}/en/topic/${topic}`,
-            'si-LK': `${baseUrl}/si/topic/${topic}`,
-            'ta-LK': `${baseUrl}/ta/topic/${topic}`,
-            'x-default': `${baseUrl}/en/topic/${topic}`
+            'en-LK': `${baseUrl}/en/${topic}`,
+            'si-LK': `${baseUrl}/si/${topic}`,
+            'ta-LK': `${baseUrl}/ta/${topic}`,
+            'x-default': `${baseUrl}/en/${topic}`
           }
         }
       });
@@ -115,7 +117,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  // Add news articles with language variants
+  // Add news articles with language variants - New format: /{lang}/{topic}/{slug}
   for (const cluster of clusters) {
     if (!cluster.slug) continue;
 
@@ -125,18 +127,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ? new Date(cluster.published_at)
       : new Date();
 
-    // Add entries for all three languages
+    // Get topic from cluster, normalize it, default to 'other' if not set
+    const topic = normalizeTopicSlug(cluster.topic) || 'other';
+
+    // Add entries for all three languages with new URL structure
     entries.push({
-      url: `${baseUrl}/en/story/${cluster.slug}`,
+      url: `${baseUrl}/en/${topic}/${cluster.slug}`,
       lastModified,
       changeFrequency: 'daily',
-      priority: 0.7,
+      priority: 0.8,
       alternates: {
         languages: {
-          'en-LK': `${baseUrl}/en/story/${cluster.slug}`,
-          'si-LK': `${baseUrl}/si/story/${cluster.slug}`,
-          'ta-LK': `${baseUrl}/ta/story/${cluster.slug}`,
-          'x-default': `${baseUrl}/en/story/${cluster.slug}`
+          'en-LK': `${baseUrl}/en/${topic}/${cluster.slug}`,
+          'si-LK': `${baseUrl}/si/${topic}/${cluster.slug}`,
+          'ta-LK': `${baseUrl}/ta/${topic}/${cluster.slug}`,
+          'x-default': `${baseUrl}/en/${topic}/${cluster.slug}`
         }
       }
     });

@@ -8,7 +8,8 @@ interface WidgetNewsCardProps {
 }
 
 export default function WidgetNewsCard({ data }: WidgetNewsCardProps) {
-  const href = getStoryUrl(data.language || 'en', data.slug, data.id);
+  const topic = data.category || data.topics?.[0] || 'other';
+  const href = getStoryUrl(data.language || 'en', data.slug, data.id, topic);
   const topicTags = getTopicTags(data);
   const imageUrl = getImageUrl(data);
 

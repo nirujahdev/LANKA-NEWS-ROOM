@@ -90,7 +90,19 @@ export function getImageUrl(data: NewsCardData): string {
   return 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80';
 }
 
-export function getStoryUrl(lang: 'en' | 'si' | 'ta', slug: string | null | undefined, id: string): string {
-  return slug ? `/${lang}/story/${slug}` : `/incident/${id}`;
+import { normalizeTopicSlug } from './topics';
+
+export function getStoryUrl(lang: 'en' | 'si' | 'ta', slug: string | null | undefined, id: string, topic?: string | null): string {
+  if (!slug) {
+    // Fallback to old route if no slug (shouldn't happen in production)
+    return `/incident/${id}`;
+  }
+  
+  // New format: /{lang}/{topic}/{slug}
+  const normalizedTopic = topic 
+    ? (normalizeTopicSlug(topic) || 'other')
+    : 'other';
+  
+  return `/${lang}/${normalizedTopic}/${slug}`;
 }
 

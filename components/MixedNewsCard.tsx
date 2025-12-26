@@ -9,7 +9,8 @@ interface MixedNewsCardProps {
 }
 
 export default function MixedNewsCard({ mainArticle, relatedArticles }: MixedNewsCardProps) {
-  const mainHref = getStoryUrl(mainArticle.language || 'en', mainArticle.slug, mainArticle.id);
+  const mainTopic = mainArticle.category || mainArticle.topics?.[0] || 'other';
+  const mainHref = getStoryUrl(mainArticle.language || 'en', mainArticle.slug, mainArticle.id, mainTopic);
   const mainTopicTags = getTopicTags(mainArticle);
   const mainImageUrl = getImageUrl(mainArticle);
 
@@ -65,7 +66,8 @@ export default function MixedNewsCard({ mainArticle, relatedArticles }: MixedNew
         </div>
         <div className="space-y-3">
           {relatedArticles.slice(0, 3).map((article) => {
-            const articleHref = getStoryUrl(article.language || 'en', article.slug, article.id);
+            const articleTopic = article.category || article.topics?.[0] || 'other';
+            const articleHref = getStoryUrl(article.language || 'en', article.slug, article.id, articleTopic);
             const articleImageUrl = getImageUrl(article);
             
             return (

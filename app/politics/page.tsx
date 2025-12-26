@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import TopicNavigation from '@/components/TopicNavigation';
-import IncidentCard from '@/components/IncidentCard';
+import NewsCard from '@/components/NewsCard';
 import Sidebar from '@/components/Sidebar';
 import { ClusterListItem, loadClusters, CategoryType } from '@/lib/api';
 
@@ -98,7 +98,7 @@ export default function PoliticsPage() {
               <>
                 <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#E8EAED] p-4 sm:p-6 mb-6">
                   {featuredIncident && (
-                    <IncidentCard
+                    <NewsCard
                       id={featuredIncident.id}
                       slug={featuredIncident.slug}
                       headline={featuredIncident.headline}
@@ -115,7 +115,7 @@ export default function PoliticsPage() {
                   {topStories.length > 0 && (
                     <div className="border-t border-[#E8EAED] pt-2">
                       {topStories.map((incident) => (
-                        <IncidentCard
+                        <NewsCard
                           key={incident.id}
                           id={incident.id}
                           slug={incident.slug}
@@ -136,7 +136,7 @@ export default function PoliticsPage() {
                 {otherStories.length > 0 && (
                   <div className="space-y-4">
                     {otherStories.map((incident) => (
-                      <IncidentCard
+                      <NewsCard
                         key={incident.id}
                         id={incident.id}
                         slug={incident.slug}

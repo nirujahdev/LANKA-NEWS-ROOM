@@ -6,15 +6,13 @@ export function middleware(request: NextRequest) {
 
   // Redirect root path to language-specific homepage
   if (pathname === '/') {
-    // Priority: cookie > browser language > default to 'en'
+    // Only use cookie if exists, otherwise default to 'en'
+    // Do NOT auto-detect from browser language - user must manually switch
     const langCookie = request.cookies.get('preferredLanguage')?.value;
-    const browserLang = request.headers.get('accept-language')?.split(',')[0]?.split('-')[0];
     
     let detectedLang = 'en';
     if (langCookie && ['en', 'si', 'ta'].includes(langCookie)) {
       detectedLang = langCookie;
-    } else if (browserLang && ['en', 'si', 'ta'].includes(browserLang)) {
-      detectedLang = browserLang;
     }
     
     const response = NextResponse.redirect(new URL(`/${detectedLang}`, request.url));

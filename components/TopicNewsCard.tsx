@@ -231,7 +231,8 @@ export default function TopicNewsCard({
         {sortedArticles.length > 0 && (
           <div className="space-y-3">
             {sortedArticles.slice(0, 3).map((article) => {
-              const articleHref = getStoryUrl(language, article.slug, article.id);
+              const articleTopic = article.topic || topicSlug || 'other';
+              const articleHref = getStoryUrl(language, article.slug, article.id, articleTopic);
               const articleImageUrl = getImageUrl({
                 id: article.id,
                 slug: article.slug,

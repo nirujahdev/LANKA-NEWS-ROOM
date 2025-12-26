@@ -101,6 +101,7 @@ export function useLanguage(initialLang?: 'en' | 'si' | 'ta') {
   }, []);
 
   // Determine current language based on priority
+  // DO NOT auto-update URLs - only update when user explicitly calls setLanguage()
   useEffect(() => {
     if (isLoading) return;
 
@@ -109,14 +110,7 @@ export function useLanguage(initialLang?: 'en' | 'si' | 'ta') {
     if (typeof window !== 'undefined' && userLanguage && !localStorage.getItem('preferredLanguage')) {
       setCurrentLanguageState(userLanguage);
       localStorage.setItem('preferredLanguage', userLanguage);
-      // Update URL if needed (only on language-aware routes)
-      const pathLang = getLangFromPath(pathname);
-      if (pathLang && pathLang !== userLanguage && pathname.match(/^\/(en|si|ta)(\/|$)/)) {
-        const newPath = pathname.replace(/^\/(en|si|ta)/, `/${userLanguage}`);
-        if (newPath !== pathname) {
-          router.replace(newPath);
-        }
-      }
+      // DO NOT auto-update URL - let user navigate manually
       return;
     }
 
@@ -124,15 +118,8 @@ export function useLanguage(initialLang?: 'en' | 'si' | 'ta') {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('preferredLanguage') as 'en' | 'si' | 'ta' | null;
       if (stored && ['en', 'si', 'ta'].includes(stored)) {
-        // Check if URL matches stored preference
-        const pathLang = getLangFromPath(pathname);
-        if (pathLang && pathLang !== stored && pathname.match(/^\/(en|si|ta)(\/|$)/)) {
-          // URL doesn't match preference - update URL to match preference
-          const newPath = pathname.replace(/^\/(en|si|ta)/, `/${stored}`);
-          if (newPath !== pathname) {
-            router.replace(newPath);
-          }
-        }
+        // DO NOT auto-update URL - only update state to match localStorage
+        // URL will be updated when user explicitly calls setLanguage()
         setCurrentLanguageState(stored);
         return;
       }
@@ -153,7 +140,7 @@ export function useLanguage(initialLang?: 'en' | 'si' | 'ta') {
         }
       }
     }
-  }, [pathname, userLanguage, isLoading, router, getLangFromPath, currentLanguage]);
+  }, [pathname, userLanguage, isLoading, currentLanguage]);
 
   // Change language (user action)
   const setLanguage = useCallback(async (lang: 'en' | 'si' | 'ta') => {

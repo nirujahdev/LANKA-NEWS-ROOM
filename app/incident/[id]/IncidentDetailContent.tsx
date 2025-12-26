@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Navigation from '@/components/Navigation';
-import IncidentDetail from '@/components/IncidentDetail';
+import StoryDetail from '@/components/StoryDetail';
 import { ClusterDetail, loadClusterDetail } from '@/lib/api';
 
 export default function IncidentDetailPageContent({ id }: { id: string }) {
@@ -53,7 +53,7 @@ export default function IncidentDetailPageContent({ id }: { id: string }) {
               {loading && <p className="text-sm text-[#5F6368]">Loading incident…</p>}
               {error && <p className="text-sm text-[#D93025]">Incident not found.</p>}
               {!loading && !error && detail && (
-                <IncidentDetail
+                <StoryDetail
                   id={detail.cluster.id}
                   headline={detail.cluster.headline}
                   summary={

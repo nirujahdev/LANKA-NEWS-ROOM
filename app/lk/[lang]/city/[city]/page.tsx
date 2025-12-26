@@ -9,7 +9,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import NavigationWrapper from '@/components/NavigationWrapper';
-import IncidentCard from '@/components/IncidentCard';
+import NewsCard from '@/components/NewsCard';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 300;
@@ -175,7 +175,7 @@ export default async function CityPage({ params }: Props) {
             const sources = Array.from(sourcesMap.values());
 
             return (
-              <IncidentCard
+              <NewsCard
                 key={cluster.id}
                 id={cluster.id}
                 headline={cluster.headline}

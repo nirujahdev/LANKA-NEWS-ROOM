@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import IncidentCard from './IncidentCard';
+import NewsCard from './NewsCard';
 import RelatedTopics from './RelatedTopics';
 
 type SidebarUpdate = {
@@ -66,7 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div key={update.id}>
               {index > 0 && <hr className="border-t border-[#E8EAED] mx-5" />}
               <div className="px-5 py-3">
-                <IncidentCard
+                <NewsCard
                   id={update.id}
                   slug={update.slug}
                   headline={update.headline}
