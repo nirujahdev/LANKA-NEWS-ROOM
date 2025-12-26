@@ -38,6 +38,15 @@ class SimpleCache {
    * @param ttlSeconds - Time to live in seconds (default from env)
    */
   set<T>(key: string, data: T, ttlSeconds?: number): void {
+    // Validate data is serializable before caching
+    try {
+      JSON.stringify(data);
+    } catch (e) {
+      console.error(`[Cache] Cannot cache ${key}: data is not serializable`, e);
+      // Don't cache invalid data - this prevents Server Components errors
+      return;
+    }
+    
     // Evict oldest entry if at capacity
     if (this.cache.size >= this.maxSize) {
       const firstKey = this.cache.keys().next().value;

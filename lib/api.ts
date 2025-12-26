@@ -9,6 +9,8 @@ export type ClusterListItem = {
   first_seen: string | null;
   last_updated: string | null;
   created_at?: string | null;
+  published_at?: string | null; // Publication date
+  last_seen_at?: string | null; // Last seen date
   source_count: number | null;
   summary?: string | null;
   summary_version?: number | null;

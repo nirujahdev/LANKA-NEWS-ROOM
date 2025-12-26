@@ -257,6 +257,7 @@ export async function GET(req: Request) {
       } catch (error) {
         console.error(`Error processing cluster ${cluster.id}:`, error);
         // Return a minimal valid object to prevent breaking the entire response
+        // Include all fields to match ClusterListItem type
         return {
           id: cluster.id || '',
           slug: null,
@@ -268,6 +269,8 @@ export async function GET(req: Request) {
           first_seen: null,
           last_updated: null,
           created_at: null,
+          published_at: null,
+          last_seen_at: null,
           source_count: 0,
           summary: '',
           summary_version: null,
@@ -277,9 +280,34 @@ export async function GET(req: Request) {
       }
     }).filter(item => item.id); // Filter out any invalid items
 
+    // Validate serialization before caching and sending
+    const validateSerializable = (data: any): boolean => {
+      try {
+        JSON.stringify(data);
+        return true;
+      } catch (e) {
+        console.error('[API] Non-serializable data detected:', e);
+        return false;
+      }
+    };
+
+    // Filter payload to only include serializable items
+    const validPayload = payload.filter(item => {
+      const isValid = validateSerializable(item);
+      if (!isValid) {
+        console.error('[API] Filtering out non-serializable item:', item.id);
+      }
+      return isValid;
+    });
+
     // Cache result for 5 minutes (with error handling)
     try {
-      cache.set(cacheKey, payload, 300);
+      // Only cache if payload is valid and serializable
+      if (validateSerializable(validPayload)) {
+        cache.set(cacheKey, validPayload, 300);
+      } else {
+        console.warn('[API] Skipping cache - payload is not serializable');
+      }
     } catch (cacheError) {
       // If cache fails, log but don't fail the request
       console.warn('[API] Failed to cache result:', cacheError);
@@ -288,8 +316,8 @@ export async function GET(req: Request) {
     // Ensure payload is serializable before sending
     try {
       // Test serialization
-      JSON.stringify(payload);
-      return NextResponse.json({ clusters: payload });
+      JSON.stringify(validPayload);
+      return NextResponse.json({ clusters: validPayload });
     } catch (serializationError) {
       console.error('[API] Serialization error:', serializationError);
       // Return empty array if serialization fails
