@@ -54,7 +54,9 @@ export function getTopicLabel(topic: string, language: 'en' | 'si' | 'ta' = 'en'
     'crime': { en: 'Crime', si: 'අපරාධ', ta: 'குற்றம்' },
     'environment': { en: 'Environment', si: 'පරිසරය', ta: 'சுற்றுச்சூழல்' },
     'culture': { en: 'Culture', si: 'සංස්කෘතිය', ta: 'கலாச்சாரம்' },
+    'society': { en: 'Society', si: 'සමාජය', ta: 'சமூகம்' },
     'sri-lanka': { en: 'Sri Lanka', si: 'ශ්‍රී ලංකාව', ta: 'இலங்கை' },
+    'world': { en: 'World', si: 'ලෝකය', ta: 'உலகம்' },
     'other': { en: 'Other', si: 'වෙනත්', ta: 'மற்ற' }
   };
 

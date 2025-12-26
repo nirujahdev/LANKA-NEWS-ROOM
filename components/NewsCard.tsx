@@ -86,6 +86,8 @@ const NewsCard: React.FC<NewsCardProps> = ({
       'environment': { en: 'Environment', si: 'පරිසරය', ta: 'சுற்றுச்சூழல்' },
       'culture': { en: 'Culture', si: 'සංස්කෘතිය', ta: 'கலாச்சாரம்' },
       'sri-lanka': { en: 'Sri Lanka', si: 'ශ්‍රී ලංකාව', ta: 'இலங்கை' },
+      'world': { en: 'World', si: 'ලෝකය', ta: 'உலகம்' },
+      'society': { en: 'Society', si: 'සමාජය', ta: 'சமூகம்' },
       'other': { en: 'Other', si: 'වෙනත්', ta: 'மற்ற' }
     };
 

@@ -9,6 +9,7 @@ import { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import NavigationWrapper from '@/components/NavigationWrapper';
+import TopicNavigation from '@/components/TopicNavigation';
 import NewsCard from '@/components/NewsCard';
 import FilterMenu from '@/components/FilterMenu';
 import { normalizeTopicSlug, getTopicLabel, VALID_TOPICS, isValidTopic } from '@/lib/topics';
@@ -134,8 +135,17 @@ export default async function TopicPage({ params, searchParams }: Props) {
           )
         )
       `)
-      .eq('status', 'published')
-      .ilike('topic', topicString); // Case-insensitive matching
+      .eq('status', 'published');
+    
+    // Support both single topic (backward compatibility) and topics array
+    // First try to match single topic field, then filter by topics array in memory if needed
+    // For now, use single topic matching (topics array matching will be added via RPC if needed)
+    query = query.ilike('topic', topicString);
+    
+    // Note: For topics array matching, we'll need to either:
+    // 1. Create an RPC function that uses PostgreSQL array operators, or
+    // 2. Fetch all and filter in memory (less efficient but works)
+    // For initial implementation, single topic matching should work
 
     // Apply date filter
     if (date && date !== 'all') {
@@ -195,13 +205,27 @@ export default async function TopicPage({ params, searchParams }: Props) {
         break;
     }
 
-    const { data, error } = await query.limit(20);
+    const { data, error } = await query.limit(50); // Fetch more to filter by topics array
     
     if (error) {
       console.error('Error fetching clusters:', error);
       clusters = [];
     } else {
-      clusters = data || [];
+      // Filter by topics array if single topic didn't match
+      // This supports multi-topic categorization
+      clusters = (data || []).filter((cluster: any) => {
+        // Check if topic matches single topic field
+        if (cluster.topic && cluster.topic.toLowerCase() === topicString.toLowerCase()) {
+          return true;
+        }
+        // Check if topic exists in topics array
+        if (cluster.topics && Array.isArray(cluster.topics)) {
+          return cluster.topics.some((t: string) => 
+            t && t.toLowerCase() === topicString.toLowerCase()
+          );
+        }
+        return false;
+      }).slice(0, 20); // Limit to 20 after filtering
     }
   } catch (error) {
     console.error('Error in topic page query:', error);
@@ -215,6 +239,7 @@ export default async function TopicPage({ params, searchParams }: Props) {
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
       <NavigationWrapper currentLanguage={lang} />
+      <TopicNavigation language={lang} />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex gap-6">
@@ -241,6 +266,12 @@ export default async function TopicPage({ params, searchParams }: Props) {
                   lang === 'ta' ? summary?.summary_ta || summary?.summary_en || '' :
                   summary?.summary_en || '';
 
+                // Get language-specific headline
+                const headlineText =
+                  lang === 'si' ? cluster.headline_si || cluster.headline :
+                  lang === 'ta' ? cluster.headline_ta || cluster.headline :
+                  cluster.headline;
+
                 // Extract unique sources from articles
                 const sourcesMap = new Map<string, { name: string; feed_url: string }>();
                 cluster.articles?.forEach((article: any) => {
@@ -256,11 +287,16 @@ export default async function TopicPage({ params, searchParams }: Props) {
                 });
                 const sources = Array.from(sourcesMap.values());
 
+                // Get topics array (prefer topics array, fallback to single topic)
+                const topicsArray = cluster.topics && Array.isArray(cluster.topics) && cluster.topics.length > 0
+                  ? cluster.topics
+                  : cluster.topic ? [cluster.topic] : [];
+
                 return (
                   <NewsCard
                     key={cluster.id}
                     id={cluster.id}
-                    headline={cluster.headline}
+                    headline={headlineText}
                     summary={summaryText}
                     sourceCount={cluster.source_count || 0}
                     updatedAt={cluster.last_seen_at}
@@ -268,7 +304,7 @@ export default async function TopicPage({ params, searchParams }: Props) {
                     language={lang}
                     sources={sources.length > 0 ? sources : [{ name: 'Multiple Sources', feed_url: '#' }]}
                     category={cluster.topic || null}
-                    topics={cluster.topic ? [cluster.topic] : []}
+                    topics={topicsArray}
                   />
                 );
               })}

@@ -13,6 +13,7 @@ export const VALID_TOPICS = [
   'culture',
   'entertainment',
   'science',
+  'society',
   'sri-lanka',
   'world',
   'local'
@@ -36,7 +37,8 @@ export const TOPIC_LABELS = {
     science: 'Science',
     'sri-lanka': 'Sri Lanka',
     world: 'World',
-    local: 'Local'
+    local: 'Local',
+    society: 'Society'
   },
   si: {
     politics: 'දේශපාලනය',
@@ -53,7 +55,8 @@ export const TOPIC_LABELS = {
     science: 'විද්‍යාව',
     'sri-lanka': 'ශ්‍රී ලංකාව',
     world: 'ලෝකය',
-    local: 'ප්‍රාදේශීය'
+    local: 'ප්‍රාදේශීය',
+    society: 'සමාජය'
   },
   ta: {
     politics: 'அரசியல்',
@@ -70,7 +73,8 @@ export const TOPIC_LABELS = {
     science: 'அறிவியல்',
     'sri-lanka': 'இலங்கை',
     world: 'உலகம்',
-    local: 'உள்ளூர்'
+    local: 'உள்ளூர்',
+    society: 'சமூகம்'
   }
 } as const;
 
@@ -92,6 +96,7 @@ export function normalizeTopicSlug(topic: string | null | undefined): string | n
     'sri lanka': 'sri-lanka',
     'srilanka': 'sri-lanka',
     'sri_lanka': 'sri-lanka',
+    'global': 'world',
     'tech': 'technology',
     'env': 'environment',
     'edu': 'education',

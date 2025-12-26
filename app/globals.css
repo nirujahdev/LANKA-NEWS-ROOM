@@ -102,6 +102,13 @@ a:focus-visible {
   }
 }
 
+/* Touch scrolling for mobile - smooth horizontal scrolling */
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  overflow-x: auto;
+}
+
 /* Smooth transitions - refined for better UX */
 * {
   transition-property: color, background-color, border-color, opacity, transform, box-shadow;

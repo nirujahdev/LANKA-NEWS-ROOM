@@ -5,7 +5,7 @@ import { fetchRssFeed } from './rss';
 import { detectLanguage } from './language';
 import { makeArticleHash } from './hash';
 import { extractEntities, normalizeTitle, similarityScore, generateSlug } from './text';
-import { summarizeEnglish, translateSummary, generateSEOMetadata, generateComprehensiveSEO, summarizeInSourceLanguage, translateToMultipleLanguages, generateKeyFacts, generateConfirmedVsDiffers, generateKeywords, translateFromTo, validateSummaryQuality, validateTranslationQuality } from './openaiClient';
+import { summarizeEnglish, translateSummary, generateSEOMetadata, generateComprehensiveSEO, summarizeInSourceLanguage, translateToMultipleLanguages, generateKeyFacts, generateConfirmedVsDiffers, generateKeywords, translateFromTo, translateHeadline, validateSummaryQuality, validateTranslationQuality } from './openaiClient';
 import { categorizeCluster } from './categorize';
 import { updateLastSuccessfulRun } from './pipelineEarlyExit';
 import { selectBestImage } from './imageSelection';
@@ -684,7 +684,9 @@ async function summarizeEligible(
     }
 
     // Generate comprehensive SEO metadata with topic/district/entity extraction
-    let seoEn, seoSi, seoTa, topic, district, primaryEntity, eventType, imageUrl;
+    let seoEn, seoSi, seoTa, topic, topics, district, primaryEntity, eventType, imageUrl;
+    let headlineSi: string | null = null;
+    let headlineTa: string | null = null;
     try {
       // Generate comprehensive SEO for English (includes topic, district, entities)
       const comprehensiveSEO = await generateComprehensiveSEO(
@@ -700,9 +702,30 @@ async function summarizeEligible(
       };
 
       topic = comprehensiveSEO.topic;
+      topics = comprehensiveSEO.topics || [comprehensiveSEO.topic];
       district = comprehensiveSEO.district;
       primaryEntity = comprehensiveSEO.primary_entity;
       eventType = comprehensiveSEO.event_type;
+      
+      // Generate translated headlines
+      console.log('[Pipeline] Generating translated headlines...');
+      [headlineSi, headlineTa] = await Promise.all([
+        translateHeadline(cluster.headline, 'en', 'si').catch((err) => {
+          console.warn(`[Pipeline] Failed to translate headline to Sinhala: ${err.message}`);
+          return null;
+        }),
+        translateHeadline(cluster.headline, 'en', 'ta').catch((err) => {
+          console.warn(`[Pipeline] Failed to translate headline to Tamil: ${err.message}`);
+          return null;
+        })
+      ]);
+      
+      if (headlineSi) {
+        console.log(`[Pipeline] Generated Sinhala headline: ${headlineSi}`);
+      }
+      if (headlineTa) {
+        console.log(`[Pipeline] Generated Tamil headline: ${headlineTa}`);
+      }
 
       // Collect images from all sources
       const availableImages: Array<{ url: string; source: string }> = [];
@@ -804,11 +827,14 @@ async function summarizeEligible(
       seoEn = { title: cluster.headline.slice(0, 60), description: summaryEn.slice(0, 160) };
       seoSi = { title: cluster.headline.slice(0, 60), description: summarySi.slice(0, 160) };
       seoTa = { title: cluster.headline.slice(0, 60), description: summaryTa.slice(0, 160) };
-      topic = 'other';
+      topic = 'politics';
+      topics = ['sri-lanka', 'politics'];
       district = null;
       primaryEntity = null;
       eventType = null;
       imageUrl = articles?.find(a => a.image_url)?.image_url || null;
+      headlineSi = null;
+      headlineTa = null;
     }
 
     // Generate slug from English meta title (stable, don't regenerate if exists)
@@ -935,6 +961,9 @@ async function summarizeEligible(
       slug: slug,
       published_at: publishedAt,
       topic: topic,
+      topics: topics, // Multi-topic array
+      headline_si: headlineSi,
+      headline_ta: headlineTa,
       city: district, // Keep city field for backward compatibility, but use district value
       primary_entity: primaryEntity,
       event_type: eventType,

@@ -25,12 +25,17 @@ const topics: Topic[] = [
   { id: 'sri-lanka', label: 'Sri Lanka', labelSi: 'ශ්‍රී ලංකාව', labelTa: 'இலங்கை', href: 'sri-lanka' },
   { id: 'world', label: 'World', labelSi: 'ලෝකය', labelTa: 'உலகம்', href: 'world' },
   { id: 'politics', label: 'Politics', labelSi: 'දේශපාලනය', labelTa: 'அரசியல்', href: 'politics' },
+  { id: 'economy', label: 'Economy', labelSi: 'ආර්ථිකය', labelTa: 'பொருளாதாரம்', href: 'economy' },
   { id: 'business', label: 'Business', labelSi: 'ව්‍යාපාර', labelTa: 'வணிகம்', href: 'business' },
   { id: 'technology', label: 'Technology', labelSi: 'තාක්ෂණය', labelTa: 'தொழில்நுட்பம்', href: 'technology' },
-  { id: 'entertainment', label: 'Entertainment', labelSi: 'විනෝදාස්වාදය', labelTa: 'பொழுதுபோக்கு', href: 'entertainment' },
+  { id: 'health', label: 'Health', labelSi: 'සෞඛ්‍ය', labelTa: 'சுகாதாரம்', href: 'health' },
+  { id: 'education', label: 'Education', labelSi: 'අධ්‍යාපනය', labelTa: 'கல்வி', href: 'education' },
   { id: 'sports', label: 'Sports', labelSi: 'ක්‍රීඩා', labelTa: 'விளையாட்டு', href: 'sports' },
-  { id: 'science', label: 'Science', labelSi: 'විද්‍යාව', labelTa: 'அறிவியல்', href: 'science' },
-  { id: 'health', label: 'Health', labelSi: 'සෞඛ්‍ය', labelTa: 'சுகாதாரம்', href: 'health' }
+  { id: 'crime', label: 'Crime', labelSi: 'අපරාධ', labelTa: 'குற்றம்', href: 'crime' },
+  { id: 'environment', label: 'Environment', labelSi: 'පරිසරය', labelTa: 'சுற்றுச்சூழல்', href: 'environment' },
+  { id: 'society', label: 'Society', labelSi: 'සමාජය', labelTa: 'சமூகம்', href: 'society' },
+  { id: 'entertainment', label: 'Entertainment', labelSi: 'විනෝදාස්වාදය', labelTa: 'பொழுதுபோக்கு', href: 'entertainment' },
+  { id: 'science', label: 'Science', labelSi: 'විද්‍යාව', labelTa: 'அறிவியல்', href: 'science' }
 ];
 
 const TopicNavigationContent: React.FC<TopicNavigationProps> = ({ 
@@ -86,7 +91,7 @@ const TopicNavigationContent: React.FC<TopicNavigationProps> = ({
       {/* Topic Tabs - Centered and Scrollable on Mobile */}
       <div>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-          <div className="flex overflow-x-auto scrollbar-hide -mb-px justify-center md:justify-center">
+          <div className="flex overflow-x-auto scrollbar-hide touch-scroll -mb-px justify-center md:justify-center">
             <div className="flex min-w-max gap-0">
               {topics.map((topic) => {
                 const active = isActive(topic.href);
@@ -129,7 +134,7 @@ const TopicNavigation: React.FC<TopicNavigationProps> = (props) => {
     <Suspense fallback={
       <div className="bg-white border-b border-[#E8EAED]">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-          <div className="flex overflow-x-auto scrollbar-hide -mb-px justify-center">
+          <div className="flex overflow-x-auto scrollbar-hide touch-scroll -mb-px justify-center">
             <div className="flex min-w-max">
               {topics.map((topic) => (
                 <div

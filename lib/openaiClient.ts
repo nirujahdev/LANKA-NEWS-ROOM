@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { env } from './env';
 import { withRetry } from './retry';
+import { normalizeTopicSlug } from './topics';
 
 const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
@@ -326,17 +327,18 @@ async function translateFromTo(
 Your task: Translate the following ${fromLabel} news summary into formal, accurate ${toLabel}.
 
 CRITICAL TRANSLATION RULES:
-1. Accuracy: Preserve the EXACT meaning - do NOT add, remove, or change ANY information. Every fact, detail, and nuance must be preserved exactly. Verify that all factual information is maintained.
-2. Formality: Use formal written ${toLabel} appropriate for news media - NO colloquialisms, slang, informal expressions, or spoken language patterns. This is formal news writing, not casual conversation.
-3. Grammar: Use proper ${toLabel} grammar, sentence structure, and punctuation. Ensure all sentences are well-formed, coherent, and follow proper ${toLabel} grammatical rules.
-4. Terminology: Use standard ${toLabel} news terminology and formal vocabulary. Use established news language conventions and avoid informal or colloquial terms.
-5. Cultural Context: Preserve cultural context and nuances accurately. Adapt cultural references appropriately while maintaining complete factual accuracy.
-6. Names & Places: Keep ALL proper nouns (names, places, organizations, titles) in their original form unless there is a standard ${toLabel} transliteration. For Sri Lankan names and places, use standard ${toLabel} transliterations when they exist. Do NOT translate proper nouns unless there is an established translation.
-7. Numbers & Dates: Preserve ALL numbers, dates, percentages, statistics, and numerical data EXACTLY as written - do NOT convert, modify, round, or approximate them. Every number must match the source.
-8. Tone: Maintain a neutral, factual news reporting tone - no emotional language, no sensationalism, no opinions, no editorializing.
-9. Length: The translated text should be approximately the same length as the source text (within 10-15% variance is acceptable). Do not significantly expand or contract the content.
-10. Sentence Structure: Maintain the logical flow, structure, and organization of the source. Preserve paragraph breaks, sentence connections, and the overall narrative structure.
-11. Verification: Before completing the translation, verify that all numbers, dates, names, and facts from the source are present in the translation.
+1. Accuracy: Preserve the EXACT meaning - do NOT add, remove, or change ANY information. Every fact, detail, and nuance must be preserved exactly. Verify that all factual information is maintained. Double-check that all key information (who, what, when, where, why, how) is present in the translation.
+2. Formality: Use formal written ${toLabel} appropriate for news media - NO colloquialisms, slang, informal expressions, or spoken language patterns. This is formal news writing, not casual conversation. Use professional journalistic language.
+3. Grammar: Use proper ${toLabel} grammar, sentence structure, and punctuation. Ensure all sentences are well-formed, coherent, and follow proper ${toLabel} grammatical rules. Check for subject-verb agreement, proper tense usage, and correct word order.
+4. Terminology: Use standard ${toLabel} news terminology and formal vocabulary. Use established news language conventions and avoid informal or colloquial terms. For Sri Lankan news, use standard ${toLabel} terms for government institutions, political terms, and common news phrases.
+5. Cultural Context: Preserve cultural context and nuances accurately. Adapt cultural references appropriately while maintaining complete factual accuracy. Understand Sri Lankan context when translating (e.g., government institutions, political parties, cultural events).
+6. Names & Places: Keep ALL proper nouns (names, places, organizations, titles) in their original form unless there is a standard ${toLabel} transliteration. For Sri Lankan names and places, use standard ${toLabel} transliterations when they exist. Do NOT translate proper nouns unless there is an established translation. Verify spelling of all names and places.
+7. Numbers & Dates: Preserve ALL numbers, dates, percentages, statistics, and numerical data EXACTLY as written - do NOT convert, modify, round, or approximate them. Every number must match the source. Dates should remain in the same format.
+8. Tone: Maintain a neutral, factual news reporting tone - no emotional language, no sensationalism, no opinions, no editorializing. Use objective, professional language throughout.
+9. Length: The translated text should be approximately the same length as the source text (within 10-15% variance is acceptable). Do not significantly expand or contract the content. Maintain the same level of detail.
+10. Sentence Structure: Maintain the logical flow, structure, and organization of the source. Preserve paragraph breaks, sentence connections, and the overall narrative structure. Ensure smooth transitions between sentences.
+11. Verification: Before completing the translation, verify that all numbers, dates, names, and facts from the source are present in the translation. Cross-check key information to ensure nothing is missing.
+12. Quality Check: Read the translation once more to ensure it sounds natural in ${toLabel} while maintaining complete accuracy. The translation should read like original ${toLabel} news writing, not like a literal translation.
 ${to === 'si' ? `11. Sinhala-Specific:
     - Use formal written Sinhala (not spoken/colloquial)
     - Use proper Sinhala script and grammar
@@ -387,6 +389,95 @@ OUTPUT REQUIREMENTS:
 
 // Export translateFromTo for use in pipeline
 export { translateFromTo };
+
+/**
+ * Translate headline from one language to another
+ * Optimized for headlines (shorter, more concise than summaries)
+ * @param headline - Headline to translate
+ * @param from - Source language
+ * @param to - Target language
+ * @returns Translated headline
+ */
+export async function translateHeadline(
+  headline: string,
+  from: 'en' | 'si' | 'ta',
+  to: 'en' | 'si' | 'ta'
+): Promise<string> {
+  if (from === to) {
+    return headline; // No translation needed
+  }
+
+  const fromLabel = from === 'en' ? 'English' : from === 'si' ? 'Sinhala' : 'Tamil';
+  const toLabel = to === 'en' ? 'English' : to === 'si' ? 'Sinhala' : 'Tamil';
+  
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    {
+      role: 'system',
+      content: `You are a professional news headline translator specializing in ${toLabel} translations for Sri Lankan news headlines.
+
+Your task: Translate the following ${fromLabel} news headline into formal, accurate ${toLabel} headline.
+
+CRITICAL HEADLINE TRANSLATION RULES:
+1. Headline-Specific: This is a HEADLINE, not a summary. Keep it concise, impactful, and attention-grabbing while maintaining accuracy.
+2. Length: Target 50-80 characters (headlines are shorter than summaries). Preserve key information but be concise.
+3. Accuracy: Preserve the EXACT meaning - do NOT add, remove, or change ANY information. Every fact must be preserved exactly.
+4. SEO-Friendly: Maintain SEO keywords and important entities in the target language when appropriate.
+5. Formality: Use formal written ${toLabel} appropriate for news headlines - NO colloquialisms, slang, or informal expressions.
+6. Grammar: Use proper ${toLabel} grammar and sentence structure appropriate for headlines.
+7. Names & Places: Keep ALL proper nouns (names, places, organizations, titles) in their original form unless there is a standard ${toLabel} transliteration. For Sri Lankan names and places, use standard ${toLabel} transliterations when they exist.
+8. Numbers & Dates: Preserve ALL numbers, dates, percentages, and statistics EXACTLY as written - do NOT convert, modify, round, or approximate them.
+9. Tone: Maintain a neutral, factual news headline tone - no emotional language, no sensationalism.
+10. Key Information: Extract and preserve the most important information (who, what, when, where) in the headline format.
+11. Sri Lankan Context: Preserve Sri Lankan context and terminology accurately.
+${to === 'si' ? `12. Sinhala-Specific:
+    - Use formal written Sinhala appropriate for headlines
+    - Use proper Sinhala script and grammar
+    - Keep headline concise and impactful
+    - Use formal vocabulary appropriate for news headlines` : ''}${to === 'ta' ? `12. Tamil-Specific:
+    - Use formal written Tamil appropriate for headlines
+    - Use proper Tamil script and grammar
+    - Keep headline concise and impactful
+    - Use formal vocabulary appropriate for news headlines` : ''}
+
+OUTPUT REQUIREMENTS:
+- Concise headline in ${toLabel} (50-80 characters)
+- All facts, numbers, and names preserved accurately
+- Formal news headline style
+- SEO-friendly and impactful
+- Proper grammar and structure`
+    },
+    { 
+      role: 'user', 
+      content: `Translate this news headline from ${fromLabel} to ${toLabel}:\n\n${headline}\n\nReturn ONLY the translated headline, no additional text.` 
+    }
+  ];
+
+  // Use retry logic for translation
+  return withRetry(
+    async () => {
+      const completion = await client.chat.completions.create({
+        model: env.SUMMARY_TRANSLATE_MODEL || env.SUMMARY_MODEL,
+        messages,
+        temperature: 0.1,
+        max_tokens: 150 // Headlines are shorter
+      });
+      const translated = completion.choices[0]?.message?.content?.trim();
+      if (!translated) {
+        throw new Error('Empty headline translation response');
+      }
+      // Clean up any extra text that might have been added
+      const cleaned = translated.split('\n')[0].trim();
+      return cleaned;
+    },
+    {
+      maxRetries: 3,
+      delayMs: 1000,
+      onRetry: (error, attempt) => {
+        console.warn(`[OpenAI] Retry ${attempt}/3 for translateHeadline (${from}→${to}): ${error.message}`);
+      }
+    }
+  );
+}
 
 function buildSourcePrompt(sources: { title: string; content: string }[], previous?: string | null) {
   const trimmed = sources
@@ -576,6 +667,7 @@ export async function generateComprehensiveSEO(
   og_title: string;
   og_description: string;
   topic: string;
+  topics: string[];
   district: string | null;
   primary_entity: string | null;
   event_type: string | null;
@@ -602,10 +694,15 @@ RULES:
 3. slug: lowercase, hyphen-separated, 4-9 words, no stopwords (a, the, is, etc.)
 4. og_title: can be slightly longer than seo_title (up to 70 chars)
 5. og_description: same as meta_description
-6. topic: ONE of [politics, economy, sports, crime, education, health, environment, technology, culture, other]
-7. district: ONE of [colombo, kandy, galle, jaffna, anuradhapura, kurunegala, batticaloa, badulla, hambantota, gampaha, kalutara, matale, nuwara-eliya, matara, kilinochchi, mannar, vavuniya, mullaitivu, ampara, trincomalee, puttalam, polonnaruwa, moneragala, ratnapura, kegalle] or null
-8. primary_entity: main person/organization mentioned (or null)
-9. event_type: ONE of [election, court, accident, protest, announcement, budget, policy, crime, disaster, sports_event, other] or null
+6. topic: PRIMARY topic from content topics [politics, economy, sports, crime, education, health, environment, technology, culture, society, other]
+7. topics: ARRAY of topics - MUST include:
+   - ONE geographic scope: "sri-lanka" (national/local news) OR "world" (global/international news)
+   - ONE or more content topics: [politics, economy, sports, crime, education, health, environment, technology, culture, society]
+   - Example: ["sri-lanka", "technology"] or ["world", "politics", "economy"]
+   - Always include at least one geographic and one content topic
+8. district: ONE of [colombo, kandy, galle, jaffna, anuradhapura, kurunegala, batticaloa, badulla, hambantota, gampaha, kalutara, matale, nuwara-eliya, matara, kilinochchi, mannar, vavuniya, mullaitivu, ampara, trincomalee, puttalam, polonnaruwa, moneragala, ratnapura, kegalle] or null
+9. primary_entity: main person/organization mentioned (or null)
+10. event_type: ONE of [election, court, accident, protest, announcement, budget, policy, crime, disaster, sports_event, other] or null
 
 CRITICAL:
 - Must match summary facts ONLY
@@ -622,10 +719,17 @@ OUTPUT JSON format:
   "og_title": "...",
   "og_description": "...",
   "topic": "...",
+  "topics": ["sri-lanka", "technology"],
   "district": "..." or null,
   "primary_entity": "..." or null,
   "event_type": "..." or null
-}`
+}
+
+EXAMPLES:
+- Sri Lankan tech news: {"topic": "technology", "topics": ["sri-lanka", "technology"]}
+- Global politics: {"topic": "politics", "topics": ["world", "politics"]}
+- Local health news: {"topic": "health", "topics": ["sri-lanka", "health"]}
+- International economy: {"topic": "economy", "topics": ["world", "economy"]}`
     },
     {
       role: 'user',
@@ -651,6 +755,44 @@ Generate comprehensive SEO pack in ${langLabel} following the rules above.`
   try {
     const result = JSON.parse(completion.choices[0]?.message?.content?.trim() || '{}');
     
+    // Validate and normalize topics array
+    let topicsArray: string[] = [];
+    if (Array.isArray(result.topics)) {
+      topicsArray = result.topics
+        .map((t: string) => {
+          const normalized = normalizeTopicSlug(t);
+          return normalized || null;
+        })
+        .filter((t: string | null): t is string => t !== null);
+    }
+    
+    // Ensure we have at least one geographic and one content topic
+    const hasGeographic = topicsArray.some(t => t === 'sri-lanka' || t === 'world');
+    const hasContent = topicsArray.some(t => 
+      ['politics', 'economy', 'sports', 'crime', 'education', 'health', 'environment', 'technology', 'culture', 'society'].includes(t)
+    );
+    
+    // If missing geographic, add based on context (default to sri-lanka for local news)
+    if (!hasGeographic) {
+      topicsArray.unshift('sri-lanka');
+    }
+    
+    // If missing content topic, use the primary topic
+    if (!hasContent && result.topic) {
+      const normalizedTopic = normalizeTopicSlug(result.topic);
+      if (normalizedTopic && !topicsArray.includes(normalizedTopic)) {
+        topicsArray.push(normalizedTopic);
+      }
+    }
+    
+    // Ensure we have at least 2 topics (geographic + content)
+    if (topicsArray.length < 2) {
+      const primaryTopic = validateTopic(result.topic);
+      if (!topicsArray.includes(primaryTopic)) {
+        topicsArray.push(primaryTopic);
+      }
+    }
+    
     return {
       seo_title: validateAndCleanTitle(result.seo_title || headline, language),
       meta_description: validateAndCleanDescription(result.meta_description || summary, language),
@@ -658,6 +800,7 @@ Generate comprehensive SEO pack in ${langLabel} following the rules above.`
       og_title: result.og_title || validateAndCleanTitle(result.seo_title || headline, language),
       og_description: result.og_description || validateAndCleanDescription(result.meta_description || summary, language),
       topic: validateTopic(result.topic),
+      topics: topicsArray.length > 0 ? topicsArray : ['sri-lanka', validateTopic(result.topic)],
       district: validateDistrict(result.district),
       primary_entity: result.primary_entity || null,
       event_type: validateEventType(result.event_type)
@@ -665,13 +808,15 @@ Generate comprehensive SEO pack in ${langLabel} following the rules above.`
   } catch (error) {
     console.error('Error parsing comprehensive SEO:', error);
     // Fallback
+    const fallbackTopic = 'politics';
     return {
       seo_title: validateAndCleanTitle(headline, language),
       meta_description: validateAndCleanDescription(summary, language),
       slug: cleanSlug(headline),
       og_title: validateAndCleanTitle(headline, language),
       og_description: validateAndCleanDescription(summary, language),
-      topic: 'other',
+      topic: fallbackTopic,
+      topics: ['sri-lanka', fallbackTopic],
       district: null,
       primary_entity: null,
       event_type: null
@@ -701,7 +846,6 @@ function cleanSlug(text: string): string {
  * Validate topic against allowed list
  */
 function validateTopic(topic: string | null | undefined): string {
-  const { normalizeTopicSlug, VALID_TOPICS } = require('@/lib/topics');
   if (!topic) return 'politics'; // Default to politics instead of 'other'
   const normalized = normalizeTopicSlug(topic);
   // If normalized topic is valid, return it; otherwise default to 'politics'

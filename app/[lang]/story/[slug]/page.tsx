@@ -55,6 +55,9 @@ async function getClusterBySlug(slug: string) {
         source_count?: number | null;
         category?: string | null;
         topic?: string | null;
+        topics?: string[] | null;
+        headline_si?: string | null;
+        headline_ta?: string | null;
         image_url?: string | null;
         language?: string | null;
         keywords?: string[] | null;

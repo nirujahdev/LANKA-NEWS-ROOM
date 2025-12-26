@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import NavigationWrapper from '@/components/NavigationWrapper';
+import TopicNavigation from '@/components/TopicNavigation';
 import StoryDetail from '@/components/StoryDetail';
 import NewsArticleSchema from '@/components/NewsArticleSchema';
 
@@ -50,6 +51,9 @@ async function getClusterBySlug(slug: string) {
         source_count?: number | null;
         category?: string | null;
         topic?: string | null;
+        topics?: string[] | null;
+        headline_si?: string | null;
+        headline_ta?: string | null;
         image_url?: string | null;
         language?: string | null;
         summaries?: Array<{
@@ -222,6 +226,12 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
     const canonicalUrl = `${baseUrl}/news/${resolvedParams.slug}`;
     
+    // Get language-specific headline
+    const headlineText =
+      lang === 'si' ? cluster.headline_si || cluster.headline :
+      lang === 'ta' ? cluster.headline_ta || cluster.headline :
+      cluster.headline;
+    
     // Get metadata for JSON-LD
     const metaDescription =
       lang === 'si' ? cluster.meta_description_si || summary?.summary_si :
@@ -235,8 +245,8 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
     <div className="min-h-screen bg-[#F5F5F5]">
       {/* JSON-LD Structured Data for Google News */}
       <NewsArticleSchema
-        headline={cluster.headline}
-        description={metaDescription || cluster.headline}
+        headline={headlineText}
+        description={metaDescription || headlineText}
         datePublished={cluster.published_at || cluster.created_at || new Date().toISOString()}
         dateModified={cluster.updated_at || undefined}
         imageUrl={imageUrl || undefined}
@@ -246,6 +256,7 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
       />
       
       <NavigationWrapper currentLanguage={lang} />
+      <TopicNavigation language={lang} />
       
       {/* Mobile-first responsive container */}
       <div className="max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
@@ -263,7 +274,7 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
               <StoryDetail
                 id={cluster.id}
                 slug={cluster.slug}
-                headline={cluster.headline}
+                headline={headlineText}
                 summary={
                   lang === 'si'
                     ? summary?.summary_si || summary?.summary_en || ''

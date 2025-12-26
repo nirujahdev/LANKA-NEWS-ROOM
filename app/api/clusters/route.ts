@@ -138,13 +138,26 @@ export async function GET(req: Request) {
           : lang === 'ta' 
           ? (summary?.summary_ta || summary?.summary_en || '')
           : (summary?.summary_en || '');
+      
+      // Get language-specific headline
+      const headlineText =
+        lang === 'si' ? cluster.headline_si || cluster.headline :
+        lang === 'ta' ? cluster.headline_ta || cluster.headline :
+        cluster.headline;
+      
+      // Get topics array (prefer topics array, fallback to single topic)
+      const topicsArray = cluster.topics && Array.isArray(cluster.topics) && cluster.topics.length > 0
+        ? cluster.topics
+        : cluster.topic ? [cluster.topic] : [];
+      
       return {
         id: cluster.id,
         slug: cluster.slug, // Add slug for SEO-friendly URLs
-        headline: cluster.headline,
+        headline: headlineText,
         status: cluster.status,
         category: cluster.category,
         topic: cluster.topic || cluster.category || null, // Use topic field if available, fallback to category
+        topics: topicsArray, // Add topics array
         first_seen: cluster.first_seen_at,
         last_updated: cluster.updated_at,
         created_at: cluster.created_at,

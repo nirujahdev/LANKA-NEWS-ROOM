@@ -108,7 +108,9 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
       language: currentLanguage,
       imageUrl: incident.image_url || null,
       category: incident.topic || incident.category || null,
-      topics: incident.topic ? [incident.topic] : []
+      topics: incident.topics && Array.isArray(incident.topics) && incident.topics.length > 0
+        ? incident.topics
+        : incident.topic ? [incident.topic] : []
     }));
 
     // Assign layouts dynamically

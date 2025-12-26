@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import NavigationWrapper from '@/components/NavigationWrapper';
+import TopicNavigation from '@/components/TopicNavigation';
 import StoryDetail from '@/components/StoryDetail';
 import NewsArticleSchema from '@/components/NewsArticleSchema';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
@@ -59,6 +60,9 @@ async function getClusterBySlug(slug: string) {
         source_count?: number | null;
         category?: string | null;
         topic?: string | null;
+        topics?: string[] | null;
+        headline_si?: string | null;
+        headline_ta?: string | null;
         image_url?: string | null;
         language?: string | null;
         keywords?: string[] | null;
@@ -247,9 +251,17 @@ export default async function StoryPage({ params }: Props) {
       notFound();
     }
 
-    // Validate topic matches cluster topic - redirect if mismatch
+    // Validate topic matches cluster topic or exists in topics array - redirect if mismatch
     const clusterTopic = normalizeTopicSlug(data.cluster.topic) || 'other';
-    if (clusterTopic !== topic) {
+    const clusterTopics = data.cluster.topics && Array.isArray(data.cluster.topics) 
+      ? data.cluster.topics.map((t: string) => normalizeTopicSlug(t)).filter(Boolean)
+      : [clusterTopic];
+    
+    // Check if current topic is in cluster's topics (single topic or topics array)
+    const topicMatches = clusterTopic === topic || clusterTopics.includes(topic);
+    
+    if (!topicMatches && clusterTopic) {
+      // Redirect to primary topic if current topic doesn't match
       redirect(`/${lang}/${clusterTopic}/${slug}`);
     }
 
@@ -257,6 +269,12 @@ export default async function StoryPage({ params }: Props) {
     
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
     const canonicalUrl = `${baseUrl}/${lang}/${topic}/${slug}`;
+    
+    // Get language-specific headline
+    const headlineText =
+      lang === 'si' ? cluster.headline_si || cluster.headline :
+      lang === 'ta' ? cluster.headline_ta || cluster.headline :
+      cluster.headline;
     
     // Get metadata for JSON-LD
     const metaDescription =
@@ -287,15 +305,15 @@ export default async function StoryPage({ params }: Props) {
           : (lang === 'si' ? 'පුවත්' : lang === 'ta' ? 'செய்திகள்' : 'News'),
         url: cluster.topic ? `/${lang}/${clusterTopic}` : `/${lang}`
       },
-      { name: cluster.headline, url: `/${lang}/${topic}/${slug}` }
+      { name: headlineText, url: `/${lang}/${topic}/${slug}` }
     ];
 
     return (
     <div className="min-h-screen bg-[#F5F5F5]">
       {/* JSON-LD Structured Data for Google News */}
       <NewsArticleSchema
-        headline={cluster.headline}
-        description={metaDescription || cluster.headline}
+        headline={headlineText}
+        description={metaDescription || headlineText}
         datePublished={cluster.published_at || cluster.created_at || new Date().toISOString()}
         dateModified={cluster.last_checked_at || cluster.updated_at || undefined}
         imageUrl={imageUrl || undefined}
@@ -310,6 +328,7 @@ export default async function StoryPage({ params }: Props) {
       <BreadcrumbSchema items={breadcrumbItems} />
       
       <NavigationWrapper currentLanguage={lang} />
+      <TopicNavigation language={lang} />
       
       {/* Mobile-first responsive container */}
       <div className="max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
@@ -327,7 +346,7 @@ export default async function StoryPage({ params }: Props) {
               <StoryDetail
                 id={cluster.id}
                 slug={cluster.slug}
-                headline={cluster.headline}
+                headline={headlineText}
                 summary={
                   lang === 'si'
                     ? summary?.summary_si || summary?.summary_en || ''
