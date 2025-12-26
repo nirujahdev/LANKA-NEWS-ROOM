@@ -142,6 +142,11 @@ export default function RootLayout({
         <meta name="google-adsense-account" content="ca-pub-8312977389353751" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        {/* Preconnect hints for performance */}
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+        <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
       </head>
       <body className="font-montserrat antialiased bg-white text-[#1E293B] flex flex-col min-h-screen">
         {/* Google Analytics - Loads with consent mode support */}

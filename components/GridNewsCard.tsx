@@ -35,7 +35,7 @@ export default function GridNewsCard({ data }: GridNewsCardProps) {
           {/* Topic Tag */}
           {topicTags.length > 0 && (
             <div className="mb-2">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E8F0FE] text-[#1A73E8]">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#1A73E8] text-white">
                 {getTopicLabel(topicTags[0], data.language || 'en')}
               </span>
             </div>

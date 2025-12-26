@@ -5,9 +5,10 @@ import { NewsCardData, formatTimeAgo, getTopicTags, getTopicLabel, getImageUrl, 
 
 interface FeaturedNewsCardProps {
   data: NewsCardData;
+  priority?: boolean;
 }
 
-export default function FeaturedNewsCard({ data }: FeaturedNewsCardProps) {
+export default function FeaturedNewsCard({ data, priority = false }: FeaturedNewsCardProps) {
   const topic = data.category || data.topics?.[0] || 'other';
   const href = getStoryUrl(data.language || 'en', data.slug, data.id, topic);
   const topicTags = getTopicTags(data);
@@ -22,6 +23,8 @@ export default function FeaturedNewsCard({ data }: FeaturedNewsCardProps) {
             src={imageUrl} 
             alt={data.headline}
             fill
+            priority={priority}
+            fetchPriority={priority ? "high" : "auto"}
             className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
@@ -37,7 +40,7 @@ export default function FeaturedNewsCard({ data }: FeaturedNewsCardProps) {
             {topicTags.map((topic, idx) => (
               <span
                 key={idx}
-                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E8F0FE] text-[#1A73E8]"
+                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#1A73E8] text-white"
               >
                 {getTopicLabel(topic, data.language || 'en')}
               </span>
@@ -45,8 +48,8 @@ export default function FeaturedNewsCard({ data }: FeaturedNewsCardProps) {
           </div>
 
           {/* Headline */}
-          <h2 className="text-xl md:text-2xl font-normal text-[#1F1F1F] leading-tight group-hover:text-[#1A73E8] transition-colors duration-200 mb-1 flex items-center gap-2">
-            <span className="group-hover:underline decoration-1 underline-offset-2">{data.headline}</span>
+          <h2 className="text-xl md:text-2xl font-normal text-[#1F1F1F] leading-tight mb-1 flex items-center gap-2">
+            <span className="group-hover:underline decoration-1 underline-offset-2 group-hover:text-[#1A73E8]">{data.headline}</span>
             <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#1A73E8]">➝</span>
           </h2>
 

@@ -64,11 +64,11 @@ export default function Footer() {
         {/* Copyright and License */}
         <div className="border-t border-[#E8EAED] pt-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="text-sm text-[#9AA0A6]">
+            <div className="text-sm text-[#5F6368]">
               <p>© {currentYear} Lanka News Room</p>
               <p className="mt-1">Apache License 2.0</p>
             </div>
-            <div className="text-sm text-[#9AA0A6]">
+            <div className="text-sm text-[#5F6368]">
               <p>Developed by Benaiah Nicholas Nimal</p>
             </div>
           </div>

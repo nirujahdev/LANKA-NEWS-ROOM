@@ -143,7 +143,7 @@ const NewsCard: React.FC<NewsCardProps> = ({
               {topicTags.map((topic, idx) => (
                 <span
                   key={idx}
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E8F0FE] text-[#1A73E8]"
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#1A73E8] text-white"
                 >
                   {getTopicLabel(topic)}
                 </span>
@@ -151,8 +151,8 @@ const NewsCard: React.FC<NewsCardProps> = ({
             </div>
 
             {/* Headline */}
-            <h2 className="text-xl md:text-2xl font-normal text-[#1F1F1F] leading-tight group-hover:text-[#1A73E8] transition-colors duration-200 mb-1 flex items-center gap-2">
-              <span className="group-hover:underline decoration-1 underline-offset-2">{headline}</span>
+            <h2 className="text-xl md:text-2xl font-normal text-[#1F1F1F] leading-tight mb-1 flex items-center gap-2">
+              <span className="group-hover:underline decoration-1 underline-offset-2 group-hover:text-[#1A73E8]">{headline}</span>
               <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#1A73E8]">➝</span>
             </h2>
 
@@ -176,7 +176,7 @@ const NewsCard: React.FC<NewsCardProps> = ({
   if (variant === 'compact') {
      return (
        <Link href={href} className="block group">
-         <article className="relative flex gap-3 cursor-pointer transition-colors">
+         <article className="relative flex gap-3 cursor-pointer">
             <div className="flex-1 min-w-0 flex flex-col">
                {/* Topic Tags */}
                {topicTags.length > 0 && (
@@ -184,15 +184,15 @@ const NewsCard: React.FC<NewsCardProps> = ({
                     {topicTags.slice(0, 1).map((topic, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#E8F0FE] text-[#1A73E8]"
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#1A73E8] text-white"
                       >
                         {getTopicLabel(topic)}
                       </span>
                     ))}
                  </div>
                )}
-               <h3 className="text-sm font-medium text-[#202124] leading-snug line-clamp-2 group-hover:text-[#1A73E8] transition-colors duration-200 flex items-start gap-1.5 mb-1">
-                  <span className="flex-1 group-hover:underline decoration-1 underline-offset-2">{headline}</span>
+               <h3 className="text-sm font-medium text-[#202124] leading-snug line-clamp-2 flex items-start gap-1.5 mb-1">
+                  <span className="flex-1 group-hover:underline decoration-1 underline-offset-2 group-hover:text-[#1A73E8]">{headline}</span>
                   <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#1A73E8] text-xs flex-shrink-0 mt-0.5">➝</span>
                </h3>
                <div className="text-[11px] text-[#5F6368]">
@@ -230,7 +230,7 @@ const NewsCard: React.FC<NewsCardProps> = ({
                 {topicTags.map((topic, idx) => (
                   <span
                     key={idx}
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E8F0FE] text-[#1A73E8]"
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#1A73E8] text-white"
                   >
                     {getTopicLabel(topic)}
                   </span>
@@ -238,8 +238,8 @@ const NewsCard: React.FC<NewsCardProps> = ({
               </div>
 
               {/* Headline */}
-              <h2 className="text-base font-medium text-[#202124] mb-2 leading-snug group-hover:text-[#1A73E8] transition-colors duration-200 flex items-center gap-2">
-                <span className="group-hover:underline decoration-1 underline-offset-2">{headline}</span>
+              <h2 className="text-base font-medium text-[#202124] mb-2 leading-snug flex items-center gap-2">
+                <span className="group-hover:underline decoration-1 underline-offset-2 group-hover:text-[#1A73E8]">{headline}</span>
                 <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#1A73E8]">➝</span>
               </h2>
             </div>

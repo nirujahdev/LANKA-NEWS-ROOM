@@ -24,7 +24,7 @@ export default function ListNewsCard({ data }: ListNewsCardProps) {
                 {topicTags.map((topic, idx) => (
                   <span
                     key={idx}
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E8F0FE] text-[#1A73E8]"
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#1A73E8] text-white"
                   >
                     {getTopicLabel(topic, data.language || 'en')}
                   </span>

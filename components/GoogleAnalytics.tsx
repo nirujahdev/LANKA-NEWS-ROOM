@@ -13,13 +13,13 @@ const GA_MEASUREMENT_ID = 'G-4NNMYY2D1H';
 export default function GoogleAnalytics() {
   return (
     <>
-      {/* Google tag (gtag.js) */}
+      {/* Google tag (gtag.js) - Deferred to reduce main thread blocking */}
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-        strategy="afterInteractive"
+        strategy="lazyOnload"
         async
       />
-      <Script id="google-analytics" strategy="afterInteractive">
+      <Script id="google-analytics" strategy="lazyOnload">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}

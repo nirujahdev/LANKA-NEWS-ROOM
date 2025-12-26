@@ -22,7 +22,8 @@ export default function MixedLayoutGrid({
   const renderCard = (article: NewsCardData, assignment: LayoutAssignment, index: number) => {
     switch (assignment.layout) {
       case 'featured':
-        return <FeaturedNewsCard key={article.id} data={article} />;
+        // First featured card should have priority loading for LCP
+        return <FeaturedNewsCard key={article.id} data={article} priority={index === 0} />;
       
       case 'grid':
         return (

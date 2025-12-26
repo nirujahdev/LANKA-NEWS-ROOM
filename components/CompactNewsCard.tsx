@@ -20,7 +20,7 @@ export default function CompactNewsCard({ data }: CompactNewsCardProps) {
           {/* Topic Tag (optional, very small) */}
           {topicTags.length > 0 && (
             <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-[#E8F0FE] text-[#1A73E8]">
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-[#1A73E8] text-white">
                 {getTopicLabel(topicTags[0], data.language || 'en')}
               </span>
             </div>

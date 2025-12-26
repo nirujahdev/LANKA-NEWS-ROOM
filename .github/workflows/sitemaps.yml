@@ -30,6 +30,8 @@ jobs:
   generate-sitemaps:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: write  # Required to push changes back to the repository
     
     steps:
       - name: Checkout code
@@ -37,6 +39,7 @@ jobs:
         with:
           # Fetch full history for proper git diff
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}  # Use token with write permissions
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

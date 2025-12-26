@@ -85,7 +85,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         
         <div className="px-5 py-3 border-t border-[#E8EAED]">
           <Link href="/recent" className="text-sm font-medium text-[#1A73E8] hover:underline">
-             See more
+             {getLabel('See more recent news', 'තවත් මෑත පුවත්', 'மேலும் சமீபத்திய செய்திகள்')}
           </Link>
         </div>
       </div>
