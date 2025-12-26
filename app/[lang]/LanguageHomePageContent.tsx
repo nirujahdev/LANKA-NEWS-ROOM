@@ -87,27 +87,60 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
       return <div data-news-content="true">No articles available.</div>;
     }
     
-    // Convert incidents to NewsCardData format
-    const newsCards: NewsCardData[] = incidents.map(incident => ({
-      id: incident.id,
-      slug: incident.slug,
-      headline: incident.headline,
-      summary: incident.summary || null,
-      sources: incident.sources,
-      updatedAt: incident.last_updated,
-      sourceCount: incident.source_count || 0,
-      language: currentLanguage,
-      imageUrl: incident.image_url || null,
-      category: incident.topic || incident.category || null,
-      topics: incident.topics && Array.isArray(incident.topics) && incident.topics.length > 0
-        ? incident.topics
-        : incident.topic ? [incident.topic] : []
-    }));
+    // Convert incidents to NewsCardData format with error handling
+    const newsCards: NewsCardData[] = incidents
+      .filter(incident => incident && incident.id) // Filter out invalid incidents
+      .map(incident => {
+        try {
+          return {
+            id: incident.id || '',
+            slug: incident.slug || null,
+            headline: incident.headline || '',
+            summary: incident.summary || null,
+            sources: Array.isArray(incident.sources) ? incident.sources : [],
+            updatedAt: incident.last_updated || null,
+            sourceCount: typeof incident.source_count === 'number' ? incident.source_count : 0,
+            language: currentLanguage,
+            imageUrl: incident.image_url || null,
+            category: incident.topic || incident.category || null,
+            topics: incident.topics && Array.isArray(incident.topics) && incident.topics.length > 0
+              ? incident.topics
+              : incident.topic ? [incident.topic] : []
+          };
+        } catch (error) {
+          console.error('Error processing incident:', error, incident);
+          // Return a minimal valid card
+          return {
+            id: incident.id || '',
+            slug: null,
+            headline: incident.headline || '',
+            summary: null,
+            sources: [],
+            updatedAt: null,
+            sourceCount: 0,
+            language: currentLanguage,
+            imageUrl: null,
+            category: null,
+            topics: []
+          };
+        }
+      });
 
     // Assign layouts dynamically
     const assignments: LayoutAssignment[] = newsCards.map((card, index) => {
-      const isRecent = card.updatedAt ? 
-        (Date.now() - new Date(card.updatedAt).getTime()) < 24 * 60 * 60 * 1000 : false;
+      let isRecent = false;
+      if (card.updatedAt) {
+        try {
+          const updatedDate = new Date(card.updatedAt);
+          // Check if date is valid
+          if (!isNaN(updatedDate.getTime())) {
+            isRecent = (Date.now() - updatedDate.getTime()) < 24 * 60 * 60 * 1000;
+          }
+        } catch (error) {
+          // If date parsing fails, default to false
+          console.warn('Invalid date in card.updatedAt:', card.updatedAt, error);
+        }
+      }
       return assignLayout(index, card.sourceCount, isRecent);
     });
 
