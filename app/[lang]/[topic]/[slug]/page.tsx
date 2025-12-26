@@ -268,24 +268,35 @@ export default async function StoryPage({ params }: Props) {
     const { cluster, summary, articles } = data;
     
     // Serialize cluster data to ensure all dates are strings and all values are serializable
+    // Helper function to safely convert date values to ISO strings
+    const toISOString = (value: any): string | null => {
+      if (!value) return null;
+      if (value instanceof Date) {
+        return value.toISOString();
+      }
+      if (typeof value === 'string') {
+        // Try to parse and validate the date string
+        try {
+          const date = new Date(value);
+          if (!isNaN(date.getTime())) {
+            return date.toISOString();
+          }
+        } catch {
+          // If parsing fails, return the original string
+        }
+        return value;
+      }
+      return String(value);
+    };
+
     const serializedCluster = {
       ...cluster,
       // Convert all date fields to ISO strings
-      published_at: cluster.published_at 
-        ? (cluster.published_at instanceof Date ? cluster.published_at.toISOString() : String(cluster.published_at))
-        : null,
-      updated_at: cluster.updated_at 
-        ? (cluster.updated_at instanceof Date ? cluster.updated_at.toISOString() : String(cluster.updated_at))
-        : null,
-      created_at: cluster.created_at 
-        ? (cluster.created_at instanceof Date ? cluster.created_at.toISOString() : String(cluster.created_at))
-        : null,
-      first_seen_at: cluster.first_seen_at 
-        ? (cluster.first_seen_at instanceof Date ? cluster.first_seen_at.toISOString() : String(cluster.first_seen_at))
-        : null,
-      last_checked_at: cluster.last_checked_at 
-        ? (cluster.last_checked_at instanceof Date ? cluster.last_checked_at.toISOString() : String(cluster.last_checked_at))
-        : null,
+      published_at: toISOString(cluster.published_at),
+      updated_at: toISOString(cluster.updated_at),
+      created_at: toISOString(cluster.created_at),
+      first_seen_at: toISOString(cluster.first_seen_at),
+      last_checked_at: toISOString(cluster.last_checked_at),
       // Ensure all string fields are strings
       id: String(cluster.id || ''),
       headline: String(cluster.headline || ''),
