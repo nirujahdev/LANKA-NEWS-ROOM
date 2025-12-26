@@ -1097,6 +1097,12 @@ async function summarizeEligible(
       console.warn(`[Pipeline] ⚠️ Low quality score (${summaryQualityScore}) for cluster ${cluster.id}`);
     }
 
+    // Log headline status before saving
+    console.log(`[Pipeline] Saving headlines for cluster ${cluster.id}:`);
+    console.log(`  - English: ${cluster.headline?.substring(0, 60)}...`);
+    console.log(`  - Sinhala: ${headlineSi ? headlineSi.substring(0, 60) + '...' : 'NULL (not generated)'}`);
+    console.log(`  - Tamil: ${headlineTa ? headlineTa.substring(0, 60) + '...' : 'NULL (not generated)'}`);
+    
     // Update cluster with comprehensive SEO metadata and publish
     const updateResult = await supabaseAdmin.from('clusters').update({
       status: 'published',
@@ -1110,8 +1116,8 @@ async function summarizeEligible(
       published_at: publishedAt,
       topic: topic,
       topics: topics, // Multi-topic array
-      headline_si: headlineSi,
-      headline_ta: headlineTa,
+      headline_si: headlineSi || null, // Explicitly set to null if not generated
+      headline_ta: headlineTa || null, // Explicitly set to null if not generated
       city: district, // Keep city field for backward compatibility, but use district value
       primary_entity: primaryEntity,
       event_type: eventType,
@@ -1123,6 +1129,9 @@ async function summarizeEligible(
 
     if (updateResult.error) {
       errors.push({ stage: 'seo', message: `Failed to update cluster SEO metadata: ${updateResult.error.message}` });
+      console.error(`[Pipeline] ❌ Failed to save headlines for cluster ${cluster.id}:`, updateResult.error);
+    } else {
+      console.log(`[Pipeline] ✅ Successfully saved headlines for cluster ${cluster.id} (SI: ${headlineSi ? 'yes' : 'no'}, TA: ${headlineTa ? 'yes' : 'no'})`);
     }
 
     // Update all articles in this cluster with district information

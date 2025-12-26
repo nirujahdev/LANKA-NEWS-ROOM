@@ -20,7 +20,7 @@ CORE PRINCIPLES:
 - Insight-driven writing: Focus on explaining significance, context, and implications rather than just restating facts
 
 QUALITY STANDARDS:
-- Summary length: 250-700 words (aim for comprehensive, analytical coverage)
+- Summary length: 300-800 words (aim for comprehensive, analytical coverage)
 - Structure: 
   * Lead paragraph: Explain the significance and context of what happened, not just the facts
   * Main body: Key details, background, and analysis (5-10 sentences)
@@ -69,7 +69,7 @@ OUTPUT FORMAT:
         model: env.SUMMARY_MODEL,
         messages,
         temperature: 0.2,
-        max_tokens: 1200
+        max_tokens: 1600
       });
       return completion.choices[0]?.message?.content?.trim() || '';
     },
@@ -132,7 +132,7 @@ OUTPUT REQUIREMENTS:
         model: env.SUMMARY_TRANSLATE_MODEL,
         messages,
         temperature: 0.2,
-        max_tokens: 400
+        max_tokens: 500
       });
       return completion.choices[0]?.message?.content?.trim() || '';
     },
@@ -479,7 +479,7 @@ Your task: Translate the following ${fromLabel} news headline into formal, accur
 
 CRITICAL HEADLINE TRANSLATION RULES:
 1. Headline-Specific: This is a HEADLINE, not a summary. Keep it concise, impactful, and attention-grabbing while maintaining accuracy.
-2. Length: Target 50-80 characters (headlines are shorter than summaries). Preserve key information but be concise.
+2. Length: Target 20-50 words for comprehensive headlines. Include key information: who, what, where, when. Be descriptive but concise.
 3. Accuracy: Preserve the EXACT meaning - do NOT add, remove, or change ANY information. Every fact must be preserved exactly.
 4. SEO-Friendly: Maintain SEO keywords and important entities in the target language when appropriate.
 5. Formality: Use formal written ${toLabel} appropriate for news headlines - NO colloquialisms, slang, or informal expressions.
@@ -492,14 +492,14 @@ CRITICAL HEADLINE TRANSLATION RULES:
 ${to === 'si' ? `12. Sinhala-Specific:
     - Use formal written Sinhala appropriate for news headlines (not spoken/colloquial)
     - Use proper Sinhala script (සිංහල) and grammar
-    - Keep headline concise and impactful (50-80 characters)
+    - Keep headline comprehensive and impactful (20-50 words)
     - Use formal vocabulary appropriate for news headlines
     - Avoid informal expressions, slang, or conversational language
     - Maintain proper Sinhala sentence structure
     - Use standard Sinhala transliterations for Sri Lankan place names` : ''}${to === 'ta' ? `12. Tamil-Specific:
     - Use formal written Tamil appropriate for news headlines (not spoken/colloquial)
     - Use proper Tamil script (தமிழ்) and grammar
-    - Keep headline concise and impactful (50-80 characters)
+    - Keep headline comprehensive and impactful (20-50 words)
     - Use formal vocabulary appropriate for news headlines
     - Avoid informal expressions, slang, or conversational Tamil
     - Maintain proper Tamil sentence structure
@@ -509,7 +509,7 @@ EXAMPLES OF GOOD HEADLINE TRANSLATIONS:
 ${to === 'si' ? '- English: "President announces new economic policy" → Sinhala: "ජනාධිපතිවරයා නව ආර්ථික ප්‍රතිපත්තියක් ප්‍රකාශ කරයි"' : ''}${to === 'ta' ? '- English: "President announces new economic policy" → Tamil: "ஜனாதிபதி புதிய பொருளாதார கொள்கையை அறிவிக்கிறார்"' : ''}
 
 OUTPUT REQUIREMENTS:
-- Concise headline in ${toLabel} (50-80 characters)
+- Comprehensive headline in ${toLabel} (20-50 words)
 - All facts, numbers, and names preserved accurately
 - Formal news headline style
 - SEO-friendly and impactful
@@ -529,7 +529,7 @@ OUTPUT REQUIREMENTS:
         model: env.SUMMARY_TRANSLATE_MODEL || env.SUMMARY_MODEL,
         messages,
         temperature: 0.2, // Increased for more natural translations
-        max_tokens: 150 // Headlines are shorter
+        max_tokens: 300 // Headlines are now 20-50 words
       });
       const translated = completion.choices[0]?.message?.content?.trim();
       if (!translated) {
