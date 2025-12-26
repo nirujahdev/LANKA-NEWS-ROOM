@@ -400,11 +400,11 @@ export default async function StoryPage({ params }: Props) {
         headline={headlineText}
         description={metaDescription || headlineText}
         datePublished={serializedCluster.published_at || serializedCluster.created_at || new Date().toISOString()}
-        dateModified={serializedCluster.last_checked_at || serializedCluster.updated_at || undefined}
-        imageUrl={imageUrl || undefined}
-        category={serializedCluster.category || undefined}
-        topic={serializedCluster.topic || undefined}
-        keywords={serializedCluster.keywords || undefined}
+        dateModified={serializedCluster.last_checked_at || serializedCluster.updated_at || null}
+        imageUrl={imageUrl || null}
+        category={serializedCluster.category || null}
+        topic={serializedCluster.topic || null}
+        keywords={serializedCluster.keywords && serializedCluster.keywords.length > 0 ? serializedCluster.keywords : null}
         url={canonicalUrl}
         language={lang}
       />
@@ -439,17 +439,17 @@ export default async function StoryPage({ params }: Props) {
                     ? serializedSummary?.summary_ta || serializedSummary?.summary_en || ''
                     : serializedSummary?.summary_en || ''
                 }
-                summarySi={serializedSummary?.summary_si || undefined}
-                summaryTa={serializedSummary?.summary_ta || undefined}
+                summarySi={serializedSummary?.summary_si || null}
+                summaryTa={serializedSummary?.summary_ta || null}
                 sources={serializedArticles.map((article: any) => article.sources || { name: 'Unknown', feed_url: '#' })}
                 updatedAt={serializedCluster.updated_at || null}
                 firstSeen={serializedCluster.first_seen_at || null}
                 sourceCount={serializedCluster.source_count || 0}
                 currentLanguage={lang}
-                keyFacts={keyFacts || undefined}
-                confirmedVsDiffers={confirmedVsDiffers || undefined}
+                keyFacts={keyFacts || null}
+                confirmedVsDiffers={confirmedVsDiffers || null}
                 lastCheckedAt={serializedCluster.last_checked_at || null}
-                imageUrl={imageUrl || undefined}
+                imageUrl={imageUrl || null}
               />
             </div>
           </main>
