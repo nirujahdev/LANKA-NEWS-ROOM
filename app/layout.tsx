@@ -18,10 +18,10 @@ const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: 'Lanka News Room - Latest Sri Lanka News | Multi-Source News Aggregator',
+    default: 'Lanka News Room - An AI system for srilankan news insights',
     template: '%s | Lanka News Room'
   },
-  description: 'Get the latest news from Sri Lanka. Trusted, neutral news summaries from multiple verified sources in English, Sinhala, and Tamil. Breaking news, politics, economy, sports, and more.',
+  description: 'An AI system for srilankan news insights',
   keywords: ['Sri Lanka news', 'Lanka news', 'Sri Lankan news', 'news aggregator', 'Sinhala news', 'Tamil news', 'English news Sri Lanka', 'breaking news Sri Lanka', 'Colombo news', 'Kandy news'],
   authors: [{ name: 'Lanka News Room Editorial Team' }],
   creator: 'Lanka News Room',
@@ -45,21 +45,21 @@ export const metadata: Metadata = {
     locale: 'en_LK',
     url: baseUrl,
     siteName: 'Lanka News Room',
-    title: 'Lanka News Room - Latest Sri Lanka News | Multi-Source News Aggregator',
-    description: 'Get the latest news from Sri Lanka. Trusted, neutral news summaries from multiple verified sources in English, Sinhala, and Tamil.',
+    title: 'Lanka News Room - An AI system for srilankan news insights',
+    description: 'An AI system for srilankan news insights',
     images: [
       {
         url: `${baseUrl}/og-image.jpg`,
         width: 1200,
         height: 630,
-        alt: 'Lanka News Room - Sri Lanka News Aggregator',
+        alt: 'Lanka News Room - An AI system for srilankan news insights',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Lanka News Room - Latest Sri Lanka News',
-    description: 'Trusted, neutral news summaries from multiple verified sources in English, Sinhala, and Tamil.',
+    title: 'Lanka News Room - An AI system for srilankan news insights',
+    description: 'An AI system for srilankan news insights',
     images: [`${baseUrl}/og-image.jpg`],
   },
   robots: {
@@ -92,7 +92,7 @@ export default function RootLayout({
     name: 'Lanka News Room',
     url: baseUrl,
     logo: `${baseUrl}/LANKA NEWS ROOM.svg`,
-    description: 'Multi-source news aggregator providing trusted, neutral news summaries from Sri Lanka',
+    description: 'An AI system for srilankan news insights',
     foundingLocation: {
       '@type': 'Country',
       name: 'Sri Lanka'
@@ -112,7 +112,7 @@ export default function RootLayout({
     '@type': 'WebSite',
     name: 'Lanka News Room',
     url: baseUrl,
-    description: 'Latest news from Sri Lanka. Trusted, neutral news summaries from multiple verified sources.',
+    description: 'An AI system for srilankan news insights',
     inLanguage: ['en-LK', 'si-LK', 'ta-LK'],
     potentialAction: {
       '@type': 'SearchAction',
@@ -140,8 +140,9 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#1A73E8" />
         <meta name="google-adsense-account" content="ca-pub-8312977389353751" />
+        <link rel="icon" href="/LANKA NEWS ROOM.svg" type="image/svg+xml" />
         <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" href="/LANKA NEWS ROOM.svg" />
         {/* Preconnect hints for performance */}
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />

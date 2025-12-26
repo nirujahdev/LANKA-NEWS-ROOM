@@ -7,10 +7,11 @@ interface SocialShareProps {
   url: string;
   title: string;
   description?: string;
+  imageUrl?: string;
   language?: 'en' | 'si' | 'ta';
 }
 
-export default function SocialShare({ url, title, description, language = 'en' }: SocialShareProps) {
+export default function SocialShare({ url, title, description, imageUrl, language = 'en' }: SocialShareProps) {
   const [copied, setCopied] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   
@@ -19,6 +20,29 @@ export default function SocialShare({ url, title, description, language = 'en' }
     : url;
   
   const shareText = description ? `${title} - ${description}` : title;
+  
+  // Update Open Graph meta tags for sharing
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && imageUrl) {
+      // Update og:image meta tag
+      let ogImage = document.querySelector('meta[property="og:image"]');
+      if (!ogImage) {
+        ogImage = document.createElement('meta');
+        ogImage.setAttribute('property', 'og:image');
+        document.head.appendChild(ogImage);
+      }
+      ogImage.setAttribute('content', imageUrl);
+      
+      // Update twitter:image meta tag
+      let twitterImage = document.querySelector('meta[name="twitter:image"]');
+      if (!twitterImage) {
+        twitterImage = document.createElement('meta');
+        twitterImage.setAttribute('name', 'twitter:image');
+        document.head.appendChild(twitterImage);
+      }
+      twitterImage.setAttribute('content', imageUrl);
+    }
+  }, [imageUrl]);
   
   const shareLinks = {
     twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(fullUrl)}`,
@@ -40,13 +64,32 @@ export default function SocialShare({ url, title, description, language = 'en' }
   const handleNativeShare = async () => {
     if (navigator.share) {
       try {
-        await navigator.share({
+        const shareData: ShareData = {
           title,
           text: description || title,
           url: fullUrl
-        });
+        };
+        
+        // Include image if available (some browsers support this)
+        if (imageUrl) {
+          try {
+            // Try to fetch and convert image to File for sharing
+            const response = await fetch(imageUrl);
+            const blob = await response.blob();
+            const file = new File([blob], 'image.jpg', { type: blob.type });
+            (shareData as any).files = [file];
+          } catch (error) {
+            // If image sharing fails, continue without it
+            console.warn('Could not include image in share:', error);
+          }
+        }
+        
+        await navigator.share(shareData);
       } catch (error) {
-        // User cancelled
+        // User cancelled or error occurred
+        if ((error as Error).name !== 'AbortError') {
+          setShowMenu(true);
+        }
       }
     } else {
       setShowMenu(true);

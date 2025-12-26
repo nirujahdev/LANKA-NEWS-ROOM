@@ -176,7 +176,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     return {
       title: metaTitle,
-      description: metaDescription || 'Latest news from Sri Lanka',
+      description: metaDescription || 'An AI system for srilankan news insights',
       alternates: {
         canonical: canonicalUrl,
         languages: {
@@ -229,7 +229,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     console.error('Error generating metadata:', error);
     return {
       title: 'News | Lanka News Room',
-      description: 'Latest news from Sri Lanka'
+      description: 'An AI system for srilankan news insights'
     };
   }
 }

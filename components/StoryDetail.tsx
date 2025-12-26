@@ -122,7 +122,7 @@ const StoryDetail: React.FC<StoryDetailProps> = ({
         {headline}
       </h1>
 
-      {/* Featured Image */}
+      {/* Featured Image - Moved to top of summary area */}
       {imageUrl && (
         <div className="mb-6 sm:mb-8">
           <div className="relative w-full aspect-video rounded-lg sm:rounded-xl overflow-hidden bg-[#F1F3F4]">
@@ -179,7 +179,7 @@ const StoryDetail: React.FC<StoryDetailProps> = ({
       </div>
 
       {/* Summary - Mobile-optimized typography */}
-      <div className="mb-8 sm:mb-10">
+      <div className="mb-8 sm:mb-10 pb-12">
         <div className="prose prose-sm sm:prose-base md:prose-lg max-w-none">
           <p className="text-sm sm:text-base md:text-lg text-[#202124] leading-[1.6] sm:leading-[1.7] md:leading-[1.75] font-normal">
             {getSummary()}
@@ -253,6 +253,7 @@ const StoryDetail: React.FC<StoryDetailProps> = ({
             url={`/${currentLanguage}/${slug || id}`}
             title={headline}
             description={getSummary()}
+            imageUrl={imageUrl || undefined}
             language={currentLanguage}
           />
         </div>
