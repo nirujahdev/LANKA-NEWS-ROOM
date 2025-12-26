@@ -7,7 +7,6 @@ import { User, Mail, Calendar, Globe, ArrowLeft, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabaseClient';
 import SignInPrompt from '@/components/SignInPrompt';
-import SignInPrompt from '@/components/SignInPrompt';
 
 export const dynamic = 'force-dynamic';
 
