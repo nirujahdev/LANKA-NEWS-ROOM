@@ -233,7 +233,104 @@ export default async function TopicPage({ params, searchParams }: Props) {
               );
             }
             return false;
-          }).slice(0, 20); // Limit to 20 after filtering
+          }).slice(0, 20).map((cluster: any) => {
+            // Serialize all date fields to ISO strings
+            const serializedCluster = { ...cluster };
+            
+            // Convert all date fields to ISO strings
+            const dateFields = ['last_seen_at', 'first_seen_at', 'published_at', 'created_at', 'updated_at', 'last_checked_at'];
+            for (const field of dateFields) {
+              if (serializedCluster[field]) {
+                if (serializedCluster[field] instanceof Date) {
+                  serializedCluster[field] = serializedCluster[field].toISOString();
+                } else if (typeof serializedCluster[field] === 'string') {
+                  // Already a string, ensure it's valid
+                  try {
+                    new Date(serializedCluster[field]);
+                  } catch {
+                    serializedCluster[field] = null;
+                  }
+                }
+              } else {
+                serializedCluster[field] = null;
+              }
+            }
+            
+            // Ensure topics is always an array of strings
+            if (!Array.isArray(serializedCluster.topics)) {
+              serializedCluster.topics = serializedCluster.topic ? [serializedCluster.topic] : [];
+            }
+            serializedCluster.topics = serializedCluster.topics.filter((t: any) => typeof t === 'string');
+            
+            // Ensure summaries is an array
+            if (serializedCluster.summaries && !Array.isArray(serializedCluster.summaries)) {
+              serializedCluster.summaries = [serializedCluster.summaries];
+            }
+            if (!Array.isArray(serializedCluster.summaries)) {
+              serializedCluster.summaries = [];
+            }
+            
+            // Ensure articles is an array
+            if (serializedCluster.articles && !Array.isArray(serializedCluster.articles)) {
+              serializedCluster.articles = [serializedCluster.articles];
+            }
+            if (!Array.isArray(serializedCluster.articles)) {
+              serializedCluster.articles = [];
+            }
+            
+            // Serialize nested summaries
+            serializedCluster.summaries = serializedCluster.summaries.map((summary: any) => {
+              if (!summary || typeof summary !== 'object') return null;
+              return {
+                summary_en: summary.summary_en || null,
+                summary_si: summary.summary_si || null,
+                summary_ta: summary.summary_ta || null,
+                key_facts_en: Array.isArray(summary.key_facts_en) ? summary.key_facts_en : null,
+                key_facts_si: Array.isArray(summary.key_facts_si) ? summary.key_facts_si : null,
+                key_facts_ta: Array.isArray(summary.key_facts_ta) ? summary.key_facts_ta : null,
+                confirmed_vs_differs_en: summary.confirmed_vs_differs_en || null,
+                confirmed_vs_differs_si: summary.confirmed_vs_differs_si || null,
+                confirmed_vs_differs_ta: summary.confirmed_vs_differs_ta || null
+              };
+            }).filter(Boolean);
+            
+            // Serialize nested articles and sources
+            serializedCluster.articles = serializedCluster.articles.map((article: any) => {
+              if (!article || typeof article !== 'object') return null;
+              const serializedArticle: any = {
+                id: String(article.id || ''),
+                cluster_id: article.cluster_id ? String(article.cluster_id) : null,
+                source_id: article.source_id ? String(article.source_id) : null,
+                image_url: article.image_url && typeof article.image_url === 'string' ? article.image_url : null
+              };
+              
+              // Serialize nested source
+              if (article.sources && typeof article.sources === 'object') {
+                serializedArticle.sources = {
+                  name: String(article.sources.name || ''),
+                  feed_url: String(article.sources.feed_url || '')
+                };
+              } else {
+                serializedArticle.sources = null;
+              }
+              
+              return serializedArticle;
+            }).filter(Boolean);
+            
+            // Ensure all string fields are strings
+            serializedCluster.id = String(serializedCluster.id || '');
+            serializedCluster.headline = String(serializedCluster.headline || '');
+            serializedCluster.headline_si = serializedCluster.headline_si ? String(serializedCluster.headline_si) : null;
+            serializedCluster.headline_ta = serializedCluster.headline_ta ? String(serializedCluster.headline_ta) : null;
+            serializedCluster.slug = serializedCluster.slug ? String(serializedCluster.slug) : null;
+            serializedCluster.status = String(serializedCluster.status || 'published');
+            serializedCluster.topic = serializedCluster.topic ? String(serializedCluster.topic) : null;
+            serializedCluster.category = serializedCluster.category ? String(serializedCluster.category) : null;
+            serializedCluster.image_url = serializedCluster.image_url ? String(serializedCluster.image_url) : null;
+            serializedCluster.source_count = typeof serializedCluster.source_count === 'number' ? serializedCluster.source_count : 0;
+            
+            return serializedCluster;
+          }); // Limit to 20 after filtering
         }
       }
     }
@@ -276,54 +373,77 @@ export default async function TopicPage({ params, searchParams }: Props) {
             {/* Articles Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {clusters?.map((cluster: any) => {
-                const summary = cluster.summaries?.[0];
-                const summaryText =
-                  lang === 'si' ? summary?.summary_si || summary?.summary_en || '' :
-                  lang === 'ta' ? summary?.summary_ta || summary?.summary_en || '' :
-                  summary?.summary_en || '';
+                try {
+                  const summary = Array.isArray(cluster.summaries) && cluster.summaries.length > 0 
+                    ? cluster.summaries[0] 
+                    : null;
+                  
+                  const summaryText =
+                    lang === 'si' ? (summary?.summary_si || summary?.summary_en || '') :
+                    lang === 'ta' ? (summary?.summary_ta || summary?.summary_en || '') :
+                    (summary?.summary_en || '');
 
-                // Get language-specific headline
-                const headlineText =
-                  lang === 'si' ? cluster.headline_si || cluster.headline :
-                  lang === 'ta' ? cluster.headline_ta || cluster.headline :
-                  cluster.headline;
+                  // Get language-specific headline
+                  const headlineText =
+                    lang === 'si' ? (cluster.headline_si || cluster.headline || '') :
+                    lang === 'ta' ? (cluster.headline_ta || cluster.headline || '') :
+                    (cluster.headline || '');
 
-                // Extract unique sources from articles
-                const sourcesMap = new Map<string, { name: string; feed_url: string }>();
-                cluster.articles?.forEach((article: any) => {
-                  if (article.sources) {
-                    const source = article.sources;
-                    if (!sourcesMap.has(source.name)) {
-                      sourcesMap.set(source.name, {
-                        name: source.name,
-                        feed_url: source.feed_url || '#'
-                      });
+                  // Extract unique sources from articles
+                  const sourcesMap = new Map<string, { name: string; feed_url: string }>();
+                  if (Array.isArray(cluster.articles)) {
+                    cluster.articles.forEach((article: any) => {
+                      if (article && article.sources && typeof article.sources === 'object') {
+                        const source = article.sources;
+                        const sourceName = String(source.name || '');
+                        const sourceUrl = String(source.feed_url || '#');
+                        if (sourceName && !sourcesMap.has(sourceName)) {
+                          sourcesMap.set(sourceName, {
+                            name: sourceName,
+                            feed_url: sourceUrl
+                          });
+                        }
+                      }
+                    });
+                  }
+                  const sources = Array.from(sourcesMap.values());
+
+                  // Get topics array (prefer topics array, fallback to single topic)
+                  const topicsArray = Array.isArray(cluster.topics) && cluster.topics.length > 0
+                    ? cluster.topics.filter((t: any) => typeof t === 'string')
+                    : cluster.topic ? [String(cluster.topic)] : [];
+
+                  // Ensure updatedAt is a string or null
+                  let updatedAt: string | null = null;
+                  if (cluster.last_seen_at) {
+                    if (cluster.last_seen_at instanceof Date) {
+                      updatedAt = cluster.last_seen_at.toISOString();
+                    } else if (typeof cluster.last_seen_at === 'string') {
+                      updatedAt = cluster.last_seen_at;
                     }
                   }
-                });
-                const sources = Array.from(sourcesMap.values());
 
-                // Get topics array (prefer topics array, fallback to single topic)
-                const topicsArray = cluster.topics && Array.isArray(cluster.topics) && cluster.topics.length > 0
-                  ? cluster.topics
-                  : cluster.topic ? [cluster.topic] : [];
-
-                return (
-                  <NewsCard
-                    key={cluster.id}
-                    id={cluster.id}
-                    headline={headlineText}
-                    summary={summaryText}
-                    sourceCount={cluster.source_count || 0}
-                    updatedAt={cluster.last_seen_at}
-                    slug={cluster.slug}
-                    language={lang}
-                    sources={sources.length > 0 ? sources : [{ name: 'Multiple Sources', feed_url: '#' }]}
-                    category={cluster.topic || null}
-                    topics={topicsArray}
-                  />
-                );
-              })}
+                  return (
+                    <NewsCard
+                      key={String(cluster.id || '')}
+                      id={String(cluster.id || '')}
+                      headline={String(headlineText || '')}
+                      summary={summaryText || null}
+                      sourceCount={typeof cluster.source_count === 'number' ? cluster.source_count : 0}
+                      updatedAt={updatedAt}
+                      slug={cluster.slug ? String(cluster.slug) : null}
+                      language={lang}
+                      sources={sources.length > 0 ? sources : [{ name: 'Multiple Sources', feed_url: '#' }]}
+                      category={cluster.topic ? String(cluster.topic) : null}
+                      topics={topicsArray}
+                    />
+                  );
+                } catch (error) {
+                  console.error('Error rendering cluster card:', error, cluster);
+                  // Return null to skip this cluster
+                  return null;
+                }
+              }).filter(Boolean)}
             </div>
 
             {(!clusters || clusters.length === 0) && (
