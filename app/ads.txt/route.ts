@@ -27,7 +27,6 @@ export async function GET() {
   });
 }
 
-// Ensure this route is not cached incorrectly
+// Ensure this route is always accessible
 export const dynamic = 'force-dynamic';
-export const runtime = 'edge';
 
