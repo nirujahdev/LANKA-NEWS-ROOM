@@ -33,7 +33,7 @@ export default function NewsArticleSchema({
   language = 'en'
 }: NewsArticleSchemaProps) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
-  const logoUrl = `${baseUrl}/logo.png`;
+  const logoUrl = `${baseUrl}/LANKA NEWS ROOM.svg`;
   
   // Ensure image is an array (Google requires array format)
   const images = imageUrl ? [imageUrl] : [`${baseUrl}/default-news-image.jpg`];

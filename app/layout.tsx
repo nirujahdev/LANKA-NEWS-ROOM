@@ -91,7 +91,7 @@ export default function RootLayout({
     '@type': 'NewsMediaOrganization',
     name: 'Lanka News Room',
     url: baseUrl,
-    logo: `${baseUrl}/logo.png`,
+    logo: `${baseUrl}/LANKA NEWS ROOM.svg`,
     description: 'Multi-source news aggregator providing trusted, neutral news summaries from Sri Lanka',
     foundingLocation: {
       '@type': 'Country',
