@@ -595,8 +595,8 @@ async function summarizeEligible(
         summaryEn = translations.en;
         summarySi = translations.si;
         summaryTa = translations.ta;
-      
-      // Track which translations succeeded
+        
+        // Track which translations succeeded
       translationStatus.en = !!summaryEn && summaryEn.trim().length > 0;
       translationStatus.si = !!summarySi && summarySi.trim().length > 0;
       translationStatus.ta = !!summaryTa && summaryTa.trim().length > 0;
