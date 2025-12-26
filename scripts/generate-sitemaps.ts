@@ -285,7 +285,6 @@ async function main() {
 
     // Generate topic sitemaps
     const sitemapFiles: Array<{ filename: string; lastmod: string }> = [];
-    const now = new Date().toISOString();
 
     // Generate static sitemap
     console.log('📝 Generating static sitemap...');
