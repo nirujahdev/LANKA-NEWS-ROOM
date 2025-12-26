@@ -24,9 +24,11 @@ type ArticleData = {
   title: string;
   url: string;
   content: string | null;
+  content_html: string | null;
   published_at: string | null;
   guid: string | null;
   image_url: string | null;
+  image_urls: string[] | null;
 };
 
 /**
@@ -161,10 +163,12 @@ export async function runIngestionPipeline() {
           source_id: source.id,
           title: item.title || 'Untitled',
           url: item.url,
-          content: stripHtml(item.content || item.contentSnippet),
+          content: stripHtml(item.content || item.contentSnippet), // Plain text for search
+          content_html: item.content || item.contentSnippet || null, // Raw HTML for image extraction
           published_at: item.publishedAt || null,
           guid: item.guid || null,
-          image_url: item.imageUrl || null
+          image_url: item.imageUrl || null,
+          image_urls: item.imageUrls || null // All images from RSS
         };
 
         articlesToInsert.push(articleData);
@@ -181,7 +185,9 @@ export async function runIngestionPipeline() {
             articlesToInsert.map((a) => ({
               ...a,
               content_text: a.content,
-              content_excerpt: a.content?.slice(0, 400) || null
+              content_excerpt: a.content?.slice(0, 400) || null,
+              content_html: a.content_html,
+              image_urls: a.image_urls
             })),
             {
               onConflict: 'url', // Deduplicate by URL

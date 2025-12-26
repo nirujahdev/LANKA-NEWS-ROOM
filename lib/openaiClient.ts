@@ -88,13 +88,41 @@ export async function translateSummary(summaryEn: string, target: 'si' | 'ta') {
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     { 
       role: 'system', 
-      content: `Translate the following English news summary into formal written ${langLabel}.
+      content: `Translate the following English news summary into formal written ${langLabel} for a Sri Lankan news analysis platform.
 
-Rules:
-- Preserve meaning exactly
-- Do NOT add or remove information
-- Use formal news-style ${langLabel}
-- Avoid informal or conversational language${target === 'ta' ? '\n- Avoid informal or spoken Tamil' : ''}`
+CRITICAL TRANSLATION RULES:
+1. Accuracy: Preserve the EXACT meaning - do NOT add, remove, or change ANY information
+2. Structure: Preserve all sections including:
+   - Lead paragraph
+   - Main body paragraphs
+   - "Why this matters" section (if present)
+   - "What to watch next" bullet points (if present)
+3. Formality: Use formal written ${langLabel} appropriate for news analysis - NO colloquialisms, slang, or informal expressions
+4. Grammar: Use proper ${langLabel} grammar and sentence structure
+5. Names & Places: Keep ALL proper nouns (names, places, organizations) in their original form unless there is a standard ${langLabel} transliteration. For Sri Lankan names and places, use standard ${langLabel} transliterations when they exist.
+6. Numbers & Dates: Preserve ALL numbers, dates, percentages, and statistics EXACTLY as written
+7. Tone: Maintain neutral, factual, analytical tone - no emotional language
+8. Context: Preserve Sri Lankan context and terminology accurately
+${target === 'si' ? `9. Sinhala-Specific:
+   - Use formal written Sinhala (not spoken/colloquial)
+   - Use proper Sinhala script (සිංහල) and grammar
+   - Maintain proper sentence structure
+   - Use formal vocabulary throughout
+   - Preserve all structural elements (paragraphs, bullet points, sections)
+   - Avoid informal expressions or conversational language` : ''}${target === 'ta' ? `9. Tamil-Specific:
+   - Use formal written Tamil (not spoken/colloquial)
+   - Use proper Tamil script (தமிழ்) and grammar
+   - Maintain proper sentence structure
+   - Use formal vocabulary throughout
+   - Preserve all structural elements (paragraphs, bullet points, sections)
+   - Avoid informal expressions or conversational Tamil
+   - Ensure proper Tamil grammar and word order` : ''}
+
+OUTPUT REQUIREMENTS:
+- Complete translation preserving all sections and structure
+- Formal news analysis style
+- All facts, numbers, and names preserved accurately
+- Proper ${langLabel} grammar and vocabulary`
     },
     { role: 'user', content: summaryEn }
   ];
@@ -170,7 +198,7 @@ QUALITY STANDARDS:
   * "What to watch next" section: 2-3 bullet points on potential follow-ups, implications, or developments to monitor
 - Tone: Calm, factual, professional, neutral, analytical - NO emotional language
 - Tense: Past tense, third person
-- Language: Write in ${langLabel} using formal written style${sourceLang === 'si' ? '\n- Sinhala: Use formal written Sinhala (not spoken/colloquial). Use proper Sinhala script, grammar, and formal vocabulary.' : ''}${sourceLang === 'ta' ? '\n- Tamil: Use formal written Tamil (not spoken/colloquial). Use proper Tamil script, grammar, and formal vocabulary. Avoid informal expressions.' : ''}
+- Language: Write in ${langLabel} using formal written style${sourceLang === 'si' ? '\n- Sinhala: Use formal written Sinhala (not spoken/colloquial). Use proper Sinhala script (සිංහල), grammar, and formal vocabulary. Maintain proper sentence structure. Avoid informal expressions, slang, or conversational language. Use standard Sinhala transliterations for Sri Lankan place names when they exist.' : ''}${sourceLang === 'ta' ? '\n- Tamil: Use formal written Tamil (not spoken/colloquial). Use proper Tamil script (தமிழ்), grammar, and formal vocabulary. Maintain proper sentence structure. Avoid informal expressions, slang, or conversational Tamil. Use standard Tamil transliterations for Sri Lankan place names when they exist. Ensure proper Tamil grammar and word order throughout.' : ''}
 - Style: Clear, simple, accessible language with explanatory focus
 - No repetition: Avoid repeating the same information in different sentences
 - Coherence: Ensure logical flow between sentences
@@ -456,27 +484,37 @@ CRITICAL HEADLINE TRANSLATION RULES:
 4. SEO-Friendly: Maintain SEO keywords and important entities in the target language when appropriate.
 5. Formality: Use formal written ${toLabel} appropriate for news headlines - NO colloquialisms, slang, or informal expressions.
 6. Grammar: Use proper ${toLabel} grammar and sentence structure appropriate for headlines.
-7. Names & Places: Keep ALL proper nouns (names, places, organizations, titles) in their original form unless there is a standard ${toLabel} transliteration. For Sri Lankan names and places, use standard ${toLabel} transliterations when they exist.
+7. Names & Places: Keep ALL proper nouns (names, places, organizations, titles) in their original form unless there is a standard ${toLabel} transliteration. For Sri Lankan names and places, use standard ${toLabel} transliterations when they exist (e.g., Colombo → කොළඹ, Jaffna → யாழ்ப்பாணம்).
 8. Numbers & Dates: Preserve ALL numbers, dates, percentages, and statistics EXACTLY as written - do NOT convert, modify, round, or approximate them.
 9. Tone: Maintain a neutral, factual news headline tone - no emotional language, no sensationalism.
 10. Key Information: Extract and preserve the most important information (who, what, when, where) in the headline format.
 11. Sri Lankan Context: Preserve Sri Lankan context and terminology accurately.
 ${to === 'si' ? `12. Sinhala-Specific:
-    - Use formal written Sinhala appropriate for headlines
-    - Use proper Sinhala script and grammar
-    - Keep headline concise and impactful
-    - Use formal vocabulary appropriate for news headlines` : ''}${to === 'ta' ? `12. Tamil-Specific:
-    - Use formal written Tamil appropriate for headlines
-    - Use proper Tamil script and grammar
-    - Keep headline concise and impactful
-    - Use formal vocabulary appropriate for news headlines` : ''}
+    - Use formal written Sinhala appropriate for news headlines (not spoken/colloquial)
+    - Use proper Sinhala script (සිංහල) and grammar
+    - Keep headline concise and impactful (50-80 characters)
+    - Use formal vocabulary appropriate for news headlines
+    - Avoid informal expressions, slang, or conversational language
+    - Maintain proper Sinhala sentence structure
+    - Use standard Sinhala transliterations for Sri Lankan place names` : ''}${to === 'ta' ? `12. Tamil-Specific:
+    - Use formal written Tamil appropriate for news headlines (not spoken/colloquial)
+    - Use proper Tamil script (தமிழ்) and grammar
+    - Keep headline concise and impactful (50-80 characters)
+    - Use formal vocabulary appropriate for news headlines
+    - Avoid informal expressions, slang, or conversational Tamil
+    - Maintain proper Tamil sentence structure
+    - Use standard Tamil transliterations for Sri Lankan place names` : ''}
+
+EXAMPLES OF GOOD HEADLINE TRANSLATIONS:
+${to === 'si' ? '- English: "President announces new economic policy" → Sinhala: "ජනාධිපතිවරයා නව ආර්ථික ප්‍රතිපත්තියක් ප්‍රකාශ කරයි"' : ''}${to === 'ta' ? '- English: "President announces new economic policy" → Tamil: "ஜனாதிபதி புதிய பொருளாதார கொள்கையை அறிவிக்கிறார்"' : ''}
 
 OUTPUT REQUIREMENTS:
 - Concise headline in ${toLabel} (50-80 characters)
 - All facts, numbers, and names preserved accurately
 - Formal news headline style
 - SEO-friendly and impactful
-- Proper grammar and structure`
+- Proper grammar and structure
+- Return ONLY the translated headline, no additional text`
     },
     { 
       role: 'user', 
@@ -490,7 +528,7 @@ OUTPUT REQUIREMENTS:
       const completion = await client.chat.completions.create({
         model: env.SUMMARY_TRANSLATE_MODEL || env.SUMMARY_MODEL,
         messages,
-        temperature: 0.1,
+        temperature: 0.2, // Increased for more natural translations
         max_tokens: 150 // Headlines are shorter
       });
       const translated = completion.choices[0]?.message?.content?.trim();
@@ -1397,33 +1435,71 @@ export function validateTranslationQuality(
   // Check for formal language (no colloquialisms, slang, or informal expressions)
   // Enhanced check for formal language usage
   if (targetLang === 'si') {
-    // Sinhala: Check for common informal patterns
-    // Look for very short words that might indicate informal speech
-    const shortWords = translatedText.match(/\b[ක-ෆ]{1,2}\b/g) || [];
-    if (shortWords.length > translatedText.split(/\s+/).length * 0.1) {
-      issues.push('May contain informal Sinhala patterns (too many very short words)');
+    // Sinhala: Check for proper Sinhala script usage
+    const hasSinhalaScript = /[ක-ෆ]/.test(translatedText);
+    if (!hasSinhalaScript && translatedText.length > 50) {
+      issues.push('May not contain proper Sinhala script (සිංහල)');
+      score -= 15;
+    }
+    // Check for too many English words (informal)
+    const englishWords = translatedText.match(/\b[A-Za-z]{3,}\b/g) || [];
+    const totalWords = translatedText.split(/\s+/).length;
+    if (totalWords > 0 && englishWords.length > totalWords * 0.2) {
+      issues.push('Too many English words in Sinhala translation (should be formal Sinhala)');
+      score -= 10;
+    }
+    // Check for common informal Sinhala patterns
+    const informalPatterns = [/කොහොමද/i, /එහෙම/i, /මෙහෙම/i, /හරිද/i];
+    if (informalPatterns.some(pattern => pattern.test(translatedText))) {
+      issues.push('Contains informal/colloquial Sinhala expressions');
+      score -= 10;
+    }
+    // Check for structure preservation (sections, bullet points)
+    const hasWhyMatters = /(?:why|මන්ද|කුමක්|ඇයි).*(?:matters|වැදගත්|සැලකිය|ප්‍රමුඛ)/i.test(translatedText) || 
+                          /වැදගත්කම|සැලකිය යුතු|ප්‍රමුඛ/.test(translatedText);
+    const hasWatchNext = /(?:watch|next|ඊළඟ|ඉදිරියට|බලන්න)/i.test(translatedText) ||
+                         /ඊළඟ|ඉදිරියට|බලන්න/.test(translatedText);
+    if (sourceText.toLowerCase().includes('why this matters') && !hasWhyMatters) {
+      issues.push('May not preserve "Why this matters" section structure');
       score -= 5;
     }
-    // Check for proper sentence endings and formal structure
-    const hasProperEndings = /[.!?]\s+[ක-ෆ]/.test(translatedText);
-    if (!hasProperEndings && translatedSentences.length > 2) {
-      issues.push('May lack proper formal Sinhala sentence structure');
+    if (sourceText.toLowerCase().includes('what to watch') && !hasWatchNext) {
+      issues.push('May not preserve "What to watch next" section structure');
       score -= 5;
     }
   }
   
   if (targetLang === 'ta') {
-    // Tamil: Check for common informal patterns
-    // Look for English words mixed in (might indicate informal usage)
+    // Tamil: Check for proper Tamil script usage
+    const hasTamilScript = /[அ-ஹ]/.test(translatedText);
+    if (!hasTamilScript && translatedText.length > 50) {
+      issues.push('May not contain proper Tamil script (தமிழ்)');
+      score -= 15;
+    }
+    // Check for too many English words (informal)
     const englishWords = translatedText.match(/\b[A-Za-z]{3,}\b/g) || [];
-    if (englishWords.length > translatedText.split(/\s+/).length * 0.15) {
-      issues.push('May contain too many English words (informal usage)');
+    const totalWords = translatedText.split(/\s+/).length;
+    if (totalWords > 0 && englishWords.length > totalWords * 0.2) {
+      issues.push('Too many English words in Tamil translation (should be formal Tamil)');
+      score -= 10;
+    }
+    // Check for common informal Tamil patterns
+    const informalPatterns = [/எப்படி/i, /அப்படி/i, /இப்படி/i, /என்ன/i];
+    if (informalPatterns.some(pattern => pattern.test(translatedText))) {
+      issues.push('Contains informal/colloquial Tamil expressions');
+      score -= 10;
+    }
+    // Check for structure preservation (sections, bullet points)
+    const hasWhyMatters = /(?:why|ஏன்|எதற்கு|என்பதற்கு).*(?:matters|முக்கியம்|முக்கியத்துவம்|பிரதான)/i.test(translatedText) ||
+                          /முக்கியம்|முக்கியத்துவம்|பிரதான/.test(translatedText);
+    const hasWatchNext = /(?:watch|next|அடுத்து|முன்னோக்கி|பார்க்க)/i.test(translatedText) ||
+                         /அடுத்து|முன்னோக்கி|பார்க்க/.test(translatedText);
+    if (sourceText.toLowerCase().includes('why this matters') && !hasWhyMatters) {
+      issues.push('May not preserve "Why this matters" section structure');
       score -= 5;
     }
-    // Check for proper sentence endings and formal structure
-    const hasProperEndings = /[.!?]\s+[அ-ஹ]/.test(translatedText);
-    if (!hasProperEndings && translatedSentences.length > 2) {
-      issues.push('May lack proper formal Tamil sentence structure');
+    if (sourceText.toLowerCase().includes('what to watch') && !hasWatchNext) {
+      issues.push('May not preserve "What to watch next" section structure');
       score -= 5;
     }
   }
@@ -1589,13 +1665,20 @@ export function validateHeadlineTranslationQuality(
     // Sinhala: Check for proper Sinhala script usage
     const hasSinhalaScript = /[ක-ෆ]/.test(translatedHeadline);
     if (!hasSinhalaScript && translatedHeadline.length > 10) {
-      issues.push('May not contain proper Sinhala script');
+      issues.push('May not contain proper Sinhala script (සිංහල)');
       score -= 15;
     }
     // Check for too many English words (informal)
     const englishWords = translatedHeadline.match(/\b[A-Za-z]{3,}\b/g) || [];
-    if (englishWords.length > translatedHeadline.split(/\s+/).length * 0.3) {
+    const totalWords = translatedHeadline.split(/\s+/).length;
+    if (totalWords > 0 && englishWords.length > totalWords * 0.3) {
       issues.push('Too many English words in Sinhala headline (should be formal Sinhala)');
+      score -= 10;
+    }
+    // Check for informal Sinhala patterns (colloquial expressions)
+    const informalPatterns = [/කොහොමද/i, /එහෙම/i, /මෙහෙම/i];
+    if (informalPatterns.some(pattern => pattern.test(translatedHeadline))) {
+      issues.push('Contains informal/colloquial Sinhala expressions');
       score -= 10;
     }
   }
@@ -1604,13 +1687,20 @@ export function validateHeadlineTranslationQuality(
     // Tamil: Check for proper Tamil script usage
     const hasTamilScript = /[அ-ஹ]/.test(translatedHeadline);
     if (!hasTamilScript && translatedHeadline.length > 10) {
-      issues.push('May not contain proper Tamil script');
+      issues.push('May not contain proper Tamil script (தமிழ்)');
       score -= 15;
     }
     // Check for too many English words (informal)
     const englishWords = translatedHeadline.match(/\b[A-Za-z]{3,}\b/g) || [];
-    if (englishWords.length > translatedHeadline.split(/\s+/).length * 0.3) {
+    const totalWords = translatedHeadline.split(/\s+/).length;
+    if (totalWords > 0 && englishWords.length > totalWords * 0.3) {
       issues.push('Too many English words in Tamil headline (should be formal Tamil)');
+      score -= 10;
+    }
+    // Check for informal Tamil patterns (colloquial expressions)
+    const informalPatterns = [/எப்படி/i, /அப்படி/i, /இப்படி/i];
+    if (informalPatterns.some(pattern => pattern.test(translatedHeadline))) {
+      issues.push('Contains informal/colloquial Tamil expressions');
       score -= 10;
     }
   }

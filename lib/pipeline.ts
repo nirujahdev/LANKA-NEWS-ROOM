@@ -370,7 +370,7 @@ async function summarizeEligible(
 
     const { data: articles, error } = await supabaseAdmin
       .from('articles')
-      .select('title, content_excerpt, content_text, published_at, image_url, url')
+      .select('title, content_excerpt, content_text, content_html, published_at, image_url, image_urls, url')
       .eq('cluster_id', cluster.id)
       .order('published_at', { ascending: false })
       .limit(env.MAX_SUMMARY_ARTICLES);
@@ -717,11 +717,21 @@ async function summarizeEligible(
       eventType = comprehensiveSEO.event_type;
       
       // Generate translated headlines with quality validation
-      // Translate from source language (not just English)
+      // For Tamil/Sinhala sources, use source language headline directly
       console.log(`[Pipeline] Generating translated headlines from source language: ${sourceLang}...`);
       
-      // Determine source headline language - if source is not English, we need to translate to English first
-      const sourceHeadline = cluster.headline;
+      // Get source headline - try to get from first article if source is Tamil/Sinhala
+      let sourceHeadline = cluster.headline;
+      if ((sourceLang === 'si' || sourceLang === 'ta') && articles && articles.length > 0) {
+        // Try to use the first article's title if it's in the source language
+        const firstArticleTitle = articles[0]?.title;
+        if (firstArticleTitle && firstArticleTitle.trim().length > 0) {
+          // Use article title as source headline for Tamil/Sinhala sources
+          sourceHeadline = firstArticleTitle;
+          console.log(`[Pipeline] Using source language article title as headline: ${sourceHeadline.substring(0, 60)}...`);
+        }
+      }
+      
       let headlineEn = cluster.headline; // Default to cluster headline
       
       // If source is Sinhala or Tamil, translate to English first
@@ -739,73 +749,89 @@ async function summarizeEligible(
       }
       
       // Translate Sinhala headline with validation
+      // For Sinhala sources, use source headline directly
       let headlineSiQuality = { score: 0, isValid: false, issues: [] as string[] };
-      try {
-        const fromLang = sourceLang === 'si' ? 'si' : 'en';
-        const sourceForSi = sourceLang === 'si' ? sourceHeadline : headlineEn;
-        headlineSi = await translateHeadline(sourceForSi, fromLang, 'si');
-        if (headlineSi) {
-          headlineSiQuality = validateHeadlineTranslationQuality(sourceForSi, headlineSi, fromLang, 'si');
-          if (!headlineSiQuality.isValid || headlineSiQuality.score < 70) {
-            console.warn(`[Pipeline] Sinhala headline quality check failed (score: ${headlineSiQuality.score}):`, headlineSiQuality.issues);
-            // Retry translation if quality is poor
-            if (headlineSiQuality.score < 60) {
-              try {
-                console.log('[Pipeline] Retrying Sinhala headline translation due to poor quality...');
-                headlineSi = await translateHeadline(sourceForSi, fromLang, 'si');
-                headlineSiQuality = validateHeadlineTranslationQuality(sourceForSi, headlineSi, fromLang, 'si');
-                if (!headlineSiQuality.isValid || headlineSiQuality.score < 70) {
-                  console.warn(`[Pipeline] Retry Sinhala headline also failed quality check (score: ${headlineSiQuality.score})`);
-                } else {
-                  console.log(`[Pipeline] Retry Sinhala headline passed quality check (score: ${headlineSiQuality.score})`);
+      if (sourceLang === 'si') {
+        // Use source headline directly for Sinhala sources
+        headlineSi = sourceHeadline;
+        console.log(`[Pipeline] Using source Sinhala headline directly: ${headlineSi}`);
+        headlineSiQuality = { score: 100, isValid: true, issues: [] }; // Source language, no translation needed
+      } else {
+        try {
+          const fromLang = 'en';
+          const sourceForSi = headlineEn;
+          headlineSi = await translateHeadline(sourceForSi, fromLang, 'si');
+          if (headlineSi) {
+            headlineSiQuality = validateHeadlineTranslationQuality(sourceForSi, headlineSi, fromLang, 'si');
+            if (!headlineSiQuality.isValid || headlineSiQuality.score < 70) {
+              console.warn(`[Pipeline] Sinhala headline quality check failed (score: ${headlineSiQuality.score}):`, headlineSiQuality.issues);
+              // Retry translation if quality is poor
+              if (headlineSiQuality.score < 60) {
+                try {
+                  console.log('[Pipeline] Retrying Sinhala headline translation due to poor quality...');
+                  headlineSi = await translateHeadline(sourceForSi, fromLang, 'si');
+                  headlineSiQuality = validateHeadlineTranslationQuality(sourceForSi, headlineSi, fromLang, 'si');
+                  if (!headlineSiQuality.isValid || headlineSiQuality.score < 70) {
+                    console.warn(`[Pipeline] Retry Sinhala headline also failed quality check (score: ${headlineSiQuality.score})`);
+                  } else {
+                    console.log(`[Pipeline] Retry Sinhala headline passed quality check (score: ${headlineSiQuality.score})`);
+                  }
+                } catch (retryErr) {
+                  console.error('[Pipeline] Sinhala headline translation retry failed:', retryErr);
                 }
-              } catch (retryErr) {
-                console.error('[Pipeline] Sinhala headline translation retry failed:', retryErr);
               }
+            } else {
+              console.log(`[Pipeline] Sinhala headline quality check passed (score: ${headlineSiQuality.score})`);
             }
-          } else {
-            console.log(`[Pipeline] Sinhala headline quality check passed (score: ${headlineSiQuality.score})`);
+            console.log(`[Pipeline] Generated Sinhala headline: ${headlineSi}`);
           }
-          console.log(`[Pipeline] Generated Sinhala headline: ${headlineSi}`);
+        } catch (err) {
+          console.warn(`[Pipeline] Failed to translate headline to Sinhala: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          headlineSi = null;
         }
-      } catch (err) {
-        console.warn(`[Pipeline] Failed to translate headline to Sinhala: ${err instanceof Error ? err.message : 'Unknown error'}`);
-        headlineSi = null;
       }
       
       // Translate Tamil headline with validation
+      // For Tamil sources, use source headline directly
       let headlineTaQuality = { score: 0, isValid: false, issues: [] as string[] };
-      try {
-        const fromLang = sourceLang === 'ta' ? 'ta' : 'en';
-        const sourceForTa = sourceLang === 'ta' ? sourceHeadline : headlineEn;
-        headlineTa = await translateHeadline(sourceForTa, fromLang, 'ta');
-        if (headlineTa) {
-          headlineTaQuality = validateHeadlineTranslationQuality(sourceForTa, headlineTa, fromLang, 'ta');
-          if (!headlineTaQuality.isValid || headlineTaQuality.score < 70) {
-            console.warn(`[Pipeline] Tamil headline quality check failed (score: ${headlineTaQuality.score}):`, headlineTaQuality.issues);
-            // Retry translation if quality is poor
-            if (headlineTaQuality.score < 60) {
-              try {
-                console.log('[Pipeline] Retrying Tamil headline translation due to poor quality...');
-                headlineTa = await translateHeadline(sourceForTa, fromLang, 'ta');
-                headlineTaQuality = validateHeadlineTranslationQuality(sourceForTa, headlineTa, fromLang, 'ta');
-                if (!headlineTaQuality.isValid || headlineTaQuality.score < 70) {
-                  console.warn(`[Pipeline] Retry Tamil headline also failed quality check (score: ${headlineTaQuality.score})`);
-                } else {
-                  console.log(`[Pipeline] Retry Tamil headline passed quality check (score: ${headlineTaQuality.score})`);
+      if (sourceLang === 'ta') {
+        // Use source headline directly for Tamil sources
+        headlineTa = sourceHeadline;
+        console.log(`[Pipeline] Using source Tamil headline directly: ${headlineTa}`);
+        headlineTaQuality = { score: 100, isValid: true, issues: [] }; // Source language, no translation needed
+      } else {
+        try {
+          const fromLang = 'en';
+          const sourceForTa = headlineEn;
+          headlineTa = await translateHeadline(sourceForTa, fromLang, 'ta');
+          if (headlineTa) {
+            headlineTaQuality = validateHeadlineTranslationQuality(sourceForTa, headlineTa, fromLang, 'ta');
+            if (!headlineTaQuality.isValid || headlineTaQuality.score < 70) {
+              console.warn(`[Pipeline] Tamil headline quality check failed (score: ${headlineTaQuality.score}):`, headlineTaQuality.issues);
+              // Retry translation if quality is poor
+              if (headlineTaQuality.score < 60) {
+                try {
+                  console.log('[Pipeline] Retrying Tamil headline translation due to poor quality...');
+                  headlineTa = await translateHeadline(sourceForTa, fromLang, 'ta');
+                  headlineTaQuality = validateHeadlineTranslationQuality(sourceForTa, headlineTa, fromLang, 'ta');
+                  if (!headlineTaQuality.isValid || headlineTaQuality.score < 70) {
+                    console.warn(`[Pipeline] Retry Tamil headline also failed quality check (score: ${headlineTaQuality.score})`);
+                  } else {
+                    console.log(`[Pipeline] Retry Tamil headline passed quality check (score: ${headlineTaQuality.score})`);
+                  }
+                } catch (retryErr) {
+                  console.error('[Pipeline] Tamil headline translation retry failed:', retryErr);
                 }
-              } catch (retryErr) {
-                console.error('[Pipeline] Tamil headline translation retry failed:', retryErr);
               }
+            } else {
+              console.log(`[Pipeline] Tamil headline quality check passed (score: ${headlineTaQuality.score})`);
             }
-          } else {
-            console.log(`[Pipeline] Tamil headline quality check passed (score: ${headlineTaQuality.score})`);
+            console.log(`[Pipeline] Generated Tamil headline: ${headlineTa}`);
           }
-          console.log(`[Pipeline] Generated Tamil headline: ${headlineTa}`);
+        } catch (err) {
+          console.warn(`[Pipeline] Failed to translate headline to Tamil: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          headlineTa = null;
         }
-      } catch (err) {
-        console.warn(`[Pipeline] Failed to translate headline to Tamil: ${err instanceof Error ? err.message : 'Unknown error'}`);
-        headlineTa = null;
       }
       
       // Log headline quality warnings
@@ -816,53 +842,73 @@ async function summarizeEligible(
         console.warn(`[Pipeline] ⚠️ Low Tamil headline quality score (${headlineTaQuality.score}) for cluster ${cluster.id}`);
       }
 
-      // Collect images from all sources
-      const availableImages: Array<{ url: string; source: string }> = [];
+      // Collect images from all sources with priority scoring
+      const availableImages: Array<{ url: string; source: string; priority: number }> = [];
       
-      // 1. Collect images from article image_url fields
+      // 1. Collect images from article image_url fields (Priority 1.0 - highest)
       articles?.forEach(article => {
         if (article.image_url) {
           availableImages.push({
             url: article.image_url,
-            source: 'RSS Feed'
+            source: 'RSS Feed',
+            priority: 1.0
           });
         }
       });
       
-      // 2. Extract images from article HTML content
+      // 1b. Collect images from image_urls array (Priority 1.0 - highest)
       articles?.forEach(article => {
-        if (article.content_text || article.content_excerpt) {
-          const html = article.content_text || article.content_excerpt || '';
-          const articleUrl = (article as any).url || '';
-          if (html && articleUrl) {
-            try {
-              const extractedImages = extractAllImagesFromHtml(html, articleUrl);
-              extractedImages.forEach(imgUrl => {
-                availableImages.push({
-                  url: imgUrl,
-                  source: 'Article Content'
-                });
+        if ((article as any).image_urls && Array.isArray((article as any).image_urls)) {
+          (article as any).image_urls.forEach((imgUrl: string) => {
+            if (imgUrl && imgUrl.startsWith('http')) {
+              availableImages.push({
+                url: imgUrl,
+                source: 'RSS Feed',
+                priority: 1.0
               });
-            } catch (error) {
-              console.warn('[Pipeline] Error extracting images from HTML:', error);
             }
+          });
+        }
+      });
+      
+      // 2. Extract images from article HTML content (Priority 0.8)
+      articles?.forEach(article => {
+        // Use content_html if available, fallback to content_text/content_excerpt
+        const html = (article as any).content_html || article.content_text || article.content_excerpt || '';
+        const articleUrl = (article as any).url || '';
+        if (html && articleUrl && html.includes('<img')) {
+          try {
+            const extractedImages = extractAllImagesFromHtml(html, articleUrl);
+            extractedImages.forEach(imgUrl => {
+              availableImages.push({
+                url: imgUrl,
+                source: 'Article Content',
+                priority: 0.8
+              });
+            });
+          } catch (error) {
+            console.warn('[Pipeline] Error extracting images from HTML:', error);
           }
         }
       });
       
-      // 3. Optionally fetch article pages if we have few images (rate-limited)
-      if (availableImages.length < 3 && articles && articles.length > 0) {
+      // 3. Optionally fetch article pages if we have few images (rate-limited, Priority 0.6)
+      const rssImageCount = availableImages.filter(img => img.source === 'RSS Feed').length;
+      const contentImageCount = availableImages.filter(img => img.source === 'Article Content').length;
+      
+      if ((rssImageCount + contentImageCount) < 2 && articles && articles.length > 0) {
         // Only fetch from first article to avoid rate limiting
         const firstArticle = articles[0];
         const articleUrl = (firstArticle as any).url;
         if (articleUrl) {
           try {
-            console.log(`[Pipeline] Fetching article page for additional images: ${articleUrl}`);
+            console.log(`[Pipeline] Fetching article page (only ${rssImageCount + contentImageCount} images found): ${articleUrl}`);
             const pageImages = await fetchArticleImages(articleUrl);
             pageImages.forEach(imgUrl => {
               availableImages.push({
                 url: imgUrl,
-                source: 'Article Page'
+                source: 'Article Page',
+                priority: 0.6
               });
             });
             console.log(`[Pipeline] Found ${pageImages.length} additional images from article page`);
@@ -872,10 +918,10 @@ async function summarizeEligible(
         }
       }
       
-      // Deduplicate images by URL
+      // Deduplicate images by URL and sort by priority
       const uniqueImages = Array.from(
         new Map(availableImages.map(img => [img.url, img])).values()
-      );
+      ).sort((a, b) => b.priority - a.priority); // Sort by priority (highest first)
       
       const imageStats = {
         rss: availableImages.filter(img => img.source === 'RSS Feed').length,
@@ -890,16 +936,18 @@ async function summarizeEligible(
         try {
           // Use English summary for image selection, or fallback to headline
           const summaryForImage = summaryEn || cluster.headline;
-          imageUrl = await selectBestImage(uniqueImages, cluster.headline, summaryForImage);
+          // Convert to format expected by selectBestImage (remove priority field)
+          const imagesForSelection = uniqueImages.map(img => ({ url: img.url, source: img.source }));
+          imageUrl = await selectBestImage(imagesForSelection, cluster.headline, summaryForImage);
           if (imageUrl) {
             console.log(`[Pipeline] ✅ Selected best image from ${uniqueImages.length} options for cluster ${cluster.id}: ${imageUrl.substring(0, 80)}...`);
           } else {
-            console.warn(`[Pipeline] ⚠️ Image selection returned null, using first image`);
-            imageUrl = uniqueImages[0].url;
+            console.warn(`[Pipeline] ⚠️ Image selection returned null, using highest priority image`);
+            imageUrl = uniqueImages[0].url; // Already sorted by priority
           }
         } catch (error) {
-          console.error('[Pipeline] ❌ Image selection failed, using first image:', error);
-          imageUrl = uniqueImages[0].url;
+          console.error('[Pipeline] ❌ Image selection failed, using highest priority image:', error);
+          imageUrl = uniqueImages[0].url; // Already sorted by priority
         }
       } else {
         imageUrl = null;

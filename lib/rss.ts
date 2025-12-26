@@ -90,23 +90,33 @@ export async function fetchRssFeed(feedUrl: string): Promise<NormalizedItem[]> {
         }
         
         // Extract ALL images from HTML content (not just the first one)
-        if (item.content) {
+        const articleUrl = (item.link || '').trim();
+        if (item.content && articleUrl) {
           // Extract from src attribute
           const srcMatches = item.content.matchAll(/<img[^>]+src=["']([^"']+)["']/gi);
           for (const match of srcMatches) {
-            if (match[1]) imageUrls.push(match[1]);
+            if (match[1]) {
+              const resolved = resolveImageUrl(match[1], articleUrl);
+              if (resolved) imageUrls.push(resolved);
+            }
           }
           
           // Extract from data-src (lazy-loaded images)
           const dataSrcMatches = item.content.matchAll(/<img[^>]+data-src=["']([^"']+)["']/gi);
           for (const match of dataSrcMatches) {
-            if (match[1]) imageUrls.push(match[1]);
+            if (match[1]) {
+              const resolved = resolveImageUrl(match[1], articleUrl);
+              if (resolved) imageUrls.push(resolved);
+            }
           }
           
           // Extract from data-lazy-src
           const lazySrcMatches = item.content.matchAll(/<img[^>]+data-lazy-src=["']([^"']+)["']/gi);
           for (const match of lazySrcMatches) {
-            if (match[1]) imageUrls.push(match[1]);
+            if (match[1]) {
+              const resolved = resolveImageUrl(match[1], articleUrl);
+              if (resolved) imageUrls.push(resolved);
+            }
           }
         }
         
@@ -151,6 +161,39 @@ export async function fetchRssFeed(feedUrl: string): Promise<NormalizedItem[]> {
     // Re-throw with context for error handling upstream
     throw new Error(`Failed to fetch RSS feed ${feedUrl} after retries: ${error instanceof Error ? error.message : 'Unknown error'}`);
   });
+}
+
+/**
+ * Resolve relative image URL to absolute URL
+ * @param url - URL (may be relative)
+ * @param baseUrl - Base URL of the article
+ * @returns Absolute URL or null if invalid
+ */
+function resolveImageUrl(url: string, baseUrl: string): string | null {
+  if (!url || !baseUrl) return null;
+  
+  // Already absolute
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  
+  // Protocol-relative (//example.com/image.jpg)
+  if (url.startsWith('//')) {
+    try {
+      const base = new URL(baseUrl);
+      return `${base.protocol}${url}`;
+    } catch {
+      return null;
+    }
+  }
+  
+  // Relative URL
+  try {
+    const base = new URL(baseUrl);
+    return new URL(url, base).href;
+  } catch {
+    return null;
+  }
 }
 
 export function hashTitle(title: string): string {

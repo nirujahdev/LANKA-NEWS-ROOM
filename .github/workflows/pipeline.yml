@@ -82,6 +82,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SUMMARY_MODEL: ${{ secrets.SUMMARY_MODEL || 'gpt-4o-mini' }}
+          SUMMARY_TRANSLATE_MODEL: ${{ secrets.SUMMARY_TRANSLATE_MODEL || 'gpt-4o-mini' }}
           BATCH_SIZE: ${{ secrets.BATCH_SIZE || '10' }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
         run: |
@@ -89,6 +90,14 @@ jobs:
           echo "   DRY_RUN: ${DRY_RUN}"
           echo "   BATCH_SIZE: ${BATCH_SIZE}"
           echo "   SUMMARY_MODEL: ${SUMMARY_MODEL}"
+          echo "   SUMMARY_TRANSLATE_MODEL: ${SUMMARY_TRANSLATE_MODEL}"
+          echo ""
+          echo "📋 Pipeline improvements enabled:"
+          echo "   ✓ Enhanced image collection (RSS, HTML, page fetch)"
+          echo "   ✓ Improved Tamil/Sinhala translation quality"
+          echo "   ✓ Source language headline preservation"
+          echo "   ✓ Quality validation with retry logic"
+          echo ""
           
           # Run the pipeline script
           npx tsx scripts/pipeline.ts
@@ -96,6 +105,13 @@ jobs:
       - name: Pipeline summary
         if: always()
         run: |
+          echo ""
           echo "📊 Pipeline run completed"
           echo "Check the logs above for detailed statistics"
+          echo ""
+          echo "Key metrics to review:"
+          echo "  - Image collection stats (RSS, Content, Page)"
+          echo "  - Translation quality scores (target: 70+ for headlines, 75+ for summaries)"
+          echo "  - Source language headline usage (Tamil/Sinhala articles)"
+          echo "  - Translation retry counts (indicates quality issues)"
 
