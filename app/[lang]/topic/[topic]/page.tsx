@@ -126,7 +126,7 @@ export default async function TopicPage({ params }: Props) {
       )
     `)
     .eq('status', 'published')
-    .ilike('topic', topic) // Case-insensitive matching
+    .ilike('topic', topic || '') // Case-insensitive matching, ensure string
     .order('last_seen_at', { ascending: false })
     .limit(20);
 
