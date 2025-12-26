@@ -337,24 +337,30 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           city: string
           created_at: string | null
+          district: string | null
           email: string | null
           id: string
           language: string
           name: string
         }
         Insert: {
+          avatar_url?: string | null
           city: string
           created_at?: string | null
+          district?: string | null
           email?: string | null
           id: string
           language: string
           name: string
         }
         Update: {
+          avatar_url?: string | null
           city?: string
           created_at?: string | null
+          district?: string | null
           email?: string | null
           id?: string
           language?: string

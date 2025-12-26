@@ -103,13 +103,13 @@ export default function OnboardingPage() {
       }
 
       // Pre-fill from existing profile
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('name, language, city, district')
         .eq('id', user.id)
         .single();
 
-      if (profile) {
+      if (profile && !profileError) {
         if (profile.name && !name) setName(profile.name);
         if (profile.language) {
           setLanguage(profile.language as 'en' | 'si' | 'ta');
