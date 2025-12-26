@@ -80,9 +80,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 // Server component wrapper that resolves params
 export default async function LanguageHomePage({ params }: Props) {
-  const resolvedParams = await params;
-  const lang = resolvedParams.lang;
+  try {
+    const resolvedParams = await params;
+    const lang = resolvedParams.lang;
 
-  return <LanguageHomePageContent lang={lang} />;
+    // Validate lang is a valid language
+    if (!lang || !['en', 'si', 'ta'].includes(lang)) {
+      // Default to 'en' if invalid
+      return <LanguageHomePageContent lang="en" />;
+    }
+
+    return <LanguageHomePageContent lang={lang} />;
+  } catch (error) {
+    console.error('Error in LanguageHomePage:', error);
+    // Return default language page on error
+    return <LanguageHomePageContent lang="en" />;
+  }
 }
 

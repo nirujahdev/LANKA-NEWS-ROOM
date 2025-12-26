@@ -147,44 +147,77 @@ export async function GET(req: Request) {
     }
 
     const payload = (clusters || []).map((cluster) => {
-      const summary = summariesByCluster.get(cluster.id);
-      // Always fallback to English if language-specific summary is missing
-      const summaryText =
-        lang === 'si' 
-          ? (summary?.summary_si || summary?.summary_en || '')
-          : lang === 'ta' 
-          ? (summary?.summary_ta || summary?.summary_en || '')
-          : (summary?.summary_en || '');
-      
-      // Get language-specific headline
-      const headlineText =
-        lang === 'si' ? cluster.headline_si || cluster.headline :
-        lang === 'ta' ? cluster.headline_ta || cluster.headline :
-        cluster.headline;
-      
-      // Get topics array (prefer topics array, fallback to single topic)
-      const topicsArray = cluster.topics && Array.isArray(cluster.topics) && cluster.topics.length > 0
-        ? cluster.topics
-        : cluster.topic ? [cluster.topic] : [];
-      
-      return {
-        id: cluster.id,
-        slug: cluster.slug, // Add slug for SEO-friendly URLs
-        headline: headlineText,
-        status: cluster.status,
-        category: cluster.category,
-        topic: cluster.topic || cluster.category || null, // Use topic field if available, fallback to category
-        topics: topicsArray, // Add topics array
-        first_seen: cluster.first_seen_at,
-        last_updated: cluster.updated_at,
-        created_at: cluster.created_at,
-        source_count: cluster.source_count,
-        summary: summaryText,
-        summary_version: summary?.version,
-        sources: sourcesByCluster.get(cluster.id) || [],
-        image_url: imagesByCluster.get(cluster.id) || null
-      };
-    });
+      try {
+        const summary = summariesByCluster.get(cluster.id);
+        // Always fallback to English if language-specific summary is missing
+        const summaryText =
+          lang === 'si' 
+            ? (summary?.summary_si || summary?.summary_en || '')
+            : lang === 'ta' 
+            ? (summary?.summary_ta || summary?.summary_en || '')
+            : (summary?.summary_en || '');
+        
+        // Get language-specific headline
+        const headlineText =
+          lang === 'si' ? cluster.headline_si || cluster.headline :
+          lang === 'ta' ? cluster.headline_ta || cluster.headline :
+          cluster.headline;
+        
+        // Get topics array (prefer topics array, fallback to single topic)
+        const topicsArray = cluster.topics && Array.isArray(cluster.topics) && cluster.topics.length > 0
+          ? cluster.topics
+          : cluster.topic ? [cluster.topic] : [];
+        
+        // Ensure all date values are strings (serializable)
+        const firstSeen = cluster.first_seen_at 
+          ? (typeof cluster.first_seen_at === 'string' ? cluster.first_seen_at : new Date(cluster.first_seen_at).toISOString())
+          : null;
+        const lastUpdated = cluster.updated_at
+          ? (typeof cluster.updated_at === 'string' ? cluster.updated_at : new Date(cluster.updated_at).toISOString())
+          : null;
+        const createdAt = cluster.created_at
+          ? (typeof cluster.created_at === 'string' ? cluster.created_at : new Date(cluster.created_at).toISOString())
+          : null;
+        
+        return {
+          id: cluster.id || '',
+          slug: cluster.slug || null, // Add slug for SEO-friendly URLs
+          headline: headlineText || '',
+          status: cluster.status || 'published',
+          category: cluster.category || null,
+          topic: cluster.topic || cluster.category || null, // Use topic field if available, fallback to category
+          topics: topicsArray, // Add topics array
+          first_seen: firstSeen,
+          last_updated: lastUpdated,
+          created_at: createdAt,
+          source_count: cluster.source_count || 0,
+          summary: summaryText || '',
+          summary_version: summary?.version || null,
+          sources: Array.isArray(sourcesByCluster.get(cluster.id)) ? sourcesByCluster.get(cluster.id) : [],
+          image_url: imagesByCluster.get(cluster.id) || null
+        };
+      } catch (error) {
+        console.error(`Error processing cluster ${cluster.id}:`, error);
+        // Return a minimal valid object to prevent breaking the entire response
+        return {
+          id: cluster.id || '',
+          slug: null,
+          headline: cluster.headline || '',
+          status: 'published',
+          category: null,
+          topic: null,
+          topics: [],
+          first_seen: null,
+          last_updated: null,
+          created_at: null,
+          source_count: 0,
+          summary: '',
+          summary_version: null,
+          sources: [],
+          image_url: null
+        };
+      }
+    }).filter(item => item.id); // Filter out any invalid items
 
     // Cache result for 5 minutes (with error handling)
     try {
@@ -194,7 +227,16 @@ export async function GET(req: Request) {
       console.warn('[API] Failed to cache result:', cacheError);
     }
     
-    return NextResponse.json({ clusters: payload });
+    // Ensure payload is serializable before sending
+    try {
+      // Test serialization
+      JSON.stringify(payload);
+      return NextResponse.json({ clusters: payload });
+    } catch (serializationError) {
+      console.error('[API] Serialization error:', serializationError);
+      // Return empty array if serialization fails
+      return NextResponse.json({ clusters: [] });
+    }
   } catch (error) {
     console.error('Error in GET /api/clusters:', error);
     // Always return a valid response, even on error
