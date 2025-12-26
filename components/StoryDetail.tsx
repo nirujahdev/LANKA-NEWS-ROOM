@@ -77,7 +77,7 @@ const StoryDetail: React.FC<StoryDetailProps> = ({
     updatedAt && firstSeen ? new Date(updatedAt).getTime() !== new Date(firstSeen).getTime() : false;
 
   return (
-    <div className="py-4 sm:py-6 md:py-8">
+    <div className="py-4 sm:py-6 md:py-8" data-story-content="true">
       {/* Back Button - Mobile optimized */}
       <Link
         href={`/${currentLanguage}`}

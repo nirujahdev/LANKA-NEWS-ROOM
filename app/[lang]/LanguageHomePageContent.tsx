@@ -121,16 +121,18 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
     });
 
     return (
-      <MixedLayoutGrid 
-        articles={newsCards}
-        assignments={assignments}
-      />
+      <div data-news-content="true">
+        <MixedLayoutGrid 
+          articles={newsCards}
+          assignments={assignments}
+        />
+      </div>
     );
   }, [incidents, currentLanguage]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F5F5F5]">
+      <div className="min-h-screen bg-[#F5F5F5]" data-loading="true">
         <Navigation currentLanguage={currentLanguage} onLanguageChange={setLanguage} />
         <TopicNavigation language={currentLanguage} />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -144,7 +146,7 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F5F5F5]">
+      <div className="min-h-screen bg-[#F5F5F5]" data-error="true">
         <Navigation currentLanguage={currentLanguage} onLanguageChange={setLanguage} />
         <TopicNavigation language={currentLanguage} />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

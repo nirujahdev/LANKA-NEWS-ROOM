@@ -21,8 +21,13 @@ export async function GET() {
     status: 200,
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+      'Cache-Control': 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=3600',
+      'Access-Control-Allow-Origin': '*',
     },
   });
 }
+
+// Ensure this route is not cached incorrectly
+export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
