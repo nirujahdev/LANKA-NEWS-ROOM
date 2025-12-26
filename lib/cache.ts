@@ -104,7 +104,7 @@ export interface SearchFilterOptions {
   topic?: string[];
   dateFrom?: string;
   dateTo?: string;
-  city?: string;
+  district?: string;
   eventType?: string;
 }
 
