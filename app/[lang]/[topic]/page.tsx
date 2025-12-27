@@ -457,38 +457,49 @@ export default async function TopicPage({ params, searchParams }: Props) {
 
   // Final validation: ensure all clusters are serializable before rendering
   // Use JSON.parse(JSON.stringify()) to strip any non-serializable properties
-  const validatedClusters = clusters.map((cluster: any) => {
-    try {
-      // First test if cluster is serializable
-      const jsonString = JSON.stringify(cluster);
-      // Parse and stringify again to ensure it's truly serializable and strip any prototypes
-      const cleaned = JSON.parse(jsonString);
-      return cleaned;
-    } catch (error) {
-      console.error('[TopicPage] Non-serializable cluster detected:', cluster?.id, error);
-      // Return minimal valid cluster
-      return {
-        id: String(cluster?.id || ''),
-        headline: String(cluster?.headline || ''),
-        status: 'published',
-        source_count: 0,
-        summaries: [],
-        articles: [],
-        topics: [],
-        last_seen_at: null,
-        first_seen_at: null,
-        published_at: null,
-        created_at: null,
-        updated_at: null,
-        last_checked_at: null,
-        slug: null,
-        topic: null,
-        headline_si: null,
-        headline_ta: null,
-        image_url: null
-      };
-    }
-  }).filter((cluster: any) => cluster && cluster.id);
+  let validatedClusters: any[] = [];
+  try {
+    validatedClusters = clusters.map((cluster: any) => {
+      try {
+        // First test if cluster is serializable
+        const jsonString = JSON.stringify(cluster);
+        // Parse and stringify again to ensure it's truly serializable and strip any prototypes
+        const cleaned = JSON.parse(jsonString);
+        // Final check: ensure cleaned object is also serializable
+        JSON.stringify(cleaned);
+        return cleaned;
+      } catch (error) {
+        console.error('[TopicPage] Non-serializable cluster detected:', cluster?.id, error);
+        // Return minimal valid cluster
+        return {
+          id: String(cluster?.id || ''),
+          headline: String(cluster?.headline || ''),
+          status: 'published',
+          source_count: 0,
+          summaries: [],
+          articles: [],
+          topics: [],
+          last_seen_at: null,
+          first_seen_at: null,
+          published_at: null,
+          created_at: null,
+          updated_at: null,
+          last_checked_at: null,
+          slug: null,
+          topic: null,
+          headline_si: null,
+          headline_ta: null,
+          image_url: null
+        };
+      }
+    }).filter((cluster: any) => cluster && cluster.id);
+    
+    // Final validation: ensure the entire array is serializable
+    JSON.stringify(validatedClusters);
+  } catch (error) {
+    console.error('[TopicPage] Error validating clusters array:', error);
+    validatedClusters = [];
+  }
 
   const topicLabel = getTopicLabel(topic, lang);
   const countryRef = lang === 'en' ? 'Sri Lanka' : lang === 'si' ? 'ශ්‍රී ලංකා' : 'இலங்கை';
