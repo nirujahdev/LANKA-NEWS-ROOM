@@ -455,6 +455,38 @@ export default async function TopicPage({ params, searchParams }: Props) {
     clusters = [];
   }
 
+  // Final validation: ensure all clusters are serializable before rendering
+  const validatedClusters = clusters.map((cluster: any) => {
+    try {
+      // Test if cluster is serializable
+      JSON.stringify(cluster);
+      return cluster;
+    } catch (error) {
+      console.error('[TopicPage] Non-serializable cluster detected:', cluster.id, error);
+      // Return minimal valid cluster
+      return {
+        id: String(cluster?.id || ''),
+        headline: String(cluster?.headline || ''),
+        status: 'published',
+        source_count: 0,
+        summaries: [],
+        articles: [],
+        topics: [],
+        last_seen_at: null,
+        first_seen_at: null,
+        published_at: null,
+        created_at: null,
+        updated_at: null,
+        last_checked_at: null,
+        slug: null,
+        topic: null,
+        headline_si: null,
+        headline_ta: null,
+        image_url: null
+      };
+    }
+  }).filter((cluster: any) => cluster && cluster.id);
+
   const topicLabel = getTopicLabel(topic, lang);
   const countryRef = lang === 'en' ? 'Sri Lanka' : lang === 'si' ? 'ශ්‍රී ලංකා' : 'இலங்கை';
   const newsLabel = lang === 'en' ? 'News' : lang === 'si' ? 'පුවත්' : 'செய்திகள்';
@@ -482,7 +514,7 @@ export default async function TopicPage({ params, searchParams }: Props) {
 
             {/* Articles Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {clusters?.map((cluster: any) => {
+              {validatedClusters?.map((cluster: any) => {
                 try {
                   const summary = Array.isArray(cluster.summaries) && cluster.summaries.length > 0 
                     ? cluster.summaries[0] 
@@ -572,7 +604,7 @@ export default async function TopicPage({ params, searchParams }: Props) {
               }).filter(Boolean)}
             </div>
 
-            {(!clusters || clusters.length === 0) && (
+            {(!validatedClusters || validatedClusters.length === 0) && (
               <div className="text-center py-12 text-[#5F6368]">
                 {lang === 'en' && 'No articles found for this topic.'}
                 {lang === 'si' && 'මෙම මාතෘකාව සඳහා ලිපි හමු නොවීය.'}
