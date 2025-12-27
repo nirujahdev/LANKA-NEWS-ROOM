@@ -446,10 +446,13 @@ async function summarizeEligible(
     const needsSummary = !summary || prevSourceCount !== cluster.source_count;
     // Always check if headlines need to be generated (even if summary exists)
     const needsHeadlines = !cluster.headline_si || !cluster.headline_ta || !cluster.topics || !Array.isArray(cluster.topics);
+    // Always check if SEO metadata needs to be generated (meta titles/descriptions)
+    const needsSEO = !cluster.meta_title_en || !cluster.meta_title_si || !cluster.meta_title_ta || 
+                     !cluster.meta_description_en || !cluster.meta_description_si || !cluster.meta_description_ta;
     
-    // Skip only if summary exists, source count unchanged, AND headlines/topics are already present
-    if (!needsSummary && !needsHeadlines) {
-      console.log(`[Pipeline] Skipping cluster ${cluster.id} - summary and headlines already exist`);
+    // Skip only if summary exists, source count unchanged, headlines/topics are present, AND SEO is complete
+    if (!needsSummary && !needsHeadlines && !needsSEO) {
+      console.log(`[Pipeline] Skipping cluster ${cluster.id} - summary, headlines, and SEO already exist`);
       continue;
     }
 
@@ -930,6 +933,8 @@ async function summarizeEligible(
       }
     }
     
+    // Always generate SEO metadata (even if summary already exists)
+    // This ensures meta titles and descriptions are always up-to-date
     try {
       // Check if cluster already has "other" topic - preserve it and don't reassign
       const existingTopic = cluster.topic ? normalizeTopicSlug(cluster.topic) : null;
