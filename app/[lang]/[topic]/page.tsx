@@ -456,13 +456,16 @@ export default async function TopicPage({ params, searchParams }: Props) {
   }
 
   // Final validation: ensure all clusters are serializable before rendering
+  // Use JSON.parse(JSON.stringify()) to strip any non-serializable properties
   const validatedClusters = clusters.map((cluster: any) => {
     try {
-      // Test if cluster is serializable
-      JSON.stringify(cluster);
-      return cluster;
+      // First test if cluster is serializable
+      const jsonString = JSON.stringify(cluster);
+      // Parse and stringify again to ensure it's truly serializable and strip any prototypes
+      const cleaned = JSON.parse(jsonString);
+      return cleaned;
     } catch (error) {
-      console.error('[TopicPage] Non-serializable cluster detected:', cluster.id, error);
+      console.error('[TopicPage] Non-serializable cluster detected:', cluster?.id, error);
       // Return minimal valid cluster
       return {
         id: String(cluster?.id || ''),
