@@ -813,8 +813,8 @@ async function summarizeEligible(
 
     // Generate comprehensive SEO metadata with topic/district/entity extraction
     let seoEn, seoSi, seoTa, topic, topics, district, primaryEntity, eventType, imageUrl;
-    let headlineSi: string | null = cluster.headline_si || null;
-    let headlineTa: string | null = cluster.headline_ta || null;
+    let headlineSi: string | null = latestCluster?.headline_si || null;
+    let headlineTa: string | null = latestCluster?.headline_ta || null;
     
     // Generate headlines if needed (even if summary already exists)
     // Note: sourceLang is already detected above (line 508-535)
