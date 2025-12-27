@@ -433,24 +433,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://lankanewsroom.xyz/en/sports/india-women-vs-sri-lanka-women-live-streaming</loc>
-    <lastmod>2025-12-26T17:33:29.834Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://lankanewsroom.xyz/si/sports/india-women-vs-sri-lanka-women-live-streaming</loc>
-    <lastmod>2025-12-26T17:33:29.834Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://lankanewsroom.xyz/ta/sports/india-women-vs-sri-lanka-women-live-streaming</loc>
-    <lastmod>2025-12-26T17:33:29.834Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://lankanewsroom.xyz/en/sports/sambo-federation-meeting-sri-lanka</loc>
     <lastmod>2025-12-26T17:33:33.979Z</lastmod>
     <changefreq>daily</changefreq>
@@ -609,6 +591,24 @@
   <url>
     <loc>https://lankanewsroom.xyz/ta/sports/womens-world-cup-begins-today-in-sri-lanka</loc>
     <lastmod>2025-12-26T17:38:59.037Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/en/sports/india-women-vs-sri-lanka-women-live-streaming</loc>
+    <lastmod>2025-12-27T09:51:56.939Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/si/sports/india-women-vs-sri-lanka-women-live-streaming</loc>
+    <lastmod>2025-12-27T09:51:56.939Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/ta/sports/india-women-vs-sri-lanka-women-live-streaming</loc>
+    <lastmod>2025-12-27T09:51:56.939Z</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1117,24 +1117,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://lankanewsroom.xyz/en/sports/gsa-chief-executive-meets-sports-leaders</loc>
-    <lastmod>2025-12-26T17:41:41.269Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://lankanewsroom.xyz/si/sports/gsa-chief-executive-meets-sports-leaders</loc>
-    <lastmod>2025-12-26T17:41:41.269Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://lankanewsroom.xyz/ta/sports/gsa-chief-executive-meets-sports-leaders</loc>
-    <lastmod>2025-12-26T17:41:41.269Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://lankanewsroom.xyz/en/sports/new-office-bearers-appointed-sri-lanka</loc>
     <lastmod>2025-12-26T17:41:47.259Z</lastmod>
     <changefreq>daily</changefreq>
@@ -1185,6 +1167,24 @@
   <url>
     <loc>https://lankanewsroom.xyz/ta/sports/sri-lankan-mens-team-tour-england-sep-2026</loc>
     <lastmod>2025-12-26T17:41:58.411Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/en/sports/gsa-chief-executive-meets-sports-leaders</loc>
+    <lastmod>2025-12-27T09:52:17.093Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/si/sports/gsa-chief-executive-meets-sports-leaders</loc>
+    <lastmod>2025-12-27T09:52:17.093Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/ta/sports/gsa-chief-executive-meets-sports-leaders</loc>
+    <lastmod>2025-12-27T09:52:17.093Z</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
