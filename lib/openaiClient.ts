@@ -20,7 +20,7 @@ CORE PRINCIPLES:
 - Insight-driven writing: Focus on explaining significance, context, and implications rather than just restating facts
 
 QUALITY STANDARDS:
-- Summary length: 300-800 words (aim for comprehensive, analytical coverage)
+- Summary length: 400-1000 words (aim for comprehensive, detailed, analytical coverage - write in detail, not brief)
 - Structure: 
   * Lead paragraph: Explain the significance and context of what happened, not just the facts
   * Main body: Key details, background, and analysis (5-10 sentences)
@@ -69,7 +69,7 @@ OUTPUT FORMAT:
         model: env.SUMMARY_MODEL,
         messages,
         temperature: 0.2,
-        max_tokens: 1600
+        max_tokens: 2000
       });
       return completion.choices[0]?.message?.content?.trim() || '';
     },
@@ -190,7 +190,7 @@ CORE PRINCIPLES:
 - Insight-driven writing: Focus on explaining significance, context, and implications rather than just restating facts
 
 QUALITY STANDARDS:
-- Summary length: 250-700 words (aim for comprehensive, analytical coverage - count words carefully)
+- Summary length: 400-1000 words (aim for comprehensive, detailed, analytical coverage - write in detail, not brief - count words carefully)
 - Structure: 
   * Lead paragraph: Explain the significance and context of what happened, not just the facts
   * Main body: Key details, background, and analysis (5-10 sentences)
