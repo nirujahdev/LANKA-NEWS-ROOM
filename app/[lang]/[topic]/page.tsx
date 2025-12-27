@@ -447,7 +447,7 @@ export default async function TopicPage({ params, searchParams }: Props) {
                   const sourcesMap = new Map<string, { name: string; feed_url: string }>();
                   if (Array.isArray(cluster.articles)) {
                     cluster.articles.forEach((article: any) => {
-                      if (article && article.sources && typeof article.sources === 'object') {
+                      if (article && article.sources && typeof article.sources === 'object' && !Array.isArray(article.sources)) {
                         const source = article.sources;
                         const sourceName = String(source.name || '');
                         const sourceUrl = String(source.feed_url || '#');
@@ -460,11 +460,15 @@ export default async function TopicPage({ params, searchParams }: Props) {
                       }
                     });
                   }
-                  const sources = Array.from(sourcesMap.values());
+                  // Convert Map to array and ensure all values are serializable
+                  const sources = Array.from(sourcesMap.values()).map(source => ({
+                    name: String(source.name || ''),
+                    feed_url: String(source.feed_url || '#')
+                  }));
 
                   // Get topics array (prefer topics array, fallback to single topic)
                   const topicsArray = Array.isArray(cluster.topics) && cluster.topics.length > 0
-                    ? cluster.topics.filter((t: any) => typeof t === 'string')
+                    ? cluster.topics.filter((t: any) => typeof t === 'string').map((t: any) => String(t))
                     : cluster.topic ? [String(cluster.topic)] : [];
 
                   // Ensure updatedAt is a string or null
@@ -474,6 +478,17 @@ export default async function TopicPage({ params, searchParams }: Props) {
                       updatedAt = cluster.last_seen_at.toISOString();
                     } else if (typeof cluster.last_seen_at === 'string') {
                       updatedAt = cluster.last_seen_at;
+                    }
+                  }
+                  
+                  // Get imageUrl from cluster or first article
+                  let imageUrl: string | null = null;
+                  if (cluster.image_url && typeof cluster.image_url === 'string' && cluster.image_url.trim().length > 0) {
+                    imageUrl = cluster.image_url;
+                  } else if (Array.isArray(cluster.articles) && cluster.articles.length > 0) {
+                    const firstArticle = cluster.articles[0];
+                    if (firstArticle && firstArticle.image_url && typeof firstArticle.image_url === 'string' && firstArticle.image_url.trim().length > 0) {
+                      imageUrl = firstArticle.image_url;
                     }
                   }
 
@@ -490,6 +505,7 @@ export default async function TopicPage({ params, searchParams }: Props) {
                       sources={sources.length > 0 ? sources : [{ name: 'Multiple Sources', feed_url: '#' }]}
                       category={cluster.topic ? String(cluster.topic) : null}
                       topics={topicsArray}
+                      imageUrl={imageUrl}
                     />
                   );
                 } catch (error) {
