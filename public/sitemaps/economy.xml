@@ -631,24 +631,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://lankanewsroom.xyz/en/economy/india-supports-sri-lanka-tourism</loc>
-    <lastmod>2025-12-26T17:24:21.413Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://lankanewsroom.xyz/si/economy/india-supports-sri-lanka-tourism</loc>
-    <lastmod>2025-12-26T17:24:21.413Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://lankanewsroom.xyz/ta/economy/india-supports-sri-lanka-tourism</loc>
-    <lastmod>2025-12-26T17:24:21.413Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://lankanewsroom.xyz/en/economy/sri-lanka-growth-cools-monetary-policy-easing</loc>
     <lastmod>2025-12-26T17:24:28.180Z</lastmod>
     <changefreq>daily</changefreq>
@@ -879,6 +861,24 @@
   <url>
     <loc>https://lankanewsroom.xyz/ta/economy/sri-lanka-keeps-policy-rate-steady</loc>
     <lastmod>2025-12-26T19:32:40.171Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/en/economy/india-supports-sri-lanka-tourism</loc>
+    <lastmod>2025-12-27T03:58:09.134Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/si/economy/india-supports-sri-lanka-tourism</loc>
+    <lastmod>2025-12-27T03:58:09.134Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/ta/economy/india-supports-sri-lanka-tourism</loc>
+    <lastmod>2025-12-27T03:58:09.134Z</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
