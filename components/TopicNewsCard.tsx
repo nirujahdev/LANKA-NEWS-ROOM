@@ -232,7 +232,7 @@ export default function TopicNewsCard({
           <div className="space-y-3">
             {sortedArticles.slice(0, 3).map((article) => {
               const articleTopic = article.topic || topicSlug || 'other';
-              const articleHref = getStoryUrl(language, article.slug, article.id, articleTopic);
+              const articleHref = getStoryUrl(language, article.slug, article.id, articleTopic, article.topics);
               const articleImageUrl = getImageUrl({
                 id: article.id,
                 slug: article.slug,

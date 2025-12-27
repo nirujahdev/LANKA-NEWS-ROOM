@@ -33,8 +33,9 @@ const NewsCard: React.FC<NewsCardProps> = ({
   topics = []
 }) => {
   // Use new URL format: /{lang}/{topic}/{slug}
+  // Prefer first non-"other" topic from topics array
   const topic = category || topics?.[0] || 'other';
-  const href = getStoryUrl(language, slug, id, topic);
+  const href = getStoryUrl(language, slug, id, topic, topics);
   const getLabel = (en: string, si?: string, ta?: string) => {
     if (language === 'si' && si) return si;
     if (language === 'ta' && ta) return ta;

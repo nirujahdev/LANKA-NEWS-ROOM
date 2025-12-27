@@ -7,44 +7,62 @@
 import { supabaseAdmin } from '../lib/supabaseAdmin';
 
 async function clearDatabase() {
-  console.log('🗑️  Starting database cleanup...');
+  console.log('🗑️  Starting database cleanup (deleting rows only, keeping table structure)...');
   
   try {
-    // Delete summaries first (foreign key constraint)
+    // Delete in proper order to respect foreign key constraints
+    // 1. Delete summaries first (references clusters)
     console.log('Deleting summaries...');
     const { error: summaryError, count: summaryCount } = await supabaseAdmin
       .from('summaries')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all (using a condition that's always true)
+      .neq('id', ''); // Delete all rows (condition that's always true)
     
     if (summaryError) {
       console.error('❌ Error deleting summaries:', summaryError);
+      throw summaryError;
     } else {
       console.log(`✅ Deleted summaries (count: ${summaryCount || 'unknown'})`);
     }
 
-    // Delete articles
+    // 2. Delete cluster_articles junction table (references both clusters and articles)
+    console.log('Deleting cluster_articles...');
+    const { error: clusterArticlesError, count: clusterArticlesCount } = await supabaseAdmin
+      .from('cluster_articles')
+      .delete()
+      .neq('id', '');
+    
+    if (clusterArticlesError) {
+      console.error('❌ Error deleting cluster_articles:', clusterArticlesError);
+      // Don't throw - this table might not exist
+    } else {
+      console.log(`✅ Deleted cluster_articles (count: ${clusterArticlesCount || 'unknown'})`);
+    }
+
+    // 3. Delete articles (references sources and clusters)
     console.log('Deleting articles...');
     const { error: articleError, count: articleCount } = await supabaseAdmin
       .from('articles')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
+      .neq('id', '');
     
     if (articleError) {
       console.error('❌ Error deleting articles:', articleError);
+      throw articleError;
     } else {
       console.log(`✅ Deleted articles (count: ${articleCount || 'unknown'})`);
     }
 
-    // Delete clusters
+    // 4. Delete clusters last (no dependencies on summaries/articles after they're deleted)
     console.log('Deleting clusters...');
     const { error: clusterError, count: clusterCount } = await supabaseAdmin
       .from('clusters')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
+      .neq('id', '');
     
     if (clusterError) {
       console.error('❌ Error deleting clusters:', clusterError);
+      throw clusterError;
     } else {
       console.log(`✅ Deleted clusters (count: ${clusterCount || 'unknown'})`);
     }

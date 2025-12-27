@@ -251,18 +251,26 @@ export default async function StoryPage({ params }: Props) {
       notFound();
     }
 
-    // Validate topic matches cluster topic or exists in topics array - redirect if mismatch
-    const clusterTopic = normalizeTopicSlug(data.cluster.topic) || 'other';
+    // Get cluster topics array and find first non-"other" topic for URL
     const clusterTopics = data.cluster.topics && Array.isArray(data.cluster.topics) 
       ? data.cluster.topics.map((t: string) => normalizeTopicSlug(t)).filter(Boolean)
-      : [clusterTopic];
+      : [];
+    const clusterTopic = normalizeTopicSlug(data.cluster.topic);
+    
+    // Find first non-"other" topic from topics array, then fallback to single topic
+    const primaryTopic = clusterTopics.find(t => t && t !== 'other') 
+      || (clusterTopic && clusterTopic !== 'other' ? clusterTopic : null)
+      || clusterTopics[0] 
+      || clusterTopic 
+      || 'other';
     
     // Check if current topic is in cluster's topics (single topic or topics array)
-    const topicMatches = clusterTopic === topic || clusterTopics.includes(topic);
+    const allClusterTopics = clusterTopics.length > 0 ? clusterTopics : (clusterTopic ? [clusterTopic] : []);
+    const topicMatches = allClusterTopics.includes(topic);
     
-    if (!topicMatches && clusterTopic) {
+    if (!topicMatches && primaryTopic && primaryTopic !== 'other') {
       // Redirect to primary topic if current topic doesn't match
-      redirect(`/${lang}/${clusterTopic}/${slug}`);
+      redirect(`/${lang}/${primaryTopic}/${slug}`);
     }
 
     const { cluster, summary, articles } = data;
@@ -353,7 +361,7 @@ export default async function StoryPage({ params }: Props) {
     } : null;
     
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
-    const canonicalUrl = `${baseUrl}/${lang}/${topic}/${slug}`;
+    const canonicalUrl = `${baseUrl}/${lang}/${primaryTopic}/${slug}`;
     
     // Get language-specific headline
     const headlineText =
@@ -385,10 +393,10 @@ export default async function StoryPage({ params }: Props) {
     const breadcrumbItems = [
       { name: lang === 'si' ? 'මුල් පිටුව' : lang === 'ta' ? 'முகப்பு' : 'Home', url: `/${lang}` },
       {
-        name: serializedCluster.topic 
-          ? (lang === 'si' ? serializedCluster.topic : lang === 'ta' ? serializedCluster.topic : serializedCluster.topic)
+        name: primaryTopic && primaryTopic !== 'other'
+          ? (lang === 'si' ? primaryTopic : lang === 'ta' ? primaryTopic : primaryTopic)
           : (lang === 'si' ? 'පුවත්' : lang === 'ta' ? 'செய்திகள்' : 'News'),
-        url: serializedCluster.topic ? `/${lang}/${clusterTopic}` : `/${lang}`
+        url: primaryTopic && primaryTopic !== 'other' ? `/${lang}/${primaryTopic}` : `/${lang}`
       },
       { name: headlineText, url: `/${lang}/${topic}/${slug}` }
     ];

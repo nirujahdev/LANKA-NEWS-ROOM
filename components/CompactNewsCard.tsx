@@ -9,7 +9,7 @@ interface CompactNewsCardProps {
 
 export default function CompactNewsCard({ data }: CompactNewsCardProps) {
   const topic = data.category || data.topics?.[0] || 'other';
-  const href = getStoryUrl(data.language || 'en', data.slug, data.id, topic);
+  const href = getStoryUrl(data.language || 'en', data.slug, data.id, topic, data.topics);
   const topicTags = getTopicTags(data);
   const imageUrl = getImageUrl(data);
 

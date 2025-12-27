@@ -960,17 +960,14 @@ async function summarizeEligible(
     // Always generate SEO metadata (even if summary already exists)
     // This ensures meta titles and descriptions are always up-to-date
     try {
-      // Check if cluster already has "other" topic - preserve it and don't reassign
-      const existingTopic = cluster.topic ? normalizeTopicSlug(cluster.topic) : null;
-      const isOtherTopic = existingTopic === 'other';
-      
       // Generate comprehensive SEO for English (includes topic, district, entities)
+      // Don't preserve "other" topic - let SEO generation determine the best topic
       const comprehensiveSEO = await generateComprehensiveSEO(
         summaryEn,
         cluster.headline,
         articles || [],
         'en',
-        isOtherTopic ? 'other' : undefined // Pass existing "other" topic to preserve it
+        undefined // Don't preserve any topic, let it be regenerated
       );
 
       seoEn = {
@@ -978,13 +975,11 @@ async function summarizeEligible(
         description: comprehensiveSEO.meta_description
       };
 
-      // Preserve "other" topic if it was already assigned
-      topic = isOtherTopic ? 'other' : comprehensiveSEO.topic;
+      // Use the topic from SEO generation (don't preserve "other")
+      topic = comprehensiveSEO.topic || 'politics';
       
       // Ensure topics array always has at least 2 topics (geographic + content)
-      let topicsArray = isOtherTopic 
-        ? ['sri-lanka', 'other'] 
-        : (comprehensiveSEO.topics || []);
+      let topicsArray = comprehensiveSEO.topics || [];
       
       // Validate and ensure 2-topic system
       if (!Array.isArray(topicsArray) || topicsArray.length === 0) {
@@ -1002,22 +997,52 @@ async function summarizeEligible(
         topicsArray.unshift('sri-lanka'); // Default to sri-lanka for local news
       }
       
-      // Add content topic if missing
+      // Add content topic if missing (prefer non-"other" topics)
       if (!hasContent) {
         const primaryTopic = comprehensiveSEO.topic || 'politics';
-        if (!topicsArray.includes(primaryTopic)) {
-          topicsArray.push(primaryTopic);
+        // Only add if it's not "other" or if we have no other option
+        if (primaryTopic !== 'other' || topicsArray.length === 0) {
+          if (!topicsArray.includes(primaryTopic)) {
+            topicsArray.push(primaryTopic);
+          }
+        } else {
+          // If primary topic is "other" but we have geographic topics, try to find a better content topic
+          const contentTopics = ['politics', 'economy', 'sports', 'crime', 'education', 'health', 'environment', 'technology', 'culture', 'society'];
+          const betterTopic = contentTopics.find(t => !topicsArray.includes(t)) || 'politics';
+          topicsArray.push(betterTopic);
         }
       }
       
-      // Ensure minimum 2 topics
+      // Ensure minimum 2 topics (avoid "other" when possible)
       if (topicsArray.length < 2) {
         const primaryTopic = comprehensiveSEO.topic || 'politics';
-        if (!topicsArray.includes(primaryTopic)) {
+        // Prefer non-"other" topics
+        if (primaryTopic !== 'other' && !topicsArray.includes(primaryTopic)) {
           topicsArray.push(primaryTopic);
+        } else if (primaryTopic === 'other') {
+          // If primary is "other", try to find a better content topic
+          const contentTopics = ['politics', 'economy', 'sports', 'crime', 'education', 'health', 'environment', 'technology', 'culture', 'society'];
+          const betterTopic = contentTopics.find(t => !topicsArray.includes(t)) || 'politics';
+          topicsArray.push(betterTopic);
         }
         if (!topicsArray.includes('sri-lanka') && !topicsArray.includes('world')) {
           topicsArray.unshift('sri-lanka');
+        }
+      }
+      
+      // Filter out "other" from topics array if we have at least one non-"other" content topic
+      const hasNonOtherContent = topicsArray.some(t => 
+        t !== 'other' && t !== 'sri-lanka' && t !== 'world' &&
+        ['politics', 'economy', 'sports', 'crime', 'education', 'health', 'environment', 'technology', 'culture', 'society'].includes(t)
+      );
+      if (hasNonOtherContent) {
+        topicsArray = topicsArray.filter(t => t !== 'other');
+        // Ensure we still have at least 2 topics after filtering
+        if (topicsArray.length < 2) {
+          const hasGeographic = topicsArray.some(t => t === 'sri-lanka' || t === 'world');
+          if (!hasGeographic) {
+            topicsArray.unshift('sri-lanka');
+          }
         }
       }
       
@@ -1220,6 +1245,13 @@ async function summarizeEligible(
         imageUrl = null;
         console.warn(`[Pipeline] ⚠️ No images found for cluster ${cluster.id} - checked ${imageStats.rss} RSS, ${imageStats.content} content, ${imageStats.page} page images`);
       }
+      
+      // Log image URL before saving
+      if (imageUrl) {
+        console.log(`[Pipeline] ✅ Selected image URL for cluster ${cluster.id}: ${imageUrl.substring(0, 100)}...`);
+      } else {
+        console.warn(`[Pipeline] ⚠️ No image URL to save for cluster ${cluster.id}`);
+      }
 
       // Generate SEO for other languages using translated headlines
       // Use translated headlines if available, otherwise use English headline
@@ -1406,7 +1438,7 @@ async function summarizeEligible(
     console.log(`  - Topics: ${JSON.stringify(topics)} (should have at least 2: geographic + content)`);
     
     // Update cluster with comprehensive SEO metadata and publish
-    const updateResult = await supabaseAdmin.from('clusters').update({
+    const updateData: any = {
       status: 'published',
       meta_title_en: seoEn.title,
       meta_description_en: seoEn.description,
@@ -1423,17 +1455,26 @@ async function summarizeEligible(
       city: district, // Keep city field for backward compatibility, but use district value
       primary_entity: primaryEntity,
       event_type: eventType,
-      image_url: imageUrl,
       language: 'en', // Primary language (can be enhanced later)
       keywords: keywords.length > 0 ? keywords : null,
       last_checked_at: new Date().toISOString()
-    }).eq('id', cluster.id);
+    };
+    
+    // Only include image_url if we have a valid URL
+    if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim().length > 0 && imageUrl.startsWith('http')) {
+      updateData.image_url = imageUrl;
+      console.log(`[Pipeline] ✅ Including image_url in update for cluster ${cluster.id}: ${imageUrl.substring(0, 80)}...`);
+    } else {
+      console.warn(`[Pipeline] ⚠️ Not including image_url in update for cluster ${cluster.id} (invalid or missing)`);
+    }
+    
+    const updateResult = await supabaseAdmin.from('clusters').update(updateData).eq('id', cluster.id);
 
     if (updateResult.error) {
       errors.push({ stage: 'seo', message: `Failed to update cluster SEO metadata: ${updateResult.error.message}` });
-      console.error(`[Pipeline] ❌ Failed to save headlines for cluster ${cluster.id}:`, updateResult.error);
+      console.error(`[Pipeline] ❌ Failed to save cluster data for cluster ${cluster.id}:`, updateResult.error);
     } else {
-      console.log(`[Pipeline] ✅ Successfully saved headlines for cluster ${cluster.id} (SI: ${headlineSi ? 'yes' : 'no'}, TA: ${headlineTa ? 'yes' : 'no'})`);
+      console.log(`[Pipeline] ✅ Successfully saved cluster data for cluster ${cluster.id} (SI: ${headlineSi ? 'yes' : 'no'}, TA: ${headlineTa ? 'yes' : 'no'}, Image: ${imageUrl ? 'yes' : 'no'})`);
     }
 
     // Update all articles in this cluster with district information
