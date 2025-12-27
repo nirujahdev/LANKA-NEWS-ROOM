@@ -3636,4 +3636,22 @@
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/en/politics/former-presidents-arrest-sri-lanka</loc>
+    <lastmod>2025-12-26T21:44:31.603Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/si/politics/former-presidents-arrest-sri-lanka</loc>
+    <lastmod>2025-12-26T21:44:31.603Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/ta/politics/former-presidents-arrest-sri-lanka</loc>
+    <lastmod>2025-12-26T21:44:31.603Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
 </urlset>
