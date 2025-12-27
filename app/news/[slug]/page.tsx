@@ -250,8 +250,8 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
       return String(value);
     };
 
-    const serializedCluster = {
-      ...cluster,
+    // Deep serialize cluster - don't use spread operator as it might copy non-serializable properties
+    const serializedCluster: any = {
       // Convert all date fields to ISO strings
       published_at: toISOString(cluster.published_at),
       updated_at: toISOString(cluster.updated_at),
@@ -269,15 +269,23 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
       category: cluster.category ? String(cluster.category) : null,
       image_url: cluster.image_url ? String(cluster.image_url) : null,
       source_count: typeof cluster.source_count === 'number' ? cluster.source_count : 0,
-      topics: Array.isArray(cluster.topics) ? cluster.topics.filter((t: any) => typeof t === 'string') : [],
-      keywords: Array.isArray(cluster.keywords) ? cluster.keywords.filter((k: any) => typeof k === 'string') : null,
+      topics: Array.isArray(cluster.topics) ? cluster.topics.filter((t: any) => typeof t === 'string').map((t: any) => String(t)) : [],
+      keywords: Array.isArray(cluster.keywords) ? cluster.keywords.filter((k: any) => typeof k === 'string').map((k: any) => String(k)) : null,
       meta_title_en: cluster.meta_title_en ? String(cluster.meta_title_en) : null,
       meta_description_en: cluster.meta_description_en ? String(cluster.meta_description_en) : null,
       meta_title_si: cluster.meta_title_si ? String(cluster.meta_title_si) : null,
       meta_description_si: cluster.meta_description_si ? String(cluster.meta_description_si) : null,
       meta_title_ta: cluster.meta_title_ta ? String(cluster.meta_title_ta) : null,
-      meta_description_ta: cluster.meta_description_ta ? String(cluster.meta_description_ta) : null
+      meta_description_ta: cluster.meta_description_ta ? String(cluster.meta_description_ta) : null,
+      language: cluster.language ? String(cluster.language) : null
     };
+    
+    // Remove any undefined values
+    Object.keys(serializedCluster).forEach(key => {
+      if (serializedCluster[key] === undefined) {
+        delete serializedCluster[key];
+      }
+    });
     
     // Serialize articles
     const serializedArticles = (articles || []).map((article: any) => {

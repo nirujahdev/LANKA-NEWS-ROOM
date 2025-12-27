@@ -132,40 +132,43 @@ export default async function TopicPage({ params }: Props) {
 
     // Serialize clusters data to ensure all dates are strings and all values are serializable
     const clusters = (clustersData || []).map((cluster: any) => {
-      const serializedCluster = { ...cluster };
+      // Don't use spread operator - explicitly serialize to avoid non-serializable properties
+      const serializedCluster: any = {};
+      
+      // Helper to convert dates to ISO strings
+      const toISOString = (value: any): string | null => {
+        if (!value) return null;
+        if (value instanceof Date) return value.toISOString();
+        if (typeof value === 'string') {
+          try {
+            const date = new Date(value);
+            if (!isNaN(date.getTime())) return date.toISOString();
+          } catch {}
+          return value;
+        }
+        return null;
+      };
       
       // Convert all date fields to ISO strings
       const dateFields = ['last_seen_at', 'first_seen_at', 'published_at', 'created_at', 'updated_at', 'last_checked_at'];
       for (const field of dateFields) {
-        if (serializedCluster[field]) {
-          if (serializedCluster[field] instanceof Date) {
-            serializedCluster[field] = serializedCluster[field].toISOString();
-          } else if (typeof serializedCluster[field] === 'string') {
-            // Already a string, ensure it's valid
-            try {
-              new Date(serializedCluster[field]);
-            } catch {
-              serializedCluster[field] = null;
-            }
-          }
-        } else {
-          serializedCluster[field] = null;
-        }
+        serializedCluster[field] = toISOString(cluster[field]);
       }
       
       // Ensure all string fields are strings
-      serializedCluster.id = String(serializedCluster.id || '');
-      serializedCluster.headline = String(serializedCluster.headline || '');
-      serializedCluster.slug = serializedCluster.slug ? String(serializedCluster.slug) : null;
-      serializedCluster.status = String(serializedCluster.status || 'published');
-      serializedCluster.topic = serializedCluster.topic ? String(serializedCluster.topic) : null;
-      serializedCluster.source_count = typeof serializedCluster.source_count === 'number' ? serializedCluster.source_count : 0;
+      serializedCluster.id = String(cluster.id || '');
+      serializedCluster.headline = String(cluster.headline || '');
+      serializedCluster.slug = cluster.slug ? String(cluster.slug) : null;
+      serializedCluster.status = String(cluster.status || 'published');
+      serializedCluster.topic = cluster.topic ? String(cluster.topic) : null;
+      serializedCluster.source_count = typeof cluster.source_count === 'number' ? cluster.source_count : 0;
       
       // Ensure summaries is an array
-      if (serializedCluster.summaries && !Array.isArray(serializedCluster.summaries)) {
-        serializedCluster.summaries = [serializedCluster.summaries];
-      }
-      if (!Array.isArray(serializedCluster.summaries)) {
+      if (cluster.summaries && !Array.isArray(cluster.summaries)) {
+        serializedCluster.summaries = [cluster.summaries];
+      } else if (Array.isArray(cluster.summaries)) {
+        serializedCluster.summaries = cluster.summaries;
+      } else {
         serializedCluster.summaries = [];
       }
       
@@ -192,10 +195,11 @@ export default async function TopicPage({ params }: Props) {
       }).filter(Boolean);
       
       // Ensure articles is an array
-      if (serializedCluster.articles && !Array.isArray(serializedCluster.articles)) {
-        serializedCluster.articles = [serializedCluster.articles];
-      }
-      if (!Array.isArray(serializedCluster.articles)) {
+      if (cluster.articles && !Array.isArray(cluster.articles)) {
+        serializedCluster.articles = [cluster.articles];
+      } else if (Array.isArray(cluster.articles)) {
+        serializedCluster.articles = cluster.articles;
+      } else {
         serializedCluster.articles = [];
       }
       
@@ -243,28 +247,28 @@ export default async function TopicPage({ params }: Props) {
       }).filter(Boolean);
       
       // Serialize keywords array
-      if (Array.isArray(serializedCluster.keywords)) {
-        serializedCluster.keywords = serializedCluster.keywords.filter((k: any) => typeof k === 'string').map((k: any) => String(k));
+      if (Array.isArray(cluster.keywords)) {
+        serializedCluster.keywords = cluster.keywords.filter((k: any) => typeof k === 'string').map((k: any) => String(k));
       } else {
         serializedCluster.keywords = null;
       }
       
       // Serialize meta fields
-      serializedCluster.meta_title_en = serializedCluster.meta_title_en ? String(serializedCluster.meta_title_en) : null;
-      serializedCluster.meta_title_si = serializedCluster.meta_title_si ? String(serializedCluster.meta_title_si) : null;
-      serializedCluster.meta_title_ta = serializedCluster.meta_title_ta ? String(serializedCluster.meta_title_ta) : null;
-      serializedCluster.meta_description_en = serializedCluster.meta_description_en ? String(serializedCluster.meta_description_en) : null;
-      serializedCluster.meta_description_si = serializedCluster.meta_description_si ? String(serializedCluster.meta_description_si) : null;
-      serializedCluster.meta_description_ta = serializedCluster.meta_description_ta ? String(serializedCluster.meta_description_ta) : null;
+      serializedCluster.meta_title_en = cluster.meta_title_en ? String(cluster.meta_title_en) : null;
+      serializedCluster.meta_title_si = cluster.meta_title_si ? String(cluster.meta_title_si) : null;
+      serializedCluster.meta_title_ta = cluster.meta_title_ta ? String(cluster.meta_title_ta) : null;
+      serializedCluster.meta_description_en = cluster.meta_description_en ? String(cluster.meta_description_en) : null;
+      serializedCluster.meta_description_si = cluster.meta_description_si ? String(cluster.meta_description_si) : null;
+      serializedCluster.meta_description_ta = cluster.meta_description_ta ? String(cluster.meta_description_ta) : null;
       
       // Serialize other optional fields
-      serializedCluster.city = serializedCluster.city ? String(serializedCluster.city) : null;
-      serializedCluster.primary_entity = serializedCluster.primary_entity ? String(serializedCluster.primary_entity) : null;
-      serializedCluster.event_type = serializedCluster.event_type ? String(serializedCluster.event_type) : null;
-      serializedCluster.language = serializedCluster.language ? String(serializedCluster.language) : null;
-      serializedCluster.headline_si = serializedCluster.headline_si ? String(serializedCluster.headline_si) : null;
-      serializedCluster.headline_ta = serializedCluster.headline_ta ? String(serializedCluster.headline_ta) : null;
-      serializedCluster.image_url = serializedCluster.image_url ? String(serializedCluster.image_url) : null;
+      serializedCluster.city = cluster.city ? String(cluster.city) : null;
+      serializedCluster.primary_entity = cluster.primary_entity ? String(cluster.primary_entity) : null;
+      serializedCluster.event_type = cluster.event_type ? String(cluster.event_type) : null;
+      serializedCluster.language = cluster.language ? String(cluster.language) : null;
+      serializedCluster.headline_si = cluster.headline_si ? String(cluster.headline_si) : null;
+      serializedCluster.headline_ta = cluster.headline_ta ? String(cluster.headline_ta) : null;
+      serializedCluster.image_url = cluster.image_url ? String(cluster.image_url) : null;
       
       // Remove any undefined values and functions
       Object.keys(serializedCluster).forEach(key => {

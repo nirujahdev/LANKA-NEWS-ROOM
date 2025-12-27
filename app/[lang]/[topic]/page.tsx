@@ -99,6 +99,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function TopicPage({ params, searchParams }: Props) {
+  // #region agent log
+  console.log('[DEBUG] TopicPage entry');
+  // #endregion
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
   const { lang, topic: rawTopic } = resolvedParams;
@@ -469,6 +472,9 @@ export default async function TopicPage({ params, searchParams }: Props) {
         JSON.stringify(cleaned);
         return cleaned;
       } catch (error) {
+        // #region agent log
+        console.error('[DEBUG] Non-serializable cluster detected', {clusterId: cluster?.id, error: String(error)});
+        // #endregion
         console.error('[TopicPage] Non-serializable cluster detected:', cluster?.id, error);
         // Return minimal valid cluster
         return {
@@ -496,7 +502,13 @@ export default async function TopicPage({ params, searchParams }: Props) {
     
     // Final validation: ensure the entire array is serializable
     JSON.stringify(validatedClusters);
+    // #region agent log
+    console.log('[DEBUG] ValidatedClusters JSON test passed', {count: validatedClusters.length});
+    // #endregion
   } catch (error) {
+    // #region agent log
+    console.error('[DEBUG] ValidatedClusters JSON test FAILED', {error: String(error)});
+    // #endregion
     console.error('[TopicPage] Error validating clusters array:', error);
     validatedClusters = [];
   }

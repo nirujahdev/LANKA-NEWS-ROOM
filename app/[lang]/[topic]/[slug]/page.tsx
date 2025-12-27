@@ -235,9 +235,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function StoryPage({ params }: Props) {
+  // #region agent log
+  console.log('[DEBUG] StoryPage entry');
+  // #endregion
   try {
     const resolvedParams = await params;
     const { lang, topic: rawTopic, slug } = resolvedParams;
+    
+    // #region agent log
+    console.log('[DEBUG] Params resolved', {lang, topic: rawTopic, slug});
+    // #endregion
     
     // Normalize and validate topic
     const topic = normalizeTopicSlug(rawTopic);
@@ -246,6 +253,10 @@ export default async function StoryPage({ params }: Props) {
     }
     
     const data = await getClusterBySlug(slug);
+    
+    // #region agent log
+    console.log('[DEBUG] Data fetched', {hasData: !!data, hasCluster: !!data?.cluster, clusterId: data?.cluster?.id});
+    // #endregion
 
     if (!data || !data.cluster) {
       notFound();
@@ -264,11 +275,18 @@ export default async function StoryPage({ params }: Props) {
       || clusterTopic 
       || 'other';
     
+    // #region agent log
+    console.log('[DEBUG] PrimaryTopic calculated', {primaryTopic, primaryTopicType: typeof primaryTopic, currentTopic: topic});
+    // #endregion
+    
     // Check if current topic is in cluster's topics (single topic or topics array)
     const allClusterTopics = clusterTopics.length > 0 ? clusterTopics : (clusterTopic ? [clusterTopic] : []);
     const topicMatches = allClusterTopics.includes(topic);
     
     if (!topicMatches && primaryTopic && primaryTopic !== 'other') {
+      // #region agent log
+      console.log('[DEBUG] Redirecting', {lang, primaryTopic, slug, redirectUrl: `/${lang}/${primaryTopic}/${slug}`});
+      // #endregion
       // Redirect to primary topic if current topic doesn't match
       redirect(`/${lang}/${primaryTopic}/${slug}`);
     }
@@ -297,8 +315,12 @@ export default async function StoryPage({ params }: Props) {
       return String(value);
     };
 
-    const serializedCluster = {
-      ...cluster,
+    // #region agent log
+    console.log('[DEBUG] Before serialization', {clusterKeys: Object.keys(cluster || {}), hasSummary: !!summary, articlesCount: articles?.length});
+    // #endregion
+    
+    // Deep serialize cluster - don't use spread operator as it might copy non-serializable properties
+    const serializedCluster: any = {
       // Convert all date fields to ISO strings
       published_at: toISOString(cluster.published_at),
       updated_at: toISOString(cluster.updated_at),
@@ -316,104 +338,270 @@ export default async function StoryPage({ params }: Props) {
       category: cluster.category ? String(cluster.category) : null,
       image_url: cluster.image_url ? String(cluster.image_url) : null,
       source_count: typeof cluster.source_count === 'number' ? cluster.source_count : 0,
-      topics: Array.isArray(cluster.topics) ? cluster.topics.filter((t: any) => typeof t === 'string') : [],
-      keywords: Array.isArray(cluster.keywords) ? cluster.keywords.filter((k: any) => typeof k === 'string') : null,
+      topics: Array.isArray(cluster.topics) ? cluster.topics.filter((t: any) => typeof t === 'string').map((t: any) => String(t)) : [],
+      keywords: Array.isArray(cluster.keywords) ? cluster.keywords.filter((k: any) => typeof k === 'string').map((k: any) => String(k)) : null,
       meta_title_en: cluster.meta_title_en ? String(cluster.meta_title_en) : null,
       meta_description_en: cluster.meta_description_en ? String(cluster.meta_description_en) : null,
       meta_title_si: cluster.meta_title_si ? String(cluster.meta_title_si) : null,
       meta_description_si: cluster.meta_description_si ? String(cluster.meta_description_si) : null,
       meta_title_ta: cluster.meta_title_ta ? String(cluster.meta_title_ta) : null,
-      meta_description_ta: cluster.meta_description_ta ? String(cluster.meta_description_ta) : null
+      meta_description_ta: cluster.meta_description_ta ? String(cluster.meta_description_ta) : null,
+      language: cluster.language ? String(cluster.language) : null
     };
     
-    // Serialize articles
+    // Remove any undefined values
+    Object.keys(serializedCluster).forEach(key => {
+      if (serializedCluster[key] === undefined) {
+        delete serializedCluster[key];
+      }
+    });
+    
+    // #region agent log
+    try{
+      JSON.stringify(serializedCluster);
+      console.log('[DEBUG] SerializedCluster JSON test passed');
+    }catch(e){
+      console.error('[DEBUG] SerializedCluster JSON test FAILED:', e);
+      // Don't throw - log the error for debugging but continue
+    }
+    // #endregion
+    
+    // Serialize articles - ensure ALL properties are serializable
     const serializedArticles = (articles || []).map((article: any) => {
       if (!article || typeof article !== 'object') return null;
-      return {
+      
+      // Helper to serialize any value
+      const serializeValue = (value: any): any => {
+        if (value === null || value === undefined) return null;
+        if (value instanceof Date) return value.toISOString();
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
+        if (Array.isArray(value)) return value.map(serializeValue);
+        if (typeof value === 'object') {
+          const serialized: any = {};
+          for (const key in value) {
+            if (value.hasOwnProperty(key) && typeof key === 'string') {
+              try {
+                serialized[key] = serializeValue(value[key]);
+              } catch {
+                // Skip non-serializable properties
+              }
+            }
+          }
+          return serialized;
+        }
+        return null; // Skip functions and other non-serializable types
+      };
+      
+      // Serialize sources object
+      let serializedSources = { name: 'Unknown', feed_url: '#' };
+      if (article.sources && typeof article.sources === 'object') {
+        try {
+          serializedSources = {
+            name: String(article.sources.name || 'Unknown'),
+            feed_url: String(article.sources.feed_url || '#')
+          };
+        } catch {
+          // Use defaults if serialization fails
+        }
+      }
+      
+      const serialized = {
         id: String(article.id || ''),
         image_url: article.image_url && typeof article.image_url === 'string' ? article.image_url : null,
-        sources: article.sources && typeof article.sources === 'object' 
-          ? {
-              name: String(article.sources.name || 'Unknown'),
-              feed_url: String(article.sources.feed_url || '#')
-            }
-          : { name: 'Unknown', feed_url: '#' }
+        sources: serializedSources
       };
+      
+      // #region agent log
+      try{
+        JSON.stringify(serialized);
+      }catch(e){
+        console.error('[DEBUG] Article serialization FAILED:', e, {articleId: article.id});
+      }
+      // #endregion
+      return serialized;
     }).filter(Boolean);
     
+    // #region agent log
+    try{
+      JSON.stringify(serializedArticles);
+      console.log('[DEBUG] SerializedArticles JSON test passed', {count: serializedArticles.length});
+    }catch(e){
+      console.error('[DEBUG] SerializedArticles JSON test FAILED:', e);
+    }
+    // #endregion
+    
     // Serialize summary object to ensure all values are JSON-serializable
-    const serializedSummary = summary ? {
-      summary_en: summary.summary_en ? String(summary.summary_en) : null,
-      summary_si: summary.summary_si ? String(summary.summary_si) : null,
-      summary_ta: summary.summary_ta ? String(summary.summary_ta) : null,
+    const serializedSummary = summary && typeof summary === 'object' ? {
+      summary_en: summary.summary_en && typeof summary.summary_en === 'string' ? String(summary.summary_en) : null,
+      summary_si: summary.summary_si && typeof summary.summary_si === 'string' ? String(summary.summary_si) : null,
+      summary_ta: summary.summary_ta && typeof summary.summary_ta === 'string' ? String(summary.summary_ta) : null,
       key_facts_en: Array.isArray(summary.key_facts_en) 
-        ? summary.key_facts_en.filter((item: any) => typeof item === 'string').map((item: any) => String(item))
+        ? summary.key_facts_en.filter((item: any) => item != null && typeof item === 'string').map((item: any) => String(item))
         : null,
       key_facts_si: Array.isArray(summary.key_facts_si) 
-        ? summary.key_facts_si.filter((item: any) => typeof item === 'string').map((item: any) => String(item))
+        ? summary.key_facts_si.filter((item: any) => item != null && typeof item === 'string').map((item: any) => String(item))
         : null,
       key_facts_ta: Array.isArray(summary.key_facts_ta) 
-        ? summary.key_facts_ta.filter((item: any) => typeof item === 'string').map((item: any) => String(item))
+        ? summary.key_facts_ta.filter((item: any) => item != null && typeof item === 'string').map((item: any) => String(item))
         : null,
-      confirmed_vs_differs_en: summary.confirmed_vs_differs_en ? String(summary.confirmed_vs_differs_en) : null,
-      confirmed_vs_differs_si: summary.confirmed_vs_differs_si ? String(summary.confirmed_vs_differs_si) : null,
-      confirmed_vs_differs_ta: summary.confirmed_vs_differs_ta ? String(summary.confirmed_vs_differs_ta) : null
+      confirmed_vs_differs_en: summary.confirmed_vs_differs_en && typeof summary.confirmed_vs_differs_en === 'string' ? String(summary.confirmed_vs_differs_en) : null,
+      confirmed_vs_differs_si: summary.confirmed_vs_differs_si && typeof summary.confirmed_vs_differs_si === 'string' ? String(summary.confirmed_vs_differs_si) : null,
+      confirmed_vs_differs_ta: summary.confirmed_vs_differs_ta && typeof summary.confirmed_vs_differs_ta === 'string' ? String(summary.confirmed_vs_differs_ta) : null
     } : null;
     
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
-    const canonicalUrl = `${baseUrl}/${lang}/${primaryTopic}/${slug}`;
+    // #region agent log
+    try{
+      JSON.stringify(serializedSummary);
+      console.log('[DEBUG] SerializedSummary JSON test passed');
+    }catch(e){
+      console.error('[DEBUG] SerializedSummary JSON test FAILED:', e);
+    }
+    // #endregion
     
-    // Get language-specific headline
-    const headlineText =
-      lang === 'si' ? serializedCluster.headline_si || serializedCluster.headline :
-      lang === 'ta' ? serializedCluster.headline_ta || serializedCluster.headline :
-      serializedCluster.headline;
-    
-    // Get metadata for JSON-LD
-    const metaDescription =
-      lang === 'si' ? serializedCluster.meta_description_si || serializedSummary?.summary_si :
-      lang === 'ta' ? serializedCluster.meta_description_ta || serializedSummary?.summary_ta :
-      serializedCluster.meta_description_en || serializedSummary?.summary_en;
+    const baseUrl = String(process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz');
+    const canonicalUrl = `${baseUrl}/${String(lang)}/${String(primaryTopic)}/${String(slug)}`;
+
+    // Get language-specific headline - ensure it's a string
+    const headlineText = String(
+      lang === 'si' ? (serializedCluster.headline_si || serializedCluster.headline || '') :
+      lang === 'ta' ? (serializedCluster.headline_ta || serializedCluster.headline || '') :
+      (serializedCluster.headline || '')
+    );
+
+    // Get metadata for JSON-LD - ensure it's a string
+    const metaDescription = String(
+      lang === 'si' ? (serializedCluster.meta_description_si || serializedSummary?.summary_si || headlineText) :
+      lang === 'ta' ? (serializedCluster.meta_description_ta || serializedSummary?.summary_ta || headlineText) :
+      (serializedCluster.meta_description_en || serializedSummary?.summary_en || headlineText)
+    );
 
     const firstArticle = serializedArticles?.[0] as { image_url?: string | null } | undefined;
     const imageUrl = serializedCluster.image_url || firstArticle?.image_url || null;
+    
+    // Ensure imageUrl is a string or null
+    const safeImageUrl = imageUrl && typeof imageUrl === 'string' ? String(imageUrl) : null;
+    
+    // Ensure datePublished is always a string
+    const datePublished = String(
+      serializedCluster.published_at || 
+      serializedCluster.created_at || 
+      new Date().toISOString()
+    );
+    
+    // Ensure dateModified is a string or null
+    const dateModified = serializedCluster.last_checked_at || serializedCluster.updated_at 
+      ? String(serializedCluster.last_checked_at || serializedCluster.updated_at)
+      : null;
 
     // Get language-specific key facts and confirmed vs differs (from serialized summary)
-    const keyFacts = 
-      lang === 'si' ? serializedSummary?.key_facts_si || null :
-      lang === 'ta' ? serializedSummary?.key_facts_ta || null :
-      serializedSummary?.key_facts_en || null;
+    // Ensure arrays are properly serialized
+    const keyFactsRaw = 
+      lang === 'si' ? serializedSummary?.key_facts_si :
+      lang === 'ta' ? serializedSummary?.key_facts_ta :
+      serializedSummary?.key_facts_en;
+    const keyFacts = Array.isArray(keyFactsRaw) 
+      ? keyFactsRaw.filter((item: any) => typeof item === 'string').map((item: any) => String(item))
+      : null;
 
-    const confirmedVsDiffers =
-      lang === 'si' ? serializedSummary?.confirmed_vs_differs_si || null :
-      lang === 'ta' ? serializedSummary?.confirmed_vs_differs_ta || null :
-      serializedSummary?.confirmed_vs_differs_en || null;
+    const confirmedVsDiffersRaw =
+      lang === 'si' ? serializedSummary?.confirmed_vs_differs_si :
+      lang === 'ta' ? serializedSummary?.confirmed_vs_differs_ta :
+      serializedSummary?.confirmed_vs_differs_en;
+    const confirmedVsDiffers = confirmedVsDiffersRaw && typeof confirmedVsDiffersRaw === 'string'
+      ? String(confirmedVsDiffersRaw)
+      : null;
 
-    // Build breadcrumb items with new URL format
+    // Build breadcrumb items with new URL format - ensure all values are strings
     const breadcrumbItems = [
       { name: lang === 'si' ? 'මුල් පිටුව' : lang === 'ta' ? 'முகப்பு' : 'Home', url: `/${lang}` },
       {
         name: primaryTopic && primaryTopic !== 'other'
-          ? (lang === 'si' ? primaryTopic : lang === 'ta' ? primaryTopic : primaryTopic)
+          ? String(primaryTopic)
           : (lang === 'si' ? 'පුවත්' : lang === 'ta' ? 'செய்திகள்' : 'News'),
-        url: primaryTopic && primaryTopic !== 'other' ? `/${lang}/${primaryTopic}` : `/${lang}`
+        url: primaryTopic && primaryTopic !== 'other' ? `/${lang}/${String(primaryTopic)}` : `/${lang}`
       },
-      { name: headlineText, url: `/${lang}/${topic}/${slug}` }
+      { name: String(headlineText || ''), url: `/${lang}/${String(primaryTopic || topic)}/${String(slug || '')}` }
     ];
+    
+    // #region agent log
+    try{
+      JSON.stringify(breadcrumbItems);
+      console.log('[DEBUG] BreadcrumbItems JSON test passed');
+    }catch(e){
+      console.error('[DEBUG] BreadcrumbItems JSON test FAILED:', e);
+    }
+    // #endregion
 
+    // #region agent log
+    try{
+      const testData = {serializedCluster,serializedSummary,serializedArticles};
+      JSON.stringify(testData);
+      console.log('[DEBUG] Final data JSON test passed');
+    }catch(e){
+      console.error('[DEBUG] Final data JSON test FAILED:', e);
+      console.error('[DEBUG] Error details:', {message: e instanceof Error ? e.message : String(e), stack: e instanceof Error ? e.stack : undefined});
+    }
+    // #endregion
+    
+    // Validate all props before passing to StoryDetail
+    const storyDetailSources = serializedArticles.map((article: any) => {
+      const source = article.sources || { name: 'Unknown', feed_url: '#' };
+      return {
+        name: String(source.name || 'Unknown'),
+        feed_url: String(source.feed_url || '#')
+      };
+    });
+    
+    // Validate all StoryDetail props before rendering
+    const storyDetailProps = {
+      id: String(serializedCluster.id),
+      slug: serializedCluster.slug ? String(serializedCluster.slug) : null,
+      headline: String(headlineText),
+      summary: String(
+        lang === 'si'
+          ? (serializedSummary?.summary_si || serializedSummary?.summary_en || '')
+          : lang === 'ta'
+          ? (serializedSummary?.summary_ta || serializedSummary?.summary_en || '')
+          : (serializedSummary?.summary_en || '')
+      ),
+      summarySi: serializedSummary?.summary_si ? String(serializedSummary.summary_si) : null,
+      summaryTa: serializedSummary?.summary_ta ? String(serializedSummary.summary_ta) : null,
+      sources: storyDetailSources,
+      updatedAt: serializedCluster.updated_at ? String(serializedCluster.updated_at) : null,
+      firstSeen: serializedCluster.first_seen_at ? String(serializedCluster.first_seen_at) : null,
+      sourceCount: typeof serializedCluster.source_count === 'number' ? serializedCluster.source_count : 0,
+      currentLanguage: lang,
+      keyFacts: keyFacts || null,
+      confirmedVsDiffers: confirmedVsDiffers || null,
+      lastCheckedAt: serializedCluster.last_checked_at ? String(serializedCluster.last_checked_at) : null,
+      imageUrl: safeImageUrl
+    };
+    
+    // #region agent log
+    try{
+      JSON.stringify(storyDetailProps);
+      console.log('[DEBUG] StoryDetail props JSON test passed');
+    }catch(e){
+      console.error('[DEBUG] StoryDetail props JSON test FAILED:', e);
+      console.error('[DEBUG] Failed props keys:', Object.keys(storyDetailProps));
+    }
+    // #endregion
+    
     return (
     <div className="min-h-screen bg-[#F5F5F5]">
       {/* JSON-LD Structured Data for Google News */}
       <NewsArticleSchema
-        headline={headlineText}
-        description={metaDescription || headlineText}
-        datePublished={serializedCluster.published_at || serializedCluster.created_at || new Date().toISOString()}
-        dateModified={serializedCluster.last_checked_at || serializedCluster.updated_at || null}
-        imageUrl={imageUrl || null}
-        category={serializedCluster.category || null}
-        topic={serializedCluster.topic || null}
-        keywords={serializedCluster.keywords && serializedCluster.keywords.length > 0 ? serializedCluster.keywords : null}
-        url={canonicalUrl}
+        headline={String(headlineText)}
+        description={String(metaDescription)}
+        datePublished={String(datePublished)}
+        dateModified={dateModified ? String(dateModified) : null}
+        imageUrl={safeImageUrl}
+        category={serializedCluster.category ? String(serializedCluster.category) : null}
+        topic={serializedCluster.topic ? String(serializedCluster.topic) : null}
+        keywords={serializedCluster.keywords && Array.isArray(serializedCluster.keywords) && serializedCluster.keywords.length > 0 
+          ? serializedCluster.keywords.filter((k: any) => typeof k === 'string').map((k: any) => String(k))
+          : null}
+        url={String(canonicalUrl)}
         language={lang}
       />
       
@@ -436,29 +624,7 @@ export default async function StoryPage({ params }: Props) {
           {/* Center Content - Full width on mobile, constrained on desktop */}
           <main className="flex-1 min-w-0 w-full lg:max-w-3xl lg:mx-auto mb-12 sm:mb-16 md:mb-20">
             <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 md:p-8 lg:p-10">
-              <StoryDetail
-                id={serializedCluster.id}
-                slug={serializedCluster.slug}
-                headline={headlineText}
-                summary={
-                  lang === 'si'
-                    ? serializedSummary?.summary_si || serializedSummary?.summary_en || ''
-                    : lang === 'ta'
-                    ? serializedSummary?.summary_ta || serializedSummary?.summary_en || ''
-                    : serializedSummary?.summary_en || ''
-                }
-                summarySi={serializedSummary?.summary_si || null}
-                summaryTa={serializedSummary?.summary_ta || null}
-                sources={serializedArticles.map((article: any) => article.sources || { name: 'Unknown', feed_url: '#' })}
-                updatedAt={serializedCluster.updated_at || null}
-                firstSeen={serializedCluster.first_seen_at || null}
-                sourceCount={serializedCluster.source_count || 0}
-                currentLanguage={lang}
-                keyFacts={keyFacts || null}
-                confirmedVsDiffers={confirmedVsDiffers || null}
-                lastCheckedAt={serializedCluster.last_checked_at || null}
-                imageUrl={imageUrl || null}
-              />
+              <StoryDetail {...storyDetailProps} />
             </div>
           </main>
 
@@ -477,6 +643,14 @@ export default async function StoryPage({ params }: Props) {
     </div>
   );
   } catch (error) {
+    // #region agent log
+    console.error('[DEBUG] StoryPage error caught:', error);
+    console.error('[DEBUG] Error details:', {
+      errorName: error instanceof Error ? error.name : 'unknown',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : undefined
+    });
+    // #endregion
     console.error('Error rendering StoryPage:', error);
     notFound();
   }
