@@ -436,19 +436,26 @@ async function summarizeEligible(
     // Generate summaries for clusters with 1+ articles
     if ((cluster.article_count || 0) < 1) continue;
 
+    // Fetch latest cluster data from database to get headline_si, headline_ta, topics, and SEO fields
+    const { data: latestCluster } = await supabaseAdmin
+      .from('clusters')
+      .select('headline_si, headline_ta, topics, meta_title_en, meta_title_si, meta_title_ta, meta_description_en, meta_description_si, meta_description_ta, source_count')
+      .eq('id', cluster.id)
+      .single();
+
     const { data: summary } = await supabaseAdmin
       .from('summaries')
       .select('*')
       .eq('cluster_id', cluster.id)
       .maybeSingle();
 
-    const prevSourceCount = summary ? cluster.source_count : 0;
-    const needsSummary = !summary || prevSourceCount !== cluster.source_count;
+    const prevSourceCount = summary ? (latestCluster?.source_count || cluster.source_count || 0) : 0;
+    const needsSummary = !summary || prevSourceCount !== (latestCluster?.source_count || cluster.source_count || 0);
     // Always check if headlines need to be generated (even if summary exists)
-    const needsHeadlines = !cluster.headline_si || !cluster.headline_ta || !cluster.topics || !Array.isArray(cluster.topics);
+    const needsHeadlines = !latestCluster?.headline_si || !latestCluster?.headline_ta || !latestCluster?.topics || !Array.isArray(latestCluster?.topics);
     // Always check if SEO metadata needs to be generated (meta titles/descriptions)
-    const needsSEO = !cluster.meta_title_en || !cluster.meta_title_si || !cluster.meta_title_ta || 
-                     !cluster.meta_description_en || !cluster.meta_description_si || !cluster.meta_description_ta;
+    const needsSEO = !latestCluster?.meta_title_en || !latestCluster?.meta_title_si || !latestCluster?.meta_title_ta || 
+                     !latestCluster?.meta_description_en || !latestCluster?.meta_description_si || !latestCluster?.meta_description_ta;
     
     // Skip only if summary exists, source count unchanged, headlines/topics are present, AND SEO is complete
     if (!needsSummary && !needsHeadlines && !needsSEO) {
