@@ -163,7 +163,7 @@ const StoryDetail: React.FC<StoryDetailProps> = ({
       <div className="mb-8 sm:mb-10 pb-32 sm:pb-40 md:pb-48">
         <div className="prose prose-sm sm:prose-base md:prose-lg max-w-none">
           {/* Featured Image - Inside article content */}
-          {imageUrl && (
+          {imageUrl && imageUrl.trim().length > 0 && imageUrl.startsWith('http') && (
             <div className="my-6 sm:my-8">
               <div className="relative w-full aspect-video rounded-lg sm:rounded-xl overflow-hidden bg-[#F1F3F4]">
                 <Image
@@ -173,6 +173,7 @@ const StoryDetail: React.FC<StoryDetailProps> = ({
                   className="object-cover"
                   priority
                   unoptimized
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 800px"
                   onError={(e) => {
                     console.error('Image failed to load:', imageUrl);
                     const target = e.target as HTMLImageElement;

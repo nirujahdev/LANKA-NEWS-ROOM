@@ -452,7 +452,8 @@ async function summarizeEligible(
     const prevSourceCount = summary ? (latestCluster?.source_count || cluster.source_count || 0) : 0;
     const needsSummary = !summary || prevSourceCount !== (latestCluster?.source_count || cluster.source_count || 0);
     // Always check if headlines need to be generated (even if summary exists)
-    const needsHeadlines = !latestCluster?.headline_si || !latestCluster?.headline_ta || !latestCluster?.topics || !Array.isArray(latestCluster?.topics);
+    // IMPORTANT: Only check headline_si and headline_ta, NOT topics (topics are generated separately)
+    const needsHeadlines = !latestCluster?.headline_si || !latestCluster?.headline_ta;
     // Always check if SEO metadata needs to be generated (meta titles/descriptions)
     const needsSEO = !latestCluster?.meta_title_en || !latestCluster?.meta_title_si || !latestCluster?.meta_title_ta || 
                      !latestCluster?.meta_description_en || !latestCluster?.meta_description_si || !latestCluster?.meta_description_ta;
@@ -937,6 +938,22 @@ async function summarizeEligible(
         if (headlineTaQuality.score < 70 && headlineTa) {
           console.warn(`[Pipeline] ⚠️ Low Tamil headline quality score (${headlineTaQuality.score}) for cluster ${cluster.id}`);
         }
+      }
+    }
+    
+    // Save headlines immediately if they were generated (don't wait for SEO block)
+    // This ensures headlines are saved even if SEO generation fails
+    if (needsHeadlines && (headlineSi || headlineTa)) {
+      const headlineUpdateResult = await supabaseAdmin.from('clusters').update({
+        headline_si: headlineSi && headlineSi.trim().length > 0 ? headlineSi.trim() : null,
+        headline_ta: headlineTa && headlineTa.trim().length > 0 ? headlineTa.trim() : null,
+      }).eq('id', cluster.id);
+      
+      if (headlineUpdateResult.error) {
+        console.error(`[Pipeline] ❌ Failed to save headlines for cluster ${cluster.id}:`, headlineUpdateResult.error);
+        errors.push({ stage: 'headlines', message: `Failed to save headlines: ${headlineUpdateResult.error.message}` });
+      } else {
+        console.log(`[Pipeline] ✅ Successfully saved headlines for cluster ${cluster.id} (SI: ${headlineSi ? 'yes' : 'no'}, TA: ${headlineTa ? 'yes' : 'no'})`);
       }
     }
     
