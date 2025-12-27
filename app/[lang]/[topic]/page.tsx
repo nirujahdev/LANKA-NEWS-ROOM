@@ -234,8 +234,42 @@ export default async function TopicPage({ params, searchParams }: Props) {
             }
             return false;
           }).slice(0, 20).map((cluster: any) => {
-            // Serialize all date fields to ISO strings
-            const serializedCluster = { ...cluster };
+            // Deep clone to avoid mutating original
+            const serializedCluster: any = {};
+            
+            // Helper function to safely serialize any value
+            const serializeValue = (value: any): any => {
+              if (value === null || value === undefined) return null;
+              if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
+              if (value instanceof Date) return value.toISOString();
+              if (Array.isArray(value)) {
+                return value.map(item => serializeValue(item)).filter(item => item !== undefined);
+              }
+              if (typeof value === 'object') {
+                const serialized: any = {};
+                for (const key in value) {
+                  if (value.hasOwnProperty(key)) {
+                    const serializedItem = serializeValue(value[key]);
+                    if (serializedItem !== undefined) {
+                      serialized[key] = serializedItem;
+                    }
+                  }
+                }
+                return serialized;
+              }
+              // Skip functions and other non-serializable types
+              return null;
+            };
+            
+            // Copy all properties with serialization
+            for (const key in cluster) {
+              if (cluster.hasOwnProperty(key)) {
+                const value = serializeValue(cluster[key]);
+                if (value !== undefined) {
+                  serializedCluster[key] = value;
+                }
+              }
+            }
             
             // Convert all date fields to ISO strings
             const dateFields = ['last_seen_at', 'first_seen_at', 'published_at', 'created_at', 'updated_at', 'last_checked_at'];
@@ -383,7 +417,29 @@ export default async function TopicPage({ params, searchParams }: Props) {
               }
             });
             
-            return serializedCluster;
+            // Final validation: ensure the entire cluster is JSON-serializable
+            try {
+              JSON.stringify(serializedCluster);
+              return serializedCluster;
+            } catch (error) {
+              console.error(`[TopicPage] Cluster ${serializedCluster.id} is not serializable:`, error);
+              // Return a minimal valid cluster to prevent breaking the page
+              return {
+                id: String(serializedCluster.id || ''),
+                headline: String(serializedCluster.headline || ''),
+                status: 'published',
+                source_count: 0,
+                summaries: [],
+                articles: [],
+                topics: [],
+                last_seen_at: null,
+                first_seen_at: null,
+                published_at: null,
+                created_at: null,
+                updated_at: null,
+                last_checked_at: null
+              };
+            }
           }); // Limit to 20 after filtering
         }
       }
