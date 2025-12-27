@@ -303,15 +303,35 @@ export default async function TopicPage({ params, searchParams }: Props) {
             // Serialize nested articles and sources
             serializedCluster.articles = serializedCluster.articles.map((article: any) => {
               if (!article || typeof article !== 'object') return null;
+              
+              // Helper to serialize article date fields
+              const serializeArticleDate = (value: any): string | null => {
+                if (!value) return null;
+                if (value instanceof Date) return value.toISOString();
+                if (typeof value === 'string') {
+                  try {
+                    const date = new Date(value);
+                    if (!isNaN(date.getTime())) return date.toISOString();
+                  } catch {}
+                  return value;
+                }
+                return null;
+              };
+              
               const serializedArticle: any = {
                 id: String(article.id || ''),
                 cluster_id: article.cluster_id ? String(article.cluster_id) : null,
                 source_id: article.source_id ? String(article.source_id) : null,
-                image_url: article.image_url && typeof article.image_url === 'string' ? article.image_url : null
+                image_url: article.image_url && typeof article.image_url === 'string' ? article.image_url : null,
+                published_at: serializeArticleDate(article.published_at),
+                fetched_at: serializeArticleDate(article.fetched_at),
+                created_at: serializeArticleDate(article.created_at),
+                title: article.title ? String(article.title) : null,
+                url: article.url ? String(article.url) : null
               };
               
               // Serialize nested source
-              if (article.sources && typeof article.sources === 'object') {
+              if (article.sources && typeof article.sources === 'object' && !Array.isArray(article.sources)) {
                 serializedArticle.sources = {
                   name: String(article.sources.name || ''),
                   feed_url: String(article.sources.feed_url || '')
@@ -334,6 +354,34 @@ export default async function TopicPage({ params, searchParams }: Props) {
             serializedCluster.category = serializedCluster.category ? String(serializedCluster.category) : null;
             serializedCluster.image_url = serializedCluster.image_url ? String(serializedCluster.image_url) : null;
             serializedCluster.source_count = typeof serializedCluster.source_count === 'number' ? serializedCluster.source_count : 0;
+            
+            // Serialize keywords array
+            if (Array.isArray(serializedCluster.keywords)) {
+              serializedCluster.keywords = serializedCluster.keywords.filter((k: any) => typeof k === 'string').map((k: any) => String(k));
+            } else {
+              serializedCluster.keywords = null;
+            }
+            
+            // Serialize meta fields
+            serializedCluster.meta_title_en = serializedCluster.meta_title_en ? String(serializedCluster.meta_title_en) : null;
+            serializedCluster.meta_title_si = serializedCluster.meta_title_si ? String(serializedCluster.meta_title_si) : null;
+            serializedCluster.meta_title_ta = serializedCluster.meta_title_ta ? String(serializedCluster.meta_title_ta) : null;
+            serializedCluster.meta_description_en = serializedCluster.meta_description_en ? String(serializedCluster.meta_description_en) : null;
+            serializedCluster.meta_description_si = serializedCluster.meta_description_si ? String(serializedCluster.meta_description_si) : null;
+            serializedCluster.meta_description_ta = serializedCluster.meta_description_ta ? String(serializedCluster.meta_description_ta) : null;
+            
+            // Serialize other optional fields
+            serializedCluster.city = serializedCluster.city ? String(serializedCluster.city) : null;
+            serializedCluster.primary_entity = serializedCluster.primary_entity ? String(serializedCluster.primary_entity) : null;
+            serializedCluster.event_type = serializedCluster.event_type ? String(serializedCluster.event_type) : null;
+            serializedCluster.language = serializedCluster.language ? String(serializedCluster.language) : null;
+            
+            // Remove any undefined values and functions
+            Object.keys(serializedCluster).forEach(key => {
+              if (serializedCluster[key] === undefined || typeof serializedCluster[key] === 'function') {
+                delete serializedCluster[key];
+              }
+            });
             
             return serializedCluster;
           }); // Limit to 20 after filtering
