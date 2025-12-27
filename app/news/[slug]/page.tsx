@@ -359,7 +359,7 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
           </aside>
 
           {/* Center Content - Full width on mobile, constrained on desktop */}
-          <main className="flex-1 min-w-0 w-full lg:max-w-3xl lg:mx-auto">
+          <main className="flex-1 min-w-0 w-full lg:max-w-3xl lg:mx-auto mb-12 sm:mb-16 md:mb-20">
             <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 md:p-8 lg:p-10">
               <StoryDetail
                 id={serializedCluster.id}
@@ -379,6 +379,7 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
                 firstSeen={serializedCluster.first_seen_at || null}
                 sourceCount={serializedCluster.source_count || 0}
                 currentLanguage={lang}
+                imageUrl={imageUrl || null}
               />
             </div>
           </main>
