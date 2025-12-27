@@ -267,7 +267,7 @@ Generate a professional analytical explanation in ${langLabel} following all rul
     model: env.SUMMARY_MODEL,
     messages,
     temperature: 0.2,
-        max_tokens: 1200,
+        max_tokens: 2000,
     top_p: 0.9,
     frequency_penalty: 0.3,
     presence_penalty: 0.1
