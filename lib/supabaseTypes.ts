@@ -25,6 +25,8 @@ export type Database = {
           guid: string | null
           hash: string | null
           id: string
+          image_extraction_method: string | null
+          image_relevance_score: number | null
           image_url: string | null
           lang: Database["public"]["Enums"]["lang_code"] | null
           processed_at: string | null
@@ -44,6 +46,8 @@ export type Database = {
           guid?: string | null
           hash?: string | null
           id?: string
+          image_extraction_method?: string | null
+          image_relevance_score?: number | null
           image_url?: string | null
           lang?: Database["public"]["Enums"]["lang_code"] | null
           processed_at?: string | null
@@ -63,6 +67,8 @@ export type Database = {
           guid?: string | null
           hash?: string | null
           id?: string
+          image_extraction_method?: string | null
+          image_relevance_score?: number | null
           image_url?: string | null
           lang?: Database["public"]["Enums"]["lang_code"] | null
           processed_at?: string | null
@@ -135,9 +141,16 @@ export type Database = {
           expires_at: string | null
           first_seen_at: string | null
           headline: string
+          headline_si: string | null
+          headline_ta: string | null
+          headline_translation_quality_en: number | null
+          headline_translation_quality_si: number | null
+          headline_translation_quality_ta: number | null
           helpful_count: number | null
           id: string
           image_url: string | null
+          image_quality_score: number | null
+          image_relevance_score: number | null
           keywords: string[] | null
           language: string | null
           last_checked_at: string | null
@@ -156,6 +169,7 @@ export type Database = {
           source_count: number | null
           status: Database["public"]["Enums"]["cluster_status"] | null
           topic: string | null
+          topics: string[] | null
           tweet_id: string | null
           tweeted_at: string | null
           tweet_status: string | null
@@ -170,9 +184,16 @@ export type Database = {
           expires_at?: string | null
           first_seen_at?: string | null
           headline: string
+          headline_si?: string | null
+          headline_ta?: string | null
+          headline_translation_quality_en?: number | null
+          headline_translation_quality_si?: number | null
+          headline_translation_quality_ta?: number | null
           helpful_count?: number | null
           id?: string
           image_url?: string | null
+          image_quality_score?: number | null
+          image_relevance_score?: number | null
           keywords?: string[] | null
           language?: string | null
           last_checked_at?: string | null
@@ -191,6 +212,7 @@ export type Database = {
           source_count?: number | null
           status?: Database["public"]["Enums"]["cluster_status"] | null
           topic?: string | null
+          topics?: string[] | null
           tweet_id?: string | null
           tweeted_at?: string | null
           tweet_status?: string | null
@@ -205,9 +227,16 @@ export type Database = {
           expires_at?: string | null
           first_seen_at?: string | null
           headline?: string
+          headline_si?: string | null
+          headline_ta?: string | null
+          headline_translation_quality_en?: number | null
+          headline_translation_quality_si?: number | null
+          headline_translation_quality_ta?: number | null
           helpful_count?: number | null
           id?: string
           image_url?: string | null
+          image_quality_score?: number | null
+          image_relevance_score?: number | null
           keywords?: string[] | null
           language?: string | null
           last_checked_at?: string | null
@@ -226,6 +255,7 @@ export type Database = {
           source_count?: number | null
           status?: Database["public"]["Enums"]["cluster_status"] | null
           topic?: string | null
+          topics?: string[] | null
           tweet_id?: string | null
           tweeted_at?: string | null
           tweet_status?: string | null
@@ -465,6 +495,12 @@ export type Database = {
           model: string | null
           prompt_version: string | null
           summary_en: string | null
+          summary_length_en: number | null
+          summary_length_si: number | null
+          summary_length_ta: number | null
+          summary_quality_score_en: number | null
+          summary_quality_score_si: number | null
+          summary_quality_score_ta: number | null
           summary_si: string | null
           summary_ta: string | null
           updated_at: string | null
@@ -483,6 +519,12 @@ export type Database = {
           model?: string | null
           prompt_version?: string | null
           summary_en?: string | null
+          summary_length_en?: number | null
+          summary_length_si?: number | null
+          summary_length_ta?: number | null
+          summary_quality_score_en?: number | null
+          summary_quality_score_si?: number | null
+          summary_quality_score_ta?: number | null
           summary_si?: string | null
           summary_ta?: string | null
           updated_at?: string | null
@@ -501,6 +543,12 @@ export type Database = {
           model?: string | null
           prompt_version?: string | null
           summary_en?: string | null
+          summary_length_en?: number | null
+          summary_length_si?: number | null
+          summary_length_ta?: number | null
+          summary_quality_score_en?: number | null
+          summary_quality_score_si?: number | null
+          summary_quality_score_ta?: number | null
           summary_si?: string | null
           summary_ta?: string | null
           updated_at?: string | null
