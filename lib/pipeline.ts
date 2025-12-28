@@ -12,6 +12,7 @@ import { updateLastSuccessfulRun } from './pipelineEarlyExit';
 import { selectBestImage } from './imageSelection';
 import { extractAllImagesFromHtml, fetchArticleImages } from './imageExtraction';
 import { cache } from './cache';
+import { ensureHeadlineTranslations, ensureSummaryTranslations, generateQualityControlledSummary, selectBestImageWithQuality } from './pipelineEnhanced';
 
 type ClusterCache = {
   id: string;
@@ -545,263 +546,76 @@ async function summarizeEligible(
       sourceLang = 'en';
     }
 
-    // Generate summary in source language (only if needed)
-    let summaryInSource: string;
+    // STEP 2: Generate quality-controlled summary (only if needed)
+    let summaryEn: string;
     let summaryQualityScore = 0;
     
-    if (needsSummary) {
+    if (needsSummary || (summary?.summary_quality_score_en || 0) < 0.7) {
       try {
-        summaryInSource = await summarizeInSourceLanguage(sourcePayload, sourceLang, summary?.summary_en || summary?.summary_si || summary?.summary_ta);
-      
-        // Validate summary quality
-        const qualityCheck = validateSummaryQuality(summaryInSource);
-        summaryQualityScore = qualityCheck.score;
+        // Use enhanced function for quality-controlled summary generation
+        const summaryResult = await generateQualityControlledSummary(
+          sourcePayload.map(s => ({ title: s.title, content_excerpt: s.content, content_text: s.content })),
+          sourceLang,
+          500 // Target length
+        );
         
-        if (!qualityCheck.isValid) {
-          console.warn(`[Pipeline] Summary quality check failed (score: ${qualityCheck.score}):`, qualityCheck.issues);
-          // If quality is very poor, try regenerating once
-          if (qualityCheck.score < 50) {
-            console.log('[Pipeline] Regenerating summary due to poor quality...');
-            try {
-              summaryInSource = await summarizeInSourceLanguage(sourcePayload, sourceLang);
-              const retryCheck = validateSummaryQuality(summaryInSource);
-              summaryQualityScore = retryCheck.score;
-              if (!retryCheck.isValid) {
-                console.warn(`[Pipeline] Retry summary also failed quality check (score: ${retryCheck.score})`);
-              }
-            } catch (retryError) {
-              console.error('[Pipeline] Summary regeneration failed:', retryError);
-            }
-          }
-        } else {
-          console.log(`[Pipeline] Summary quality check passed (score: ${qualityCheck.score})`);
-        }
+        summaryEn = summaryResult.summary;
+        summaryQualityScore = summaryResult.qualityScore;
+        
+        console.log(`[Pipeline] Generated quality-controlled summary (quality: ${summaryQualityScore}, length: ${summaryResult.length})`);
       } catch (error) {
-        console.error('[Pipeline] Source language summarization failed, falling back to English:', error);
-        // Fallback to English summarization
-        summaryInSource = await summarizeEnglish(sourcePayload, summary?.summary_en);
-        sourceLang = 'en';
-        
-        // Validate fallback summary
-        const qualityCheck = validateSummaryQuality(summaryInSource);
-        summaryQualityScore = qualityCheck.score;
-        if (!qualityCheck.isValid) {
-          console.warn(`[Pipeline] Fallback summary quality check failed (score: ${qualityCheck.score})`);
+        console.error('[Pipeline] Quality-controlled summary generation failed, falling back to standard:', error);
+        // Fallback to standard summarization
+        if (sourceLang === 'en') {
+          summaryEn = await summarizeEnglish(sourcePayload, summary?.summary_en);
+        } else {
+          summaryEn = await summarizeInSourceLanguage(sourcePayload, sourceLang, summary?.summary_en);
         }
+        const qualityCheck = await validateSummaryQuality(summaryEn);
+        summaryQualityScore = qualityCheck.score / 100;
       }
     } else {
       // Use existing summary
-      summaryInSource = summary?.summary_en || summary?.summary_si || summary?.summary_ta || '';
-      console.log(`[Pipeline] Using existing summary for cluster ${cluster.id}`);
+      summaryEn = summary?.summary_en || '';
+      summaryQualityScore = summary?.summary_quality_score_en || 0.7;
+      console.log(`[Pipeline] Using existing summary for cluster ${cluster.id} (quality: ${summaryQualityScore})`);
     }
-
-    // Translate to all 3 languages - ensure all are always generated (only if summary was regenerated)
-    let summaryEn: string, summarySi: string, summaryTa: string;
-    const translationStatus: { en: boolean; si: boolean; ta: boolean } = { en: false, si: false, ta: false };
     
-    if (needsSummary) {
-      try {
-        console.log(`[Pipeline] Starting translation from ${sourceLang} to all languages...`);
-        const translations = await translateToMultipleLanguages(summaryInSource, sourceLang);
-        summaryEn = translations.en;
-        summarySi = translations.si;
-        summaryTa = translations.ta;
-        
-        // Track which translations succeeded
-      translationStatus.en = !!summaryEn && summaryEn.trim().length > 0;
-      translationStatus.si = !!summarySi && summarySi.trim().length > 0;
-      translationStatus.ta = !!summaryTa && summaryTa.trim().length > 0;
-      
-      // Validate translation quality for each language
-      if (translationStatus.en && sourceLang !== 'en') {
-        const enQuality = validateTranslationQuality(summaryInSource, summaryEn, sourceLang, 'en');
-        if (!enQuality.isValid || enQuality.score < 75) {
-          console.warn(`[Pipeline] English translation quality check failed (score: ${enQuality.score}):`, enQuality.issues);
-          // Retry translation if quality is poor
-          if (enQuality.score < 65) {
-            try {
-              console.log('[Pipeline] Retrying English translation due to poor quality...');
-              summaryEn = await translateFromTo(summaryInSource, sourceLang, 'en');
-              const retryQuality = validateTranslationQuality(summaryInSource, summaryEn, sourceLang, 'en');
-              if (!retryQuality.isValid || retryQuality.score < 75) {
-                console.warn(`[Pipeline] Retry English translation also failed quality check (score: ${retryQuality.score})`);
-              } else {
-                console.log(`[Pipeline] Retry English translation passed quality check (score: ${retryQuality.score})`);
-              }
-            } catch (err) {
-              console.error('[Pipeline] English translation retry failed:', err);
-            }
-          }
-        } else {
-          console.log(`[Pipeline] English translation quality check passed (score: ${enQuality.score})`);
-        }
-      }
-      
-      if (translationStatus.si && sourceLang !== 'si') {
-        const siQuality = validateTranslationQuality(summaryInSource, summarySi, sourceLang, 'si');
-        if (!siQuality.isValid || siQuality.score < 75) {
-          console.warn(`[Pipeline] Sinhala translation quality check failed (score: ${siQuality.score}):`, siQuality.issues);
-          // Retry translation if quality is poor
-          if (siQuality.score < 65) {
-            try {
-              console.log('[Pipeline] Retrying Sinhala translation due to poor quality...');
-              const sourceForSi = sourceLang === 'en' ? summaryEn : summaryInSource;
-              const sourceLangForSi = sourceLang === 'en' ? 'en' : sourceLang;
-              summarySi = await translateFromTo(sourceForSi, sourceLangForSi, 'si');
-              const retryQuality = validateTranslationQuality(sourceForSi, summarySi, sourceLangForSi, 'si');
-              if (!retryQuality.isValid || retryQuality.score < 75) {
-                console.warn(`[Pipeline] Retry Sinhala translation also failed quality check (score: ${retryQuality.score})`);
-              } else {
-                console.log(`[Pipeline] Retry Sinhala translation passed quality check (score: ${retryQuality.score})`);
-              }
-            } catch (err) {
-              console.error('[Pipeline] Sinhala translation retry failed:', err);
-            }
-          }
-        } else {
-          console.log(`[Pipeline] Sinhala translation quality check passed (score: ${siQuality.score})`);
-        }
-      }
-      
-      if (translationStatus.ta && sourceLang !== 'ta') {
-        const taQuality = validateTranslationQuality(summaryInSource, summaryTa, sourceLang, 'ta');
-        if (!taQuality.isValid || taQuality.score < 75) {
-          console.warn(`[Pipeline] Tamil translation quality check failed (score: ${taQuality.score}):`, taQuality.issues);
-          // Retry translation if quality is poor
-          if (taQuality.score < 65) {
-            try {
-              console.log('[Pipeline] Retrying Tamil translation due to poor quality...');
-              const sourceForTa = sourceLang === 'en' ? summaryEn : summaryInSource;
-              const sourceLangForTa = sourceLang === 'en' ? 'en' : sourceLang;
-              summaryTa = await translateFromTo(sourceForTa, sourceLangForTa, 'ta');
-              const retryQuality = validateTranslationQuality(sourceForTa, summaryTa, sourceLangForTa, 'ta');
-              if (!retryQuality.isValid || retryQuality.score < 75) {
-                console.warn(`[Pipeline] Retry Tamil translation also failed quality check (score: ${retryQuality.score})`);
-              } else {
-                console.log(`[Pipeline] Retry Tamil translation passed quality check (score: ${retryQuality.score})`);
-              }
-            } catch (err) {
-              console.error('[Pipeline] Tamil translation retry failed:', err);
-            }
-          }
-        } else {
-          console.log(`[Pipeline] Tamil translation quality check passed (score: ${taQuality.score})`);
-        }
-      }
-      
-      // Validate all 3 languages are present and non-empty
-      if (!translationStatus.en || !translationStatus.si || !translationStatus.ta) {
-        console.warn(`[Pipeline] Some translations failed: en=${translationStatus.en}, si=${translationStatus.si}, ta=${translationStatus.ta}`);
-        
-        // Retry failed translations individually with simpler approach
-        if (!translationStatus.en) {
-          try {
-            summaryEn = await translateFromTo(summaryInSource, sourceLang, 'en');
-            translationStatus.en = !!summaryEn && summaryEn.trim().length > 0;
-          } catch (err) {
-            console.error('[Pipeline] English translation retry failed:', err);
-            summaryEn = summaryInSource;
-          }
-        }
-        
-        if (!translationStatus.si) {
-          try {
-            summarySi = await translateFromTo(summaryEn || summaryInSource, 'en', 'si');
-            translationStatus.si = !!summarySi && summarySi.trim().length > 0;
-          } catch (err) {
-            console.error('[Pipeline] Sinhala translation retry failed:', err);
-            summarySi = summaryEn || summaryInSource;
-          }
-        }
-        
-        if (!translationStatus.ta) {
-          try {
-            summaryTa = await translateFromTo(summaryEn || summaryInSource, 'en', 'ta');
-            translationStatus.ta = !!summaryTa && summaryTa.trim().length > 0;
-          } catch (err) {
-            console.error('[Pipeline] Tamil translation retry failed:', err);
-            summaryTa = summaryEn || summaryInSource;
-          }
-        }
-      }
-      
-      console.log(`[Pipeline] Translation complete: en=${translationStatus.en}, si=${translationStatus.si}, ta=${translationStatus.ta}`);
-      } catch (error) {
-        console.error('[Pipeline] Multi-language translation failed, using fallback:', error);
-        // Fallback: Always ensure all 3 languages are set
-        // If source was English, translate to Si/Ta; otherwise translate to English first
-        if (sourceLang === 'en') {
-          summaryEn = summaryInSource;
-          translationStatus.en = true;
-          // Try to translate to Si and Ta, fallback to English if fails
-          try {
-            summarySi = await translateSummary(summaryEn, 'si');
-            translationStatus.si = !!summarySi && summarySi.trim().length > 0;
-          } catch {
-            console.warn('[Pipeline] Sinhala translation failed, using English fallback');
-            summarySi = summaryEn;
-          }
-          try {
-            summaryTa = await translateSummary(summaryEn, 'ta');
-            translationStatus.ta = !!summaryTa && summaryTa.trim().length > 0;
-          } catch {
-            console.warn('[Pipeline] Tamil translation failed, using English fallback');
-            summaryTa = summaryEn;
-          }
-        } else {
-          // Source is Si or Ta - translate to English first, then to other languages
-          try {
-            // First translate to English
-            summaryEn = await translateFromTo(summaryInSource, sourceLang, 'en');
-            translationStatus.en = !!summaryEn && summaryEn.trim().length > 0;
-            
-            // Set source language summary
-            if (sourceLang === 'si') {
-              summarySi = summaryInSource;
-              translationStatus.si = true;
-              // Translate English to Tamil
-              try {
-                summaryTa = await translateFromTo(summaryEn, 'en', 'ta');
-                translationStatus.ta = !!summaryTa && summaryTa.trim().length > 0;
-              } catch {
-                console.warn('[Pipeline] Tamil translation failed, using English fallback');
-                summaryTa = summaryEn;
-              }
-            } else {
-              // Tamil source
-              summaryTa = summaryInSource;
-              translationStatus.ta = true;
-              // Translate English to Sinhala
-              try {
-                summarySi = await translateFromTo(summaryEn, 'en', 'si');
-                translationStatus.si = !!summarySi && summarySi.trim().length > 0;
-              } catch {
-                console.warn('[Pipeline] Sinhala translation failed, using English fallback');
-                summarySi = summaryEn;
-              }
-            }
-          } catch {
-            // Ultimate fallback - use source for all
-            console.error('[Pipeline] All translation attempts failed, using source language for all');
-            summaryEn = summaryInSource;
-            summarySi = summaryInSource;
-            summaryTa = summaryInSource;
-          }
-        }
-      }
-    } else {
-      // Use existing summaries
-      summaryEn = summary?.summary_en || summaryInSource;
-      summarySi = summary?.summary_si || summaryInSource;
-      summaryTa = summary?.summary_ta || summaryInSource;
-      console.log(`[Pipeline] Using existing summaries for cluster ${cluster.id}`);
+    // STEP 3: Ensure summary translations (MANDATORY - uses enhanced function)
+    let summarySi: string;
+    let summaryTa: string;
+    let summarySiQuality = 0;
+    let summaryTaQuality = 0;
+    
+    try {
+      const translationResult = await ensureSummaryTranslations(cluster.id, summaryEn, errors);
+      summarySi = translationResult.summarySi;
+      summaryTa = translationResult.summaryTa;
+      summarySiQuality = translationResult.qualitySi;
+      summaryTaQuality = translationResult.qualityTa;
+      console.log(`[Pipeline] ✅ Summary translations ensured (SI quality: ${summarySiQuality}, TA quality: ${summaryTaQuality})`);
+    } catch (err) {
+      console.error(`[Pipeline] Failed to ensure summary translations:`, err);
+      errors.push({ stage: 'summary_translation', message: `Failed to ensure summary translations: ${err}` });
+      // Fallback to existing or English
+      summarySi = summary?.summary_si || summaryEn;
+      summaryTa = summary?.summary_ta || summaryEn;
+      summarySiQuality = summary?.summary_quality_score_si || 0;
+      summaryTaQuality = summary?.summary_quality_score_ta || 0;
     }
+    
+    // Legacy translation status tracking (for compatibility)
+    const translationStatus: { en: boolean; si: boolean; ta: boolean } = {
+      en: !!summaryEn && summaryEn.trim().length > 0,
+      si: !!summarySi && summarySi.trim().length > 0,
+      ta: !!summaryTa && summaryTa.trim().length > 0
+    };
     
     // Final validation - ensure all 3 are non-empty and meet minimum length
     const minLength = 20; // Minimum characters for a valid summary
     if (!summaryEn || summaryEn.trim().length < minLength) {
       console.error('[Pipeline] CRITICAL: English summary is invalid');
-      summaryEn = summaryEn || summaryInSource || 'Summary unavailable';
+      summaryEn = summaryEn || 'Summary unavailable';
     }
     if (!summarySi || summarySi.trim().length < minLength) {
       console.warn('[Pipeline] Sinhala summary is invalid, using English fallback');
@@ -814,147 +628,47 @@ async function summarizeEligible(
 
     // Generate comprehensive SEO metadata with topic/district/entity extraction
     let seoEn, seoSi, seoTa, topic, topics, district, primaryEntity, eventType, imageUrl;
-    let headlineSi: string | null = latestCluster?.headline_si || null;
-    let headlineTa: string | null = latestCluster?.headline_ta || null;
     
-    // Generate headlines if needed (even if summary already exists)
-    // Note: sourceLang is already detected above (line 508-535)
-    if (needsHeadlines) {
-      console.log(`[Pipeline] Generating headlines for cluster ${cluster.id} (SI: ${headlineSi ? 'exists' : 'missing'}, TA: ${headlineTa ? 'exists' : 'missing'})`);
-      
-      // Get source headline - try to get from first article if source is Tamil/Sinhala
-      let sourceHeadline = cluster.headline;
-      if ((sourceLang === 'si' || sourceLang === 'ta') && articles && articles.length > 0) {
-        const firstArticleTitle = articles[0]?.title;
-        if (firstArticleTitle && firstArticleTitle.trim().length > 0) {
-          sourceHeadline = firstArticleTitle;
-          console.log(`[Pipeline] Using source language article title as headline: ${sourceHeadline.substring(0, 60)}...`);
-        }
-      }
-      
-      let headlineEn = cluster.headline; // Default to cluster headline
-      
-      // If source is Sinhala or Tamil, translate to English first
-      if (sourceLang === 'si' || sourceLang === 'ta') {
+    // STEP 1: Ensure headline translations (MANDATORY - uses enhanced function)
+    // This ensures 100% translation coverage with quality tracking
+    let headlineSi: string | null = null;
+    let headlineTa: string | null = null;
+    
+    // Get English headline (may need translation if source is Sinhala/Tamil)
+    let headlineEn = cluster.headline;
+    if ((sourceLang === 'si' || sourceLang === 'ta') && articles && articles.length > 0) {
+      const firstArticleTitle = articles[0]?.title;
+      if (firstArticleTitle && firstArticleTitle.trim().length > 0) {
         try {
-          console.log(`[Pipeline] Translating headline from ${sourceLang} to English first...`);
-          headlineEn = await translateHeadline(sourceHeadline, sourceLang, 'en');
+          headlineEn = await translateHeadline(firstArticleTitle, sourceLang, 'en');
           if (!headlineEn || headlineEn.trim().length === 0) {
-            headlineEn = cluster.headline; // Fallback to original
+            headlineEn = cluster.headline; // Fallback
           }
         } catch (err) {
           console.warn(`[Pipeline] Failed to translate headline to English from ${sourceLang}, using original:`, err);
           headlineEn = cluster.headline;
         }
       }
-      
-      // Generate Sinhala headline if missing
-      if (!headlineSi) {
-        let headlineSiQuality = { score: 0, isValid: false, issues: [] as string[] };
-        if (sourceLang === 'si') {
-          headlineSi = sourceHeadline;
-          console.log(`[Pipeline] Using source Sinhala headline directly: ${headlineSi}`);
-          headlineSiQuality = { score: 100, isValid: true, issues: [] };
-        } else {
-          try {
-            const fromLang = 'en';
-            const sourceForSi = headlineEn || cluster.headline;
-            if (sourceForSi && sourceForSi.trim().length > 0) {
-              headlineSi = await translateHeadline(sourceForSi, fromLang, 'si');
-              if (headlineSi && headlineSi.trim().length > 0) {
-                headlineSiQuality = validateHeadlineTranslationQuality(sourceForSi, headlineSi, fromLang, 'si');
-                if (!headlineSiQuality.isValid || headlineSiQuality.score < 70) {
-                  console.warn(`[Pipeline] Sinhala headline quality check failed (score: ${headlineSiQuality.score})`);
-                  if (headlineSiQuality.score < 60) {
-                    try {
-                      console.log('[Pipeline] Retrying Sinhala headline translation...');
-                      headlineSi = await translateHeadline(sourceForSi, fromLang, 'si');
-                      if (headlineSi && headlineSi.trim().length > 0) {
-                        headlineSiQuality = validateHeadlineTranslationQuality(sourceForSi, headlineSi, fromLang, 'si');
-                      }
-                    } catch (retryErr) {
-                      console.error('[Pipeline] Sinhala headline translation retry failed:', retryErr);
-                    }
-                  }
-                } else {
-                  console.log(`[Pipeline] Sinhala headline quality check passed (score: ${headlineSiQuality.score})`);
-                }
-                console.log(`[Pipeline] Generated Sinhala headline: ${headlineSi}`);
-              } else {
-                headlineSi = sourceForSi; // Fallback to English
-              }
-            }
-          } catch (err) {
-            console.error(`[Pipeline] Failed to translate headline to Sinhala: ${err instanceof Error ? err.message : 'Unknown error'}`);
-            headlineSi = headlineEn || cluster.headline || null;
-          }
-        }
-        if (headlineSiQuality.score < 70 && headlineSi) {
-          console.warn(`[Pipeline] ⚠️ Low Sinhala headline quality score (${headlineSiQuality.score}) for cluster ${cluster.id}`);
-        }
-      }
-      
-      // Generate Tamil headline if missing
-      if (!headlineTa) {
-        let headlineTaQuality = { score: 0, isValid: false, issues: [] as string[] };
-        if (sourceLang === 'ta') {
-          headlineTa = sourceHeadline;
-          console.log(`[Pipeline] Using source Tamil headline directly: ${headlineTa}`);
-          headlineTaQuality = { score: 100, isValid: true, issues: [] };
-        } else {
-          try {
-            const fromLang = 'en';
-            const sourceForTa = headlineEn || cluster.headline;
-            if (sourceForTa && sourceForTa.trim().length > 0) {
-              headlineTa = await translateHeadline(sourceForTa, fromLang, 'ta');
-              if (headlineTa && headlineTa.trim().length > 0) {
-                headlineTaQuality = validateHeadlineTranslationQuality(sourceForTa, headlineTa, fromLang, 'ta');
-                if (!headlineTaQuality.isValid || headlineTaQuality.score < 70) {
-                  console.warn(`[Pipeline] Tamil headline quality check failed (score: ${headlineTaQuality.score})`);
-                  if (headlineTaQuality.score < 60) {
-                    try {
-                      console.log('[Pipeline] Retrying Tamil headline translation...');
-                      headlineTa = await translateHeadline(sourceForTa, fromLang, 'ta');
-                      if (headlineTa && headlineTa.trim().length > 0) {
-                        headlineTaQuality = validateHeadlineTranslationQuality(sourceForTa, headlineTa, fromLang, 'ta');
-                      }
-                    } catch (retryErr) {
-                      console.error('[Pipeline] Tamil headline translation retry failed:', retryErr);
-                    }
-                  }
-                } else {
-                  console.log(`[Pipeline] Tamil headline quality check passed (score: ${headlineTaQuality.score})`);
-                }
-                console.log(`[Pipeline] Generated Tamil headline: ${headlineTa}`);
-              } else {
-                headlineTa = sourceForTa; // Fallback to English
-              }
-            }
-          } catch (err) {
-            console.error(`[Pipeline] Failed to translate headline to Tamil: ${err instanceof Error ? err.message : 'Unknown error'}`);
-            headlineTa = headlineEn || cluster.headline || null;
-          }
-        }
-        if (headlineTaQuality.score < 70 && headlineTa) {
-          console.warn(`[Pipeline] ⚠️ Low Tamil headline quality score (${headlineTaQuality.score}) for cluster ${cluster.id}`);
-        }
-      }
     }
     
-    // Save headlines immediately if they were generated (don't wait for SEO block)
-    // This ensures headlines are saved even if SEO generation fails
-    if (needsHeadlines && (headlineSi || headlineTa)) {
-      const headlineUpdateResult = await supabaseAdmin.from('clusters').update({
-        headline_si: headlineSi && headlineSi.trim().length > 0 ? headlineSi.trim() : null,
-        headline_ta: headlineTa && headlineTa.trim().length > 0 ? headlineTa.trim() : null,
-      }).eq('id', cluster.id);
-      
-      if (headlineUpdateResult.error) {
-        console.error(`[Pipeline] ❌ Failed to save headlines for cluster ${cluster.id}:`, headlineUpdateResult.error);
-        errors.push({ stage: 'headlines', message: `Failed to save headlines: ${headlineUpdateResult.error.message}` });
-      } else {
-        console.log(`[Pipeline] ✅ Successfully saved headlines for cluster ${cluster.id} (SI: ${headlineSi ? 'yes' : 'no'}, TA: ${headlineTa ? 'yes' : 'no'})`);
+    // Use enhanced function to ensure translations (mandatory, with quality tracking)
+    if (needsHeadlines || !latestCluster?.headline_si || !latestCluster?.headline_ta) {
+      console.log(`[Pipeline] Ensuring headline translations for cluster ${cluster.id}...`);
+      try {
+        const headlineResult = await ensureHeadlineTranslations(cluster.id, headlineEn, errors);
+        headlineSi = headlineResult.headlineSi;
+        headlineTa = headlineResult.headlineTa;
+        console.log(`[Pipeline] ✅ Headline translations ensured (SI quality: ${headlineResult.qualitySi}, TA quality: ${headlineResult.qualityTa})`);
+      } catch (err) {
+        console.error(`[Pipeline] Failed to ensure headline translations:`, err);
+        errors.push({ stage: 'headlines', message: `Failed to ensure headline translations: ${err}` });
+        // Fallback to existing or null
+        headlineSi = latestCluster?.headline_si || null;
+        headlineTa = latestCluster?.headline_ta || null;
       }
+    } else {
+      headlineSi = latestCluster?.headline_si || null;
+      headlineTa = latestCluster?.headline_ta || null;
     }
     
     // Always generate SEO metadata (even if summary already exists)
@@ -1185,53 +899,27 @@ async function summarizeEligible(
       
       console.log(`[Pipeline] Image collection stats for cluster ${cluster.id}:`, imageStats);
       
+      // STEP 4: Select best image with quality tracking (uses enhanced function)
       if (uniqueImages.length > 0) {
         try {
-          // Use English summary for image selection, or fallback to headline
-          const summaryForImage = summaryEn || cluster.headline || '';
-          const headlineForImage = cluster.headline || '';
+          // Use enhanced function for image selection with quality tracking
+          const imageResult = await selectBestImageWithQuality(
+            cluster.id,
+            cluster.headline || '',
+            summaryEn || '',
+            articles.map(a => ({
+              image_url: a.image_url,
+              image_urls: a.image_urls,
+              url: a.url,
+              content_html: a.content_html || null
+            }))
+          );
           
-          // Only use AI selection if we have multiple images and a meaningful summary/headline
-          if (uniqueImages.length > 1 && (summaryForImage.length > 50 || headlineForImage.length > 20)) {
-            // Convert to format expected by selectBestImage (remove priority field)
-            const imagesForSelection = uniqueImages.map(img => ({ url: img.url, source: img.source }));
-            imageUrl = await selectBestImage(imagesForSelection, headlineForImage, summaryForImage);
-            if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim().length > 0) {
-              console.log(`[Pipeline] ✅ AI selected best image from ${uniqueImages.length} options for cluster ${cluster.id}: ${imageUrl.substring(0, 80)}...`);
-            } else {
-              console.warn(`[Pipeline] ⚠️ AI image selection returned invalid result, using highest priority image`);
-              imageUrl = uniqueImages[0].url; // Already sorted by priority
-            }
-          } else {
-            // Use highest priority image if only one image or insufficient context
-            imageUrl = uniqueImages[0].url;
-            console.log(`[Pipeline] Using highest priority image (${uniqueImages.length} available, priority: ${uniqueImages[0].priority}): ${imageUrl.substring(0, 80)}...`);
-          }
-          
-          // Final validation of selected image URL
-          if (imageUrl && typeof imageUrl === 'string') {
-            try {
-              new URL(imageUrl);
-              // Ensure it's a valid HTTP(S) URL
-              if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-                console.warn(`[Pipeline] ⚠️ Selected image URL is not HTTP(S), using fallback`);
-                imageUrl = uniqueImages.find(img => img.url.startsWith('http'))?.url || null;
-              }
-            } catch {
-              console.warn(`[Pipeline] ⚠️ Selected image URL is invalid, using fallback`);
-              imageUrl = uniqueImages.find(img => {
-                try {
-                  new URL(img.url);
-                  return img.url.startsWith('http');
-                } catch {
-                  return false;
-                }
-              })?.url || null;
-            }
-          }
+          imageUrl = imageResult.imageUrl;
+          console.log(`[Pipeline] ✅ Selected image with quality tracking (relevance: ${imageResult.relevanceScore}, quality: ${imageResult.qualityScore})`);
         } catch (error) {
-          console.error('[Pipeline] ❌ Image selection failed, using highest priority image:', error);
-          // Find first valid HTTP(S) URL as fallback
+          console.error('[Pipeline] ❌ Enhanced image selection failed, using fallback:', error);
+          // Fallback: use first valid image
           imageUrl = uniqueImages.find(img => {
             try {
               new URL(img.url);
@@ -1244,13 +932,6 @@ async function summarizeEligible(
       } else {
         imageUrl = null;
         console.warn(`[Pipeline] ⚠️ No images found for cluster ${cluster.id} - checked ${imageStats.rss} RSS, ${imageStats.content} content, ${imageStats.page} page images`);
-      }
-      
-      // Log image URL before saving
-      if (imageUrl) {
-        console.log(`[Pipeline] ✅ Selected image URL for cluster ${cluster.id}: ${imageUrl.substring(0, 100)}...`);
-      } else {
-        console.warn(`[Pipeline] ⚠️ No image URL to save for cluster ${cluster.id}`);
       }
 
       // Generate SEO for other languages using translated headlines
@@ -1378,6 +1059,7 @@ async function summarizeEligible(
     }
 
     // Save summaries with new SEO content fields, translation status, and quality score
+    // Save summaries with quality scores and lengths (enhanced)
     await supabaseAdmin.from('summaries').upsert(
       {
         cluster_id: cluster.id,
@@ -1390,8 +1072,12 @@ async function summarizeEligible(
         confirmed_vs_differs_en: confirmedDiffersEn || null,
         confirmed_vs_differs_si: confirmedDiffersSi || null,
         confirmed_vs_differs_ta: confirmedDiffersTa || null,
-        translation_status: translationStatus,
-        summary_quality_score: summaryQualityScore,
+        summary_quality_score_en: summaryQualityScore,
+        summary_quality_score_si: summarySiQuality,
+        summary_quality_score_ta: summaryTaQuality,
+        summary_length_en: summaryEn.length,
+        summary_length_si: summarySi.length,
+        summary_length_ta: summaryTa.length,
         model: env.SUMMARY_MODEL,
         prompt_version: 'v1-title-excerpt',
         version: summary?.version ? summary.version + 1 : 1,
@@ -1401,12 +1087,13 @@ async function summarizeEligible(
     );
     
     // Log translation status and quality for monitoring
-    console.log(`[Pipeline] Cluster ${cluster.id} - Translation: en=${translationStatus.en}, si=${translationStatus.si}, ta=${translationStatus.ta}, Quality: ${summaryQualityScore}`);
+    console.log(`[Pipeline] Cluster ${cluster.id} - Translation: en=${translationStatus.en}, si=${translationStatus.si}, ta=${translationStatus.ta}`);
+    console.log(`[Pipeline] Quality scores - EN: ${summaryQualityScore}, SI: ${summarySiQuality}, TA: ${summaryTaQuality}`);
     if (!translationStatus.en || !translationStatus.si || !translationStatus.ta) {
       console.warn(`[Pipeline] ⚠️ Translation incomplete for cluster ${cluster.id}:`, translationStatus);
     }
-    if (summaryQualityScore < 70) {
-      console.warn(`[Pipeline] ⚠️ Low quality score (${summaryQualityScore}) for cluster ${cluster.id}`);
+    if (summaryQualityScore < 0.7 || summarySiQuality < 0.7 || summaryTaQuality < 0.7) {
+      console.warn(`[Pipeline] ⚠️ Low quality score for cluster ${cluster.id} (EN: ${summaryQualityScore}, SI: ${summarySiQuality}, TA: ${summaryTaQuality})`);
     }
 
     // Ensure topics array always has at least 2 topics before saving

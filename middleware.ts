@@ -25,6 +25,20 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
+  // Redirect legacy routes to new format
+  // Legacy: /{lang}/topic/{topic} -> /{lang}/{topic}
+  if (pathname.match(/^\/(en|si|ta)\/topic\//)) {
+    const [, lang, , topic] = pathname.split('/');
+    return NextResponse.redirect(new URL(`/${lang}/${topic}`, request.url), 301);
+  }
+
+  // Legacy: /{lang}/story/{slug} -> /{lang}/other/{slug} (or detect topic from database)
+  if (pathname.match(/^\/(en|si|ta)\/story\//)) {
+    const [, lang, , slug] = pathname.split('/');
+    // Default to 'other' topic - actual topic will be determined by the page component
+    return NextResponse.redirect(new URL(`/${lang}/other/${slug}`, request.url), 301);
+  }
+
   // Sync cookie with URL language for language-aware routes
   const langMatch = pathname.match(/^\/(en|si|ta)(\/|$)/);
   if (langMatch) {
