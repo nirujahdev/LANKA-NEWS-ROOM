@@ -190,11 +190,17 @@ export async function generateQualityControlledSummary(
   while (attempts < maxAttempts && qualityScore < 0.7) {
     attempts++;
     
+    // Map articles to expected format (use content_text or content_excerpt as content)
+    const mappedArticles = articles.map(a => ({
+      title: a.title,
+      content: a.content_text || a.content_excerpt || ''
+    }));
+    
     // Generate summary
     if (sourceLang === 'en') {
-      summary = await summarizeEnglish(articles, targetLength);
+      summary = await summarizeEnglish(mappedArticles);
     } else {
-      summary = await summarizeInSourceLanguage(articles, sourceLang, targetLength);
+      summary = await summarizeInSourceLanguage(mappedArticles, sourceLang);
     }
 
     // Validate quality
