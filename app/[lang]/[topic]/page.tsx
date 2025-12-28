@@ -149,9 +149,11 @@ export default async function TopicPage({ params, searchParams }: Props) {
         .eq('status', 'published');
     
       // Support both single topic (backward compatibility) and topics array
-      // Match if topic field matches OR if topics array contains the topic
-      // Use OR filter to check both conditions
-      query = query.or(`topic.ilike.${topicString},topics.cs.{${topicString}}`);
+      // First match by single topic field (most common case)
+      query = query.ilike('topic', topicString);
+      
+      // Note: For topics array matching, we'll filter in memory after fetching
+      // This ensures backward compatibility while supporting the new topics array
 
       // Apply date filter
       if (date && date !== 'all') {
