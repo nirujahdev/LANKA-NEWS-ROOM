@@ -440,7 +440,7 @@ async function summarizeEligible(
     // Fetch latest cluster data from database to get headline_si, headline_ta, topics, and SEO fields
     const { data: latestCluster } = await supabaseAdmin
       .from('clusters')
-      .select('headline_si, headline_ta, topics, meta_title_en, meta_title_si, meta_title_ta, meta_description_en, meta_description_si, meta_description_ta, source_count')
+      .select('headline_si, headline_ta, topics, meta_title_en, meta_title_si, meta_title_ta, meta_description_en, meta_description_si, meta_description_ta, source_count, image_url, headline_translation_quality_si, headline_translation_quality_ta')
       .eq('id', cluster.id)
       .single();
 
@@ -453,17 +453,27 @@ async function summarizeEligible(
     const prevSourceCount = summary ? (latestCluster?.source_count || cluster.source_count || 0) : 0;
     const needsSummary = !summary || prevSourceCount !== (latestCluster?.source_count || cluster.source_count || 0);
     // Always check if headlines need to be generated (even if summary exists)
-    // IMPORTANT: Only check headline_si and headline_ta, NOT topics (topics are generated separately)
-    const needsHeadlines = !latestCluster?.headline_si || !latestCluster?.headline_ta;
+    // IMPORTANT: Check if headlines are missing OR quality is low
+    const needsHeadlines = !latestCluster?.headline_si || !latestCluster?.headline_ta || 
+                          (latestCluster?.headline_translation_quality_si || 0) < 0.7 || 
+                          (latestCluster?.headline_translation_quality_ta || 0) < 0.7;
     // Always check if SEO metadata needs to be generated (meta titles/descriptions)
     const needsSEO = !latestCluster?.meta_title_en || !latestCluster?.meta_title_si || !latestCluster?.meta_title_ta || 
                      !latestCluster?.meta_description_en || !latestCluster?.meta_description_si || !latestCluster?.meta_description_ta;
+    // Check if image is missing
+    const needsImage = !latestCluster?.image_url;
     
-    // Skip only if summary exists, source count unchanged, headlines/topics are present, AND SEO is complete
-    if (!needsSummary && !needsHeadlines && !needsSEO) {
-      console.log(`[Pipeline] Skipping cluster ${cluster.id} - summary, headlines, and SEO already exist`);
+    // Skip only if summary exists, source count unchanged, headlines/topics are present, SEO is complete, AND image exists
+    if (!needsSummary && !needsHeadlines && !needsSEO && !needsImage) {
+      console.log(`[Pipeline] Skipping cluster ${cluster.id} - summary, headlines, SEO, and image already exist`);
       continue;
     }
+    
+    // Log what needs to be done
+    if (needsHeadlines) console.log(`[Pipeline] Cluster ${cluster.id} needs headlines (SI: ${!!latestCluster?.headline_si}, TA: ${!!latestCluster?.headline_ta}, SI quality: ${latestCluster?.headline_translation_quality_si}, TA quality: ${latestCluster?.headline_translation_quality_ta})`);
+    if (needsImage) console.log(`[Pipeline] Cluster ${cluster.id} needs image`);
+    if (needsSummary) console.log(`[Pipeline] Cluster ${cluster.id} needs summary`);
+    if (needsSEO) console.log(`[Pipeline] Cluster ${cluster.id} needs SEO`);
 
     const { data: articles, error } = await supabaseAdmin
       .from('articles')
@@ -656,17 +666,21 @@ async function summarizeEligible(
     let headlineQualitySi = null;
     let headlineQualityTa = null;
     
-    if (needsHeadlines || !latestCluster?.headline_si || !latestCluster?.headline_ta) {
-      console.log(`[Pipeline] Ensuring headline translations for cluster ${cluster.id}...`);
+    // ALWAYS call ensureHeadlineTranslations if headlines are missing or quality is low
+    // This ensures 100% translation coverage
+    if (needsHeadlines || !latestCluster?.headline_si || !latestCluster?.headline_ta || 
+        (latestCluster?.headline_translation_quality_si || 0) < 0.7 || 
+        (latestCluster?.headline_translation_quality_ta || 0) < 0.7) {
+      console.log(`[Pipeline] Ensuring headline translations for cluster ${cluster.id} (needsHeadlines: ${needsHeadlines}, has SI: ${!!latestCluster?.headline_si}, has TA: ${!!latestCluster?.headline_ta})...`);
       try {
         const headlineResult = await ensureHeadlineTranslations(cluster.id, headlineEn, errors);
         headlineSi = headlineResult.headlineSi;
         headlineTa = headlineResult.headlineTa;
         headlineQualitySi = headlineResult.qualitySi;
         headlineQualityTa = headlineResult.qualityTa;
-        console.log(`[Pipeline] ✅ Headline translations ensured (SI quality: ${headlineResult.qualitySi}, TA quality: ${headlineResult.qualityTa})`);
+        console.log(`[Pipeline] ✅ Headline translations ensured (SI: ${headlineSi ? headlineSi.substring(0, 50) + '...' : 'NULL'}, TA: ${headlineTa ? headlineTa.substring(0, 50) + '...' : 'NULL'}, SI quality: ${headlineResult.qualitySi}, TA quality: ${headlineResult.qualityTa})`);
       } catch (err) {
-        console.error(`[Pipeline] Failed to ensure headline translations:`, err);
+        console.error(`[Pipeline] ❌ Failed to ensure headline translations:`, err);
         errors.push({ stage: 'headlines', message: `Failed to ensure headline translations: ${err}` });
         // Fallback to existing or null
         headlineSi = latestCluster?.headline_si || null;
@@ -675,6 +689,7 @@ async function summarizeEligible(
         headlineQualityTa = latestCluster?.headline_translation_quality_ta || null;
       }
     } else {
+      console.log(`[Pipeline] Using existing headlines for cluster ${cluster.id} (SI quality: ${latestCluster?.headline_translation_quality_si}, TA quality: ${latestCluster?.headline_translation_quality_ta})`);
       headlineSi = latestCluster?.headline_si || null;
       headlineTa = latestCluster?.headline_ta || null;
       // Fetch quality scores if headlines exist
