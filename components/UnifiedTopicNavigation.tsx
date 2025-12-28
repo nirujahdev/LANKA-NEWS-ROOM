@@ -2,7 +2,7 @@
 
 import React, { Suspense } from 'react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import WeatherWidget from './WeatherWidget';
 import { normalizeTopicSlug } from '@/lib/topics';
 
@@ -14,7 +14,7 @@ interface Topic {
   href: string;
 }
 
-interface TopicNavigationProps {
+interface UnifiedTopicNavigationProps {
   language?: 'en' | 'si' | 'ta';
   showWeather?: boolean;
 }
@@ -33,12 +33,11 @@ const topics: Topic[] = [
   { id: 'society', label: 'Society', labelSi: 'සමාජය', labelTa: 'சமூகம்', href: 'society' }
 ];
 
-const TopicNavigationContent: React.FC<TopicNavigationProps> = ({ 
+const UnifiedTopicNavigationContent: React.FC<UnifiedTopicNavigationProps> = ({ 
   language = 'en',
   showWeather = true 
 }) => {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const getLabel = (topic: Topic) => {
     if (language === 'si' && topic.labelSi) return topic.labelSi;
@@ -65,7 +64,7 @@ const TopicNavigationContent: React.FC<TopicNavigationProps> = ({
     }
     // For topic pages, normalize and use /lang/topic/topicname
     const normalized = normalizeTopicSlug(topicHref) || topicHref.toLowerCase().replace(/\s+/g, '-');
-    return `/${currentLang}/topic/${normalized}`;
+    return `/${currentLang}/${normalized}`;
   };
 
   const isActive = (topicHref: string) => {
@@ -77,16 +76,16 @@ const TopicNavigationContent: React.FC<TopicNavigationProps> = ({
     }
     // Check if path matches /lang/topic/topicname (normalize for comparison)
     const normalized = normalizeTopicSlug(topicHref) || topicHref.toLowerCase().replace(/\s+/g, '-');
-    return pathname === `/${currentLang}/topic/${normalized}` || 
-           pathname.startsWith(`/${currentLang}/topic/${normalized}/`);
+    return pathname === `/${currentLang}/${normalized}` || 
+           pathname.startsWith(`/${currentLang}/${normalized}/`);
   };
 
   return (
     <div className="bg-white border-b border-[#E8EAED]">
-      {/* Topic Tabs - Centered and Scrollable on Mobile */}
+      {/* Topic Tabs - Identical on all screen sizes */}
       <div>
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-          <div className="flex overflow-x-auto scrollbar-hide touch-scroll -mb-px justify-start md:justify-center">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex overflow-x-auto scrollbar-hide touch-scroll -mb-px justify-center">
             <div className="flex min-w-max gap-0">
               {topics.map((topic) => {
                 const active = isActive(topic.href);
@@ -95,7 +94,7 @@ const TopicNavigationContent: React.FC<TopicNavigationProps> = ({
                     key={topic.id}
                     href={getHref(topic.href)}
                     className={`
-                      relative px-3 sm:px-4 py-3 text-sm font-normal whitespace-nowrap
+                      relative px-4 py-3 text-sm font-normal whitespace-nowrap
                       border-b-[3px] transition-colors duration-150
                       ${active
                         ? 'border-[#1A73E8] text-[#1A73E8]'
@@ -112,9 +111,9 @@ const TopicNavigationContent: React.FC<TopicNavigationProps> = ({
         </div>
       </div>
 
-      {/* Weather Section - Only render if active (removed extra borders/padding) */}
+      {/* Weather Section - Identical on all screen sizes */}
       {showWeather && (
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-2">
+        <div className="max-w-7xl mx-auto px-4 py-2">
           <div className="flex justify-end">
             <WeatherWidget />
           </div>
@@ -124,17 +123,17 @@ const TopicNavigationContent: React.FC<TopicNavigationProps> = ({
   );
 };
 
-const TopicNavigation: React.FC<TopicNavigationProps> = (props) => {
+const UnifiedTopicNavigation: React.FC<UnifiedTopicNavigationProps> = (props) => {
   return (
     <Suspense fallback={
       <div className="bg-white border-b border-[#E8EAED]">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-          <div className="flex overflow-x-auto scrollbar-hide touch-scroll -mb-px justify-start md:justify-center">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex overflow-x-auto scrollbar-hide touch-scroll -mb-px justify-center">
             <div className="flex min-w-max">
               {topics.map((topic) => (
                 <div
                   key={topic.id}
-                  className="relative px-3 sm:px-4 py-3 text-sm font-normal whitespace-nowrap border-b-[3px] border-transparent text-[#5F6368]"
+                  className="relative px-4 py-3 text-sm font-normal whitespace-nowrap border-b-[3px] border-transparent text-[#5F6368]"
                 >
                   {props.language === 'si' && topic.labelSi ? topic.labelSi : props.language === 'ta' && topic.labelTa ? topic.labelTa : topic.label}
                 </div>
@@ -144,10 +143,10 @@ const TopicNavigation: React.FC<TopicNavigationProps> = (props) => {
         </div>
       </div>
     }>
-      <TopicNavigationContent {...props} />
+      <UnifiedTopicNavigationContent {...props} />
     </Suspense>
   );
 };
 
-export default TopicNavigation;
+export default UnifiedTopicNavigation;
 

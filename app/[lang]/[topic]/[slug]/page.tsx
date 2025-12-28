@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import NavigationWrapper from '@/components/NavigationWrapper';
-import TopicNavigation from '@/components/TopicNavigation';
+import UnifiedTopicNavigation from '@/components/UnifiedTopicNavigation';
 import StoryDetail from '@/components/StoryDetail';
 import NewsArticleSchema from '@/components/NewsArticleSchema';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
@@ -609,7 +609,7 @@ export default async function StoryPage({ params }: Props) {
       <BreadcrumbSchema items={breadcrumbItems} />
       
       <NavigationWrapper currentLanguage={lang} />
-      <TopicNavigation language={lang} />
+      <UnifiedTopicNavigation language={lang} />
       
       {/* Mobile-first responsive container */}
       <div className="max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">

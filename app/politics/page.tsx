@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
-import TopicNavigation from '@/components/TopicNavigation';
+import UnifiedTopicNavigation from '@/components/UnifiedTopicNavigation';
 import NewsCard from '@/components/NewsCard';
 import Sidebar from '@/components/Sidebar';
 import { ClusterListItem, loadClusters, CategoryType } from '@/lib/api';
@@ -67,7 +67,7 @@ export default function PoliticsPage() {
         onLanguageChange={setCurrentLanguage}
       />
       
-      <TopicNavigation 
+      <UnifiedTopicNavigation 
         language={currentLanguage}
         showWeather={true}
       />

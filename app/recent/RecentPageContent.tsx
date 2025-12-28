@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
-import TopicNavigation from '@/components/TopicNavigation';
+import UnifiedTopicNavigation from '@/components/UnifiedTopicNavigation';
 import MixedLayoutGrid from '@/components/MixedLayoutGrid';
 import { ClusterListItem, loadClusters, FeedType } from '@/lib/api';
 import { useLanguage } from '@/lib/useLanguage';
@@ -83,7 +83,7 @@ export default function RecentPageContent() {
         onLanguageChange={setLanguage}
       />
       
-      <TopicNavigation 
+      <UnifiedTopicNavigation 
         language={currentLanguage}
         showWeather={true}
       />

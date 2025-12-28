@@ -9,7 +9,7 @@ import { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import NavigationWrapper from '@/components/NavigationWrapper';
-import TopicNavigation from '@/components/TopicNavigation';
+import UnifiedTopicNavigation from '@/components/UnifiedTopicNavigation';
 import NewsCard from '@/components/NewsCard';
 import FilterMenu from '@/components/FilterMenu';
 import { normalizeTopicSlug, getTopicLabel, VALID_TOPICS, isValidTopic } from '@/lib/topics';
@@ -149,14 +149,9 @@ export default async function TopicPage({ params, searchParams }: Props) {
         .eq('status', 'published');
     
       // Support both single topic (backward compatibility) and topics array
-      // First try to match single topic field, then filter by topics array in memory if needed
-      // For now, use single topic matching (topics array matching will be added via RPC if needed)
-      query = query.ilike('topic', topicString);
-      
-      // Note: For topics array matching, we'll need to either:
-      // 1. Create an RPC function that uses PostgreSQL array operators, or
-      // 2. Fetch all and filter in memory (less efficient but works)
-      // For initial implementation, single topic matching should work
+      // Match if topic field matches OR if topics array contains the topic
+      // Use OR filter to check both conditions
+      query = query.or(`topic.ilike.${topicString},topics.cs.{${topicString}}`);
 
       // Apply date filter
       if (date && date !== 'all') {
@@ -517,10 +512,20 @@ export default async function TopicPage({ params, searchParams }: Props) {
   const countryRef = lang === 'en' ? 'Sri Lanka' : lang === 'si' ? 'ශ්‍රී ලංකා' : 'இலங்கை';
   const newsLabel = lang === 'en' ? 'News' : lang === 'si' ? 'පුවත්' : 'செய்திகள்';
 
+  // Final safety check: ensure validatedClusters is serializable before rendering
+  let safeClusters: any[] = [];
+  try {
+    const testSerialization = JSON.stringify(validatedClusters);
+    safeClusters = JSON.parse(testSerialization);
+  } catch (error) {
+    console.error('[TopicPage] Final serialization check failed, using empty array:', error);
+    safeClusters = [];
+  }
+
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
       <NavigationWrapper currentLanguage={lang} />
-      <TopicNavigation language={lang} />
+      <UnifiedTopicNavigation language={lang} />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex gap-6">
@@ -540,7 +545,7 @@ export default async function TopicPage({ params, searchParams }: Props) {
 
             {/* Articles Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {validatedClusters?.map((cluster: any) => {
+              {safeClusters?.map((cluster: any) => {
                 try {
                   const summary = Array.isArray(cluster.summaries) && cluster.summaries.length > 0 
                     ? cluster.summaries[0] 
@@ -630,7 +635,7 @@ export default async function TopicPage({ params, searchParams }: Props) {
               }).filter(Boolean)}
             </div>
 
-            {(!validatedClusters || validatedClusters.length === 0) && (
+            {(!safeClusters || safeClusters.length === 0) && (
               <div className="text-center py-12 text-[#5F6368]">
                 {lang === 'en' && 'No articles found for this topic.'}
                 {lang === 'si' && 'මෙම මාතෘකාව සඳහා ලිපි හමු නොවීය.'}

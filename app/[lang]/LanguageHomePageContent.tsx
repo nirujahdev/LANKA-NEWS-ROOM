@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import Navigation from '@/components/Navigation';
-import TopicNavigation from '@/components/TopicNavigation';
+import UnifiedTopicNavigation from '@/components/UnifiedTopicNavigation';
 import Sidebar from '@/components/Sidebar';
 import MixedLayoutGrid from '@/components/MixedLayoutGrid';
 import { ClusterListItem, loadClusters, FeedType, CategoryType } from '@/lib/api';
@@ -158,7 +158,7 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
     return (
       <div className="min-h-screen bg-[#F5F5F5]" data-loading="true">
         <Navigation currentLanguage={currentLanguage} onLanguageChange={setLanguage} />
-        <TopicNavigation language={currentLanguage} />
+        <UnifiedTopicNavigation language={currentLanguage} />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center py-12">
             <div className="text-[#5F6368]">Loading news...</div>
@@ -172,7 +172,7 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
     return (
       <div className="min-h-screen bg-[#F5F5F5]" data-error="true">
         <Navigation currentLanguage={currentLanguage} onLanguageChange={setLanguage} />
-        <TopicNavigation language={currentLanguage} />
+        <UnifiedTopicNavigation language={currentLanguage} />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center py-12">
             <div className="text-[#5F6368]">Error loading news. Please try refreshing the page.</div>

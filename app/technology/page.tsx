@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Navigation from '@/components/Navigation';
-import TopicNavigation from '@/components/TopicNavigation';
+import UnifiedTopicNavigation from '@/components/UnifiedTopicNavigation';
 import NewsCard from '@/components/NewsCard';
 import Sidebar from '@/components/Sidebar';
 import { ClusterListItem, loadClusters, CategoryType } from '@/lib/api';
@@ -66,7 +66,7 @@ export default function TechnologyPage() {
         onLanguageChange={setCurrentLanguage}
       />
       
-      <TopicNavigation 
+      <UnifiedTopicNavigation 
         language={currentLanguage}
         showWeather={true}
       />
