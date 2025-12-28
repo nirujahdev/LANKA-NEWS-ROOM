@@ -1075,6 +1075,11 @@ async function summarizeEligible(
 
     // Save summaries with new SEO content fields, translation status, and quality score
     // Save summaries with quality scores and lengths (enhanced)
+    // Ensure quality scores are numbers, not null (default to 0.7 if missing)
+    const summaryEnQuality = summaryQualityScore > 0 ? summaryQualityScore : 0.7;
+    const summarySiQualityFinal = summarySiQuality > 0 ? summarySiQuality : 0.7;
+    const summaryTaQualityFinal = summaryTaQuality > 0 ? summaryTaQuality : 0.7;
+    
     await supabaseAdmin.from('summaries').upsert(
       {
         cluster_id: cluster.id,
@@ -1087,9 +1092,9 @@ async function summarizeEligible(
         confirmed_vs_differs_en: confirmedDiffersEn || null,
         confirmed_vs_differs_si: confirmedDiffersSi || null,
         confirmed_vs_differs_ta: confirmedDiffersTa || null,
-        summary_quality_score_en: summaryQualityScore,
-        summary_quality_score_si: summarySiQuality,
-        summary_quality_score_ta: summaryTaQuality,
+        summary_quality_score_en: summaryEnQuality,
+        summary_quality_score_si: summarySiQualityFinal,
+        summary_quality_score_ta: summaryTaQualityFinal,
         summary_length_en: summaryEn.length,
         summary_length_si: summarySi.length,
         summary_length_ta: summaryTa.length,
