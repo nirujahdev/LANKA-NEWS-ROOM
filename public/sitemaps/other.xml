@@ -1188,4 +1188,22 @@
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/en/other/problem-thats-not-a-problem</loc>
+    <lastmod>2025-12-28T06:46:11.283Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/si/other/problem-thats-not-a-problem</loc>
+    <lastmod>2025-12-28T06:46:11.283Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/ta/other/problem-thats-not-a-problem</loc>
+    <lastmod>2025-12-28T06:46:11.283Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
 </urlset>
