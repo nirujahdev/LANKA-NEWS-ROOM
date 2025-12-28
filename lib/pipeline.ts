@@ -1124,6 +1124,13 @@ async function summarizeEligible(
     console.log(`  - Tamil: ${headlineTa ? headlineTa.substring(0, 60) + '...' : 'NULL (not generated)'}`);
     console.log(`  - Topics: ${JSON.stringify(topics)} (should have at least 2: geographic + content)`);
     
+    // Fetch quality scores that were set by enhanced functions
+    const { data: qualityData } = await supabaseAdmin
+      .from('clusters')
+      .select('headline_translation_quality_si, headline_translation_quality_ta, image_relevance_score, image_quality_score')
+      .eq('id', cluster.id)
+      .single();
+    
     // Update cluster with comprehensive SEO metadata and publish
     const updateData: any = {
       status: 'published',
@@ -1139,6 +1146,10 @@ async function summarizeEligible(
       topics: topics, // Multi-topic array (always has at least 2: geographic + content)
       headline_si: headlineSi && headlineSi.trim().length > 0 ? headlineSi.trim() : null, // Save if valid
       headline_ta: headlineTa && headlineTa.trim().length > 0 ? headlineTa.trim() : null, // Save if valid
+      // Preserve quality scores from enhanced functions
+      headline_translation_quality_en: 1.0, // English is always 1.0 (original)
+      headline_translation_quality_si: qualityData?.headline_translation_quality_si || null,
+      headline_translation_quality_ta: qualityData?.headline_translation_quality_ta || null,
       city: district, // Keep city field for backward compatibility, but use district value
       primary_entity: primaryEntity,
       event_type: eventType,
@@ -1147,9 +1158,12 @@ async function summarizeEligible(
       last_checked_at: new Date().toISOString()
     };
     
-    // Only include image_url if we have a valid URL
+    // Only include image_url and quality scores if we have a valid URL
     if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim().length > 0 && imageUrl.startsWith('http')) {
       updateData.image_url = imageUrl;
+      // Preserve image quality scores from enhanced function
+      updateData.image_relevance_score = qualityData?.image_relevance_score || 0.8;
+      updateData.image_quality_score = qualityData?.image_quality_score || 1.0;
       console.log(`[Pipeline] ✅ Including image_url in update for cluster ${cluster.id}: ${imageUrl.substring(0, 80)}...`);
     } else {
       console.warn(`[Pipeline] ⚠️ Not including image_url in update for cluster ${cluster.id} (invalid or missing)`);
