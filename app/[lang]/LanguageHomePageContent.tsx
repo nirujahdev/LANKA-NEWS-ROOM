@@ -185,7 +185,7 @@ export default function LanguageHomePageContent({ lang }: { lang: 'en' | 'si' | 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
       <Navigation currentLanguage={currentLanguage} onLanguageChange={setLanguage} />
-      <TopicNavigation language={currentLanguage} />
+      <UnifiedTopicNavigation language={currentLanguage} />
 
       <main className="w-full py-6">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
