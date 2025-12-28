@@ -900,38 +900,42 @@ async function summarizeEligible(
       console.log(`[Pipeline] Image collection stats for cluster ${cluster.id}:`, imageStats);
       
       // STEP 4: Select best image with quality tracking (uses enhanced function)
-      if (uniqueImages.length > 0) {
-        try {
-          // Use enhanced function for image selection with quality tracking
-          const imageResult = await selectBestImageWithQuality(
-            cluster.id,
-            cluster.headline || '',
-            summaryEn || '',
-            articles.map(a => ({
-              image_url: a.image_url,
-              image_urls: a.image_urls,
-              url: a.url,
-              content_html: a.content_html || null
-            }))
-          );
-          
-          imageUrl = imageResult.imageUrl;
+      // Always call selectBestImageWithQuality - it checks RSS feeds even if uniqueImages is empty
+      try {
+        // Use enhanced function for image selection with quality tracking
+        const imageResult = await selectBestImageWithQuality(
+          cluster.id,
+          cluster.headline || '',
+          summaryEn || '',
+          articles.map(a => ({
+            image_url: a.image_url,
+            image_urls: a.image_urls,
+            url: a.url,
+            content_html: a.content_html || null
+          }))
+        );
+        
+        imageUrl = imageResult.imageUrl;
+        if (imageUrl) {
           console.log(`[Pipeline] ✅ Selected image with quality tracking (relevance: ${imageResult.relevanceScore}, quality: ${imageResult.qualityScore})`);
-        } catch (error) {
-          console.error('[Pipeline] ❌ Enhanced image selection failed, using fallback:', error);
-          // Fallback: use first valid image
-          imageUrl = uniqueImages.find(img => {
-            try {
-              new URL(img.url);
-              return img.url.startsWith('http');
-            } catch {
-              return false;
-            }
-          })?.url || null;
+        } else {
+          console.warn(`[Pipeline] ⚠️ No images found for cluster ${cluster.id} - checked ${imageStats.rss} RSS, ${imageStats.content} content, ${imageStats.page} page images`);
         }
-      } else {
-        imageUrl = null;
-        console.warn(`[Pipeline] ⚠️ No images found for cluster ${cluster.id} - checked ${imageStats.rss} RSS, ${imageStats.content} content, ${imageStats.page} page images`);
+      } catch (error) {
+        console.error('[Pipeline] ❌ Enhanced image selection failed, using fallback:', error);
+        // Fallback: use first valid image from uniqueImages if available
+        imageUrl = uniqueImages.length > 0 ? uniqueImages.find(img => {
+          try {
+            new URL(img.url);
+            return img.url.startsWith('http');
+          } catch {
+            return false;
+          }
+        })?.url || null : null;
+        
+        if (!imageUrl) {
+          console.warn(`[Pipeline] ⚠️ No images found for cluster ${cluster.id} - checked ${imageStats.rss} RSS, ${imageStats.content} content, ${imageStats.page} page images`);
+        }
       }
 
       // Generate SEO for other languages using translated headlines
