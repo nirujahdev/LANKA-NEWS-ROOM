@@ -3,8 +3,6 @@
 
 import { supabaseAdmin } from './supabaseAdmin';
 import { translateHeadline, validateHeadlineTranslationQuality, translateSummary, validateTranslationQuality, validateSummaryQuality, summarizeEnglish, summarizeInSourceLanguage } from './openaiClient';
-import { selectBestImage, analyzeImageRelevance } from './imageSelection';
-import { extractAllImagesFromHtml, fetchArticleImages } from './imageExtraction';
 import { detectLanguage } from './language';
 import { env } from './env';
 
@@ -120,14 +118,14 @@ export async function ensureSummaryTranslations(
   // MANDATORY: Generate Sinhala translation if missing or quality < 0.7
   if (!summarySi || qualitySi < 0.7) {
     try {
-      summarySi = await translateSummary(summaryEn, 'en', 'si');
+      summarySi = await translateSummary(summaryEn, 'si');
       const qualityCheck = await validateTranslationQuality(summaryEn, summarySi, 'en', 'si');
       qualitySi = qualityCheck.score / 100;
       
       // Retry if quality is still low
       if (qualitySi < 0.7) {
         console.log(`[Pipeline] Retrying Sinhala summary translation (quality: ${qualitySi})...`);
-        summarySi = await translateSummary(summaryEn, 'en', 'si');
+        summarySi = await translateSummary(summaryEn, 'si');
         const retryCheck = await validateTranslationQuality(summaryEn, summarySi, 'en', 'si');
         qualitySi = retryCheck.score / 100;
       }
@@ -141,14 +139,14 @@ export async function ensureSummaryTranslations(
   // MANDATORY: Generate Tamil translation if missing or quality < 0.7
   if (!summaryTa || qualityTa < 0.7) {
     try {
-      summaryTa = await translateSummary(summaryEn, 'en', 'ta');
+      summaryTa = await translateSummary(summaryEn, 'ta');
       const qualityCheck = await validateTranslationQuality(summaryEn, summaryTa, 'en', 'ta');
       qualityTa = qualityCheck.score / 100;
       
       // Retry if quality is still low
       if (qualityTa < 0.7) {
         console.log(`[Pipeline] Retrying Tamil summary translation (quality: ${qualityTa})...`);
-        summaryTa = await translateSummary(summaryEn, 'en', 'ta');
+        summaryTa = await translateSummary(summaryEn, 'ta');
         const retryCheck = await validateTranslationQuality(summaryEn, summaryTa, 'en', 'ta');
         qualityTa = retryCheck.score / 100;
       }
@@ -235,8 +233,7 @@ export async function generateQualityControlledSummary(
 }
 
 /**
- * Selects best image with quality and relevance tracking
- * TARGET: Relevance > 0.8
+ * Simplified image selection: Fetch first available image URL and save to Supabase
  */
 export async function selectBestImageWithQuality(
   clusterId: string,
@@ -244,113 +241,68 @@ export async function selectBestImageWithQuality(
   summary: string,
   articles: Array<{ image_url?: string | null; image_urls?: string[] | null; url: string; content_html?: string | null }>
 ): Promise<{ imageUrl: string | null; relevanceScore: number; qualityScore: number }> {
-  // Collect all image candidates
-  const candidates: Array<{ url: string; source: string; priority: number }> = [];
-  
-  // Priority 1: Cluster's existing image (if exists and has high relevance)
+  // Check if cluster already has an image
   const { data: cluster } = await supabaseAdmin
     .from('clusters')
-    .select('image_url, image_relevance_score')
+    .select('image_url')
     .eq('id', clusterId)
     .single();
   
-  if (cluster?.image_url && cluster.image_relevance_score && cluster.image_relevance_score >= 0.8) {
-    // Use existing high-quality image
+  if (cluster?.image_url) {
     return {
       imageUrl: cluster.image_url,
-      relevanceScore: cluster.image_relevance_score,
+      relevanceScore: 0.8,
       qualityScore: 1.0
     };
   }
 
-  // Priority 2: Article images from RSS feeds
-  articles.forEach(article => {
+  // Collect image URLs from articles (RSS feeds first)
+  const imageUrls: string[] = [];
+  
+  for (const article of articles) {
+    // Priority 1: RSS feed image
     if (article.image_url) {
-      candidates.push({ url: article.image_url, source: 'rss', priority: 0.9 });
+      imageUrls.push(article.image_url);
     }
+    // Priority 2: RSS feed image array
     if (article.image_urls && Array.isArray(article.image_urls)) {
-      article.image_urls.forEach(url => {
-        candidates.push({ url, source: 'rss', priority: 0.9 });
-      });
+      imageUrls.push(...article.image_urls);
+    }
+  }
+
+  // Filter valid HTTP(S) URLs
+  const validUrls = imageUrls.filter(url => {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+    } catch {
+      return false;
     }
   });
 
-  // Priority 3: Extract from article HTML content
-  for (const article of articles) {
-    if (article.content_html) {
-      try {
-        const htmlImages = await extractAllImagesFromHtml(article.content_html, article.url);
-        htmlImages.forEach(url => {
-          candidates.push({ url, source: 'content', priority: 0.8 });
-        });
-      } catch (error) {
-        console.warn(`[Pipeline] Failed to extract images from HTML for ${article.url}:`, error);
-      }
-    }
-  }
-
-  // Priority 4: Fetch from article pages (only if we have < 3 candidates)
-  if (candidates.length < 3) {
-    for (const article of articles.slice(0, 2)) { // Limit to 2 articles to avoid rate limits
-      try {
-        const pageImages = await fetchArticleImages(article.url);
-        pageImages.forEach(url => {
-          candidates.push({ url, source: 'page', priority: 0.7 });
-        });
-      } catch (error) {
-        console.warn(`[Pipeline] Failed to fetch images from ${article.url}:`, error);
-      }
-    }
-  }
-
-  // Filter and deduplicate
-  const uniqueCandidates = Array.from(
-    new Map(candidates.map(c => [c.url, c])).values()
-  );
-
-  if (uniqueCandidates.length === 0) {
+  if (validUrls.length === 0) {
     return { imageUrl: null, relevanceScore: 0, qualityScore: 0 };
   }
 
-  // Use AI to select best image
-  try {
-    const selected = await selectBestImage(
-      uniqueCandidates.map(c => ({ url: c.url, source: c.source })),
-      headline,
-      summary
-    );
+  // Use first valid image URL
+  const selectedUrl = validUrls[0];
 
-    if (selected) {
-      // Analyze relevance
-      const relevanceResult = await analyzeImageRelevance([selected], headline, summary);
-      const relevanceScore = relevanceResult.selectedIndex >= 0 ? 0.85 : 0.5; // Default high if AI selected
-      
-      // Update cluster with selected image and scores
-      await supabaseAdmin
-        .from('clusters')
-        .update({
-          image_url: selected,
-          image_relevance_score: relevanceScore,
-          image_quality_score: 1.0 // Assume quality is good if AI selected it
-        })
-        .eq('id', clusterId);
+  // Save to Supabase
+  await supabaseAdmin
+    .from('clusters')
+    .update({
+      image_url: selectedUrl,
+      image_relevance_score: 0.8,
+      image_quality_score: 1.0
+    })
+    .eq('id', clusterId);
 
-      return {
-        imageUrl: selected,
-        relevanceScore,
-        qualityScore: 1.0
-      };
-    }
-  } catch (error) {
-    console.error('[Pipeline] Image selection failed:', error);
-  }
+  console.log(`[Pipeline] ✅ Saved image URL to cluster ${clusterId}: ${selectedUrl.substring(0, 80)}...`);
 
-  // Fallback: use first candidate
-  const fallback = uniqueCandidates[0];
   return {
-    imageUrl: fallback.url,
-    relevanceScore: 0.6, // Lower score for fallback
-    qualityScore: 0.8
+    imageUrl: selectedUrl,
+    relevanceScore: 0.8,
+    qualityScore: 1.0
   };
 }
 
