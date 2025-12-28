@@ -652,12 +652,18 @@ async function summarizeEligible(
     }
     
     // Use enhanced function to ensure translations (mandatory, with quality tracking)
+    // ALWAYS generate headlines for new clusters or if missing
+    let headlineQualitySi = null;
+    let headlineQualityTa = null;
+    
     if (needsHeadlines || !latestCluster?.headline_si || !latestCluster?.headline_ta) {
       console.log(`[Pipeline] Ensuring headline translations for cluster ${cluster.id}...`);
       try {
         const headlineResult = await ensureHeadlineTranslations(cluster.id, headlineEn, errors);
         headlineSi = headlineResult.headlineSi;
         headlineTa = headlineResult.headlineTa;
+        headlineQualitySi = headlineResult.qualitySi;
+        headlineQualityTa = headlineResult.qualityTa;
         console.log(`[Pipeline] ✅ Headline translations ensured (SI quality: ${headlineResult.qualitySi}, TA quality: ${headlineResult.qualityTa})`);
       } catch (err) {
         console.error(`[Pipeline] Failed to ensure headline translations:`, err);
@@ -665,10 +671,15 @@ async function summarizeEligible(
         // Fallback to existing or null
         headlineSi = latestCluster?.headline_si || null;
         headlineTa = latestCluster?.headline_ta || null;
+        headlineQualitySi = latestCluster?.headline_translation_quality_si || null;
+        headlineQualityTa = latestCluster?.headline_translation_quality_ta || null;
       }
     } else {
       headlineSi = latestCluster?.headline_si || null;
       headlineTa = latestCluster?.headline_ta || null;
+      // Fetch quality scores if headlines exist
+      headlineQualitySi = latestCluster?.headline_translation_quality_si || null;
+      headlineQualityTa = latestCluster?.headline_translation_quality_ta || null;
     }
     
     // Always generate SEO metadata (even if summary already exists)
@@ -1128,12 +1139,18 @@ async function summarizeEligible(
     console.log(`  - Tamil: ${headlineTa ? headlineTa.substring(0, 60) + '...' : 'NULL (not generated)'}`);
     console.log(`  - Topics: ${JSON.stringify(topics)} (should have at least 2: geographic + content)`);
     
-    // Fetch quality scores that were set by enhanced functions
-    const { data: qualityData } = await supabaseAdmin
-      .from('clusters')
-      .select('headline_translation_quality_si, headline_translation_quality_ta, image_relevance_score, image_quality_score')
-      .eq('id', cluster.id)
-      .single();
+    // Fetch image quality scores that were set by enhanced function (if image was selected)
+    let imageRelevanceScore = null;
+    let imageQualityScore = null;
+    if (imageUrl) {
+      const { data: imageQualityData } = await supabaseAdmin
+        .from('clusters')
+        .select('image_relevance_score, image_quality_score')
+        .eq('id', cluster.id)
+        .single();
+      imageRelevanceScore = imageQualityData?.image_relevance_score || 0.8;
+      imageQualityScore = imageQualityData?.image_quality_score || 1.0;
+    }
     
     // Update cluster with comprehensive SEO metadata and publish
     const updateData: any = {
@@ -1150,10 +1167,10 @@ async function summarizeEligible(
       topics: topics, // Multi-topic array (always has at least 2: geographic + content)
       headline_si: headlineSi && headlineSi.trim().length > 0 ? headlineSi.trim() : null, // Save if valid
       headline_ta: headlineTa && headlineTa.trim().length > 0 ? headlineTa.trim() : null, // Save if valid
-      // Preserve quality scores from enhanced functions
+      // Use quality scores from enhanced function (already set in ensureHeadlineTranslations)
       headline_translation_quality_en: 1.0, // English is always 1.0 (original)
-      headline_translation_quality_si: qualityData?.headline_translation_quality_si || null,
-      headline_translation_quality_ta: qualityData?.headline_translation_quality_ta || null,
+      headline_translation_quality_si: headlineQualitySi !== null ? headlineQualitySi : null,
+      headline_translation_quality_ta: headlineQualityTa !== null ? headlineQualityTa : null,
       city: district, // Keep city field for backward compatibility, but use district value
       primary_entity: primaryEntity,
       event_type: eventType,
@@ -1165,10 +1182,10 @@ async function summarizeEligible(
     // Only include image_url and quality scores if we have a valid URL
     if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim().length > 0 && imageUrl.startsWith('http')) {
       updateData.image_url = imageUrl;
-      // Preserve image quality scores from enhanced function
-      updateData.image_relevance_score = qualityData?.image_relevance_score || 0.8;
-      updateData.image_quality_score = qualityData?.image_quality_score || 1.0;
-      console.log(`[Pipeline] ✅ Including image_url in update for cluster ${cluster.id}: ${imageUrl.substring(0, 80)}...`);
+      // Use quality scores from enhanced function (already set in selectBestImageWithQuality)
+      updateData.image_relevance_score = imageRelevanceScore;
+      updateData.image_quality_score = imageQualityScore;
+      console.log(`[Pipeline] ✅ Including image_url in update for cluster ${cluster.id}: ${imageUrl.substring(0, 80)}... (relevance: ${imageRelevanceScore}, quality: ${imageQualityScore})`);
     } else {
       console.warn(`[Pipeline] ⚠️ Not including image_url in update for cluster ${cluster.id} (invalid or missing)`);
     }
