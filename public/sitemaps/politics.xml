@@ -1,6 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>https://lankanewsroom.xyz/en/politics/sri-lankas-left-in-the-tariff-trap</loc>
+    <lastmod>2026-01-02T09:36:40.787Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/si/politics/sri-lankas-left-in-the-tariff-trap</loc>
+    <lastmod>2026-01-02T09:36:40.787Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lankanewsroom.xyz/ta/politics/sri-lankas-left-in-the-tariff-trap</loc>
+    <lastmod>2026-01-02T09:36:40.787Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://lankanewsroom.xyz/en/politics/nation-in-distress-fourth-time-six-years</loc>
     <lastmod>2025-12-28T06:03:39.763Z</lastmod>
     <changefreq>daily</changefreq>
@@ -2139,24 +2157,6 @@
   <url>
     <loc>https://lankanewsroom.xyz/ta/politics/defining-sri-lanka-in-2025</loc>
     <lastmod>2025-12-28T06:43:36.476Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://lankanewsroom.xyz/en/politics/sri-lankas-left-in-the-tariff-trap</loc>
-    <lastmod>2025-12-28T06:45:40.193Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://lankanewsroom.xyz/si/politics/sri-lankas-left-in-the-tariff-trap</loc>
-    <lastmod>2025-12-28T06:45:40.193Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://lankanewsroom.xyz/ta/politics/sri-lankas-left-in-the-tariff-trap</loc>
-    <lastmod>2025-12-28T06:45:40.193Z</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
