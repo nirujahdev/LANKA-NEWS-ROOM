@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "pipeline": "tsx scripts/pipeline.ts"
+    "lint": "next lint"
   },
   "dependencies": {
     "@openai/agents": "^0.1.0",

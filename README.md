@@ -66,9 +66,14 @@ npm start
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-### Running the Pipeline Locally
+### Running the AI News Agent Pipeline
 
-The pipeline worker fetches RSS feeds, processes articles with OpenAI, and saves them to Supabase.
+The AI News Agent Pipeline uses AI agents to process news articles with advanced capabilities:
+- Summary generation via Summary Agent
+- Translation via Translation Agent (multi-language)
+- SEO metadata generation via SEO Agent
+- Image selection via Image Agent
+- Categorization via Category Agent
 
 **Required Environment Variables:**
 ```bash
@@ -79,46 +84,42 @@ export OPENAI_API_KEY="sk-your-openai-key"
 
 **Optional Environment Variables:**
 ```bash
-export SUMMARY_MODEL="gpt-4o-mini"  # Default: gpt-4o-mini
-export BATCH_SIZE="10"               # Default: 10
-export DRY_RUN="true"                # Set to "true" for dry run (no writes)
+export AGENT_ENABLED="true"                    # Enable agents (default: true)
+export AGENT_ROLLOUT_PERCENTAGE="100"         # Percentage of traffic to route to agents (0-100)
+export AGENT_USE_FOR_COMPLEX="true"           # Use agents for complex cases (default: true)
+export AGENT_SUMMARY_MODEL="gpt-4o-mini"      # Model for summary agent
+export AGENT_TRANSLATION_MODEL="gpt-4o-mini"  # Model for translation agent
+export AGENT_SEO_MODEL="gpt-4o-mini"          # Model for SEO agent
+export AGENT_IMAGE_MODEL="gpt-4o"             # Model for image agent (uses gpt-4o)
+export AGENT_CATEGORY_MODEL="gpt-4o-mini"     # Model for category agent
 ```
 
-**Run the pipeline:**
+**Run the AI Agent Pipeline:**
 ```bash
-# Production mode (writes to database)
-npm run pipeline
-
-# Dry run mode (no database writes, for testing)
-DRY_RUN=true npm run pipeline
+npx tsx scripts/ai-agent-pipeline.ts
 ```
 
 **What the pipeline does:**
-1. Fetches RSS feeds from active sources in Supabase
-2. Inserts new articles into `articles` table (deduplicates by URL/hash)
-3. Picks unprocessed articles (`status='new'`)
-4. Processes each article with OpenAI to generate:
-   - Summary
-   - Topics
-   - SEO title and description
-   - Slug
-   - Language detection
-   - City extraction
-5. Creates/updates clusters in `clusters` table
-6. Saves summaries to `summaries` table
-7. Marks articles as `processed` or `failed`
+1. Processes clusters that need AI agent processing
+2. Generates summaries using AI agents with quality control
+3. Translates headlines and summaries to Sinhala and Tamil
+4. Generates comprehensive SEO metadata (titles, descriptions, keywords, topics)
+5. Selects the best images with relevance and quality scoring
+6. Categorizes clusters with appropriate topics
 
 **Pipeline Statistics:**
 The pipeline prints statistics:
-- `fetched`: Number of RSS items fetched
-- `inserted`: New articles inserted
-- `deduped`: Articles skipped (already exist)
-- `pickedForProcessing`: Articles selected for processing
-- `processed`: Successfully processed articles
-- `failed`: Articles that failed processing
+- `clustersProcessed`: Number of clusters processed
+- `summariesGenerated`: Summaries generated via agents
+- `translationsGenerated`: Translations generated
+- `seoGenerated`: SEO metadata generated
+- `imagesSelected`: Images selected
+- `categoriesAssigned`: Categories assigned
+- `agentOperations`: Total agent operations performed
+- `errors`: Any errors encountered
 
 **GitHub Actions:**
-The pipeline runs automatically every 15 minutes via GitHub Actions (`.github/workflows/pipeline.yml`). 
+The AI News Agent Pipeline runs automatically every 30 minutes via GitHub Actions (`.github/workflows/ai-agent-pipeline.yml`). 
 See the workflow file for configuration details.
 
 ## Project Structure
