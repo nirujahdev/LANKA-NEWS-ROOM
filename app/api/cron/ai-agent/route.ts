@@ -42,7 +42,7 @@ export async function GET(req: Request) {
   const token = authHeader.substring(7).trim();
 
   // Validate token matches CRON_SECRET
-  if (token !== env.CRON_SECRET) {
+  if (!env.CRON_SECRET || token !== env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

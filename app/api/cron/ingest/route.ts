@@ -13,7 +13,7 @@ import { runFullPipeline } from '@/lib/pipeline';
 export async function GET(req: Request) {
   // Legacy authentication check
   const secret = req.headers.get('x-cron-secret');
-  if (secret !== env.CRON_SECRET) {
+  if (!env.CRON_SECRET || secret !== env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

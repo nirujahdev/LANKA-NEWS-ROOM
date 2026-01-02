@@ -55,7 +55,7 @@ export async function GET(req: Request) {
   // Validate token matches CRON_SECRET
   // CRON_SECRET is read from environment variables only
   // Never hardcoded, never logged, never exposed to client
-  if (token !== env.CRON_SECRET) {
+  if (!env.CRON_SECRET || token !== env.CRON_SECRET) {
     // Return generic error to avoid leaking information
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
