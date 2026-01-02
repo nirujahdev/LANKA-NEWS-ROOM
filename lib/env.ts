@@ -8,7 +8,6 @@ const serverEnvSchema = z.object({
   SUPABASE_URL: z.string().url(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   OPENAI_API_KEY: z.string().min(1),
-  CRON_SECRET: z.string().min(1).optional(), // Optional - only needed for API endpoints, not scripts
   SUMMARY_MODEL: z.string().default('gpt-4o-mini'),
   SUMMARY_TRANSLATE_MODEL: z.string().default('gpt-4o-mini'),
   SIMILARITY_THRESHOLD: z.coerce.number().default(0.65),
@@ -85,7 +84,6 @@ if (isClient) {
     SUPABASE_URL: process.env.SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-    CRON_SECRET: process.env.CRON_SECRET || undefined, // Optional - only needed for API endpoints
     SUMMARY_MODEL: process.env.SUMMARY_MODEL,
     SUMMARY_TRANSLATE_MODEL: process.env.SUMMARY_TRANSLATE_MODEL,
     SIMILARITY_THRESHOLD: process.env.SIMILARITY_THRESHOLD,
