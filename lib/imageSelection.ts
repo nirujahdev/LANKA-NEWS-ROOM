@@ -214,7 +214,7 @@ Return your response in this EXACT JSON format:
 IMPORTANT: Return ONLY valid JSON, no other text.`;
 
   const completion = await client.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: 'gpt-4o', // Use gpt-4o for image relevance analysis
     messages: [
       {
         role: 'system',

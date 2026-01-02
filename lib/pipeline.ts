@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { supabaseAdmin } from './supabaseAdmin';
 import { env } from './env';
 import { fetchRssFeed } from './rss';
@@ -13,6 +12,13 @@ import { selectBestImage } from './imageSelection';
 import { extractAllImagesFromHtml, fetchArticleImages } from './imageExtraction';
 import { cache } from './cache';
 import { ensureHeadlineTranslations, ensureSummaryTranslations, generateQualityControlledSummary, selectBestImageWithQuality } from './pipelineEnhanced';
+import {
+  orchestrateSummaryGeneration,
+  orchestrateTranslation,
+  orchestrateSEOGeneration,
+  orchestrateImageSelection,
+} from './agents/orchestrator';
+import { orchestrateCategorization } from './agents/orchestrator';
 
 type ClusterCache = {
   id: string;
@@ -415,10 +421,11 @@ async function categorizeClusters(
     }
 
     try {
-      const category = await categorizeCluster(articles);
+      // Use agent orchestrator for categorization
+      const categoryResult = await orchestrateCategorization(articles);
       await supabaseAdmin
         .from('clusters')
-        .update({ category })
+        .update({ category: categoryResult.category })
         .eq('id', cluster.id);
       categorized += 1;
     } catch (err: any) {
@@ -562,19 +569,32 @@ async function summarizeEligible(
     
     if (needsSummary || (summary?.summary_quality_score_en || 0) < 0.7) {
       try {
-        // Use enhanced function for quality-controlled summary generation
-        const summaryResult = await generateQualityControlledSummary(
-          sourcePayload.map(s => ({ title: s.title, content_excerpt: s.content, content_text: s.content })),
-          sourceLang,
-          500 // Target length
+        // Use agent orchestrator for summary generation
+        const summaryResult = await orchestrateSummaryGeneration(
+          sourcePayload.map(s => ({
+            title: s.title,
+            content: s.content,
+            weight: s.weight,
+            publishedAt: s.publishedAt,
+          })),
+          summary?.summary_en || null,
+          sourceLang
         );
         
         summaryEn = summaryResult.summary;
         summaryQualityScore = summaryResult.qualityScore;
         
-        console.log(`[Pipeline] Generated quality-controlled summary (quality: ${summaryQualityScore}, length: ${summaryResult.length})`);
+        console.log(`[Pipeline] ✅ Generated summary via orchestrator (quality: ${summaryQualityScore}, length: ${summaryResult.length}, sourceLang: ${summaryResult.sourceLang})`);
       } catch (error) {
-        console.error('[Pipeline] Quality-controlled summary generation failed, falling back to standard:', error);
+        console.error('[Pipeline] ❌ Summary generation failed, falling back to standard:', {
+          errorType: error instanceof Error ? error.constructor.name : typeof error,
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack?.split('\n').slice(0, 5).join('\n') : undefined,
+          clusterId: cluster.id,
+          articlesCount: sourcePayload.length,
+          sourceLang,
+          timestamp: new Date().toISOString(),
+        });
         // Fallback to standard summarization
         if (sourceLang === 'en') {
           summaryEn = await summarizeEnglish(sourcePayload, summary?.summary_en);
@@ -591,25 +611,96 @@ async function summarizeEligible(
       console.log(`[Pipeline] Using existing summary for cluster ${cluster.id} (quality: ${summaryQualityScore})`);
     }
     
-    // STEP 3: Ensure summary translations (MANDATORY - uses enhanced function)
+    // STEP 3: Ensure summary translations (MANDATORY - uses agent orchestrator)
     let summarySi: string;
     let summaryTa: string;
     let summarySiQuality = 0;
     let summaryTaQuality = 0;
+    let headlineSi: string | null = null;
+    let headlineTa: string | null = null;
+    let headlineQualitySi: number | null = null;
+    let headlineQualityTa: number | null = null;
     
-    try {
-      const translationResult = await ensureSummaryTranslations(cluster.id, summaryEn, errors);
-      summarySi = translationResult.summarySi;
-      summaryTa = translationResult.summaryTa;
-      summarySiQuality = translationResult.qualitySi;
-      summaryTaQuality = translationResult.qualityTa;
-      console.log(`[Pipeline] ✅ Summary translations ensured (SI quality: ${summarySiQuality}, TA quality: ${summaryTaQuality})`);
-    } catch (err) {
-      console.error(`[Pipeline] Failed to ensure summary translations:`, err);
-      errors.push({ stage: 'summary_translation', message: `Failed to ensure summary translations: ${err}` });
-      // Fallback to existing or English
+    // Get English headline (may need translation if source is Sinhala/Tamil)
+    let headlineEn = cluster.headline;
+    if ((sourceLang === 'si' || sourceLang === 'ta') && articles && articles.length > 0) {
+      const firstArticleTitle = articles[0]?.title;
+      if (firstArticleTitle && firstArticleTitle.trim().length > 0) {
+        try {
+          headlineEn = await translateHeadline(firstArticleTitle, sourceLang, 'en');
+          if (!headlineEn || headlineEn.trim().length === 0) {
+            headlineEn = cluster.headline; // Fallback
+          }
+        } catch (err) {
+          console.warn(`[Pipeline] Failed to translate headline to English from ${sourceLang}, using original:`, err);
+          headlineEn = cluster.headline;
+        }
+      }
+    }
+    
+    // Use agent orchestrator for translations (headlines + summaries)
+    if (needsHeadlines || needsSummary) {
+      try {
+        const translationResult = await orchestrateTranslation(
+          cluster.id,
+          headlineEn,
+          summaryEn,
+          errors
+        );
+        
+        headlineSi = translationResult.headlineSi;
+        headlineTa = translationResult.headlineTa;
+        summarySi = translationResult.summarySi;
+        summaryTa = translationResult.summaryTa;
+        headlineQualitySi = translationResult.qualityScores.headlineSi;
+        headlineQualityTa = translationResult.qualityScores.headlineTa;
+        summarySiQuality = translationResult.qualityScores.summarySi;
+        summaryTaQuality = translationResult.qualityScores.summaryTa;
+        
+        console.log(`[Pipeline] ✅ Translations ensured via orchestrator (SI quality: ${summarySiQuality}, TA quality: ${summaryTaQuality})`);
+      } catch (err) {
+        console.error(`[Pipeline] ❌ Failed to ensure translations via orchestrator:`, {
+          errorType: err instanceof Error ? err.constructor.name : typeof err,
+          errorMessage: err instanceof Error ? err.message : String(err),
+          errorStack: err instanceof Error ? err.stack?.split('\n').slice(0, 5).join('\n') : undefined,
+          clusterId: cluster.id,
+          headlineLength: headlineEn.length,
+          summaryLength: summaryEn.length,
+          timestamp: new Date().toISOString(),
+        });
+        errors.push({ stage: 'translation', message: `Failed to ensure translations: ${err}` });
+        // Fallback to enhanced functions
+        try {
+          const headlineResult = await ensureHeadlineTranslations(cluster.id, headlineEn, errors);
+          const summaryResult = await ensureSummaryTranslations(cluster.id, summaryEn, errors);
+          headlineSi = headlineResult.headlineSi;
+          headlineTa = headlineResult.headlineTa;
+          summarySi = summaryResult.summarySi;
+          summaryTa = summaryResult.summaryTa;
+          headlineQualitySi = headlineResult.qualitySi;
+          headlineQualityTa = headlineResult.qualityTa;
+          summarySiQuality = summaryResult.qualitySi;
+          summaryTaQuality = summaryResult.qualityTa;
+        } catch (fallbackErr) {
+          // Final fallback
+          headlineSi = latestCluster?.headline_si || null;
+          headlineTa = latestCluster?.headline_ta || null;
+          summarySi = summary?.summary_si || summaryEn;
+          summaryTa = summary?.summary_ta || summaryEn;
+          headlineQualitySi = latestCluster?.headline_translation_quality_si || null;
+          headlineQualityTa = latestCluster?.headline_translation_quality_ta || null;
+          summarySiQuality = summary?.summary_quality_score_si || 0;
+          summaryTaQuality = summary?.summary_quality_score_ta || 0;
+        }
+      }
+    } else {
+      // Use existing translations
+      headlineSi = latestCluster?.headline_si || null;
+      headlineTa = latestCluster?.headline_ta || null;
       summarySi = summary?.summary_si || summaryEn;
       summaryTa = summary?.summary_ta || summaryEn;
+      headlineQualitySi = latestCluster?.headline_translation_quality_si || null;
+      headlineQualityTa = latestCluster?.headline_translation_quality_ta || null;
       summarySiQuality = summary?.summary_quality_score_si || 0;
       summaryTaQuality = summary?.summary_quality_score_ta || 0;
     }
@@ -638,374 +729,125 @@ async function summarizeEligible(
 
     // Generate comprehensive SEO metadata with topic/district/entity extraction
     let seoEn, seoSi, seoTa, topic, topics, district, primaryEntity, eventType, imageUrl;
-    
-    // STEP 1: Ensure headline translations (MANDATORY - uses enhanced function)
-    // This ensures 100% translation coverage with quality tracking
-    let headlineSi: string | null = null;
-    let headlineTa: string | null = null;
-    
-    // Get English headline (may need translation if source is Sinhala/Tamil)
-    let headlineEn = cluster.headline;
-    if ((sourceLang === 'si' || sourceLang === 'ta') && articles && articles.length > 0) {
-      const firstArticleTitle = articles[0]?.title;
-      if (firstArticleTitle && firstArticleTitle.trim().length > 0) {
-        try {
-          headlineEn = await translateHeadline(firstArticleTitle, sourceLang, 'en');
-          if (!headlineEn || headlineEn.trim().length === 0) {
-            headlineEn = cluster.headline; // Fallback
-          }
-        } catch (err) {
-          console.warn(`[Pipeline] Failed to translate headline to English from ${sourceLang}, using original:`, err);
-          headlineEn = cluster.headline;
-        }
-      }
-    }
-    
-    // Use enhanced function to ensure translations (mandatory, with quality tracking)
-    // ALWAYS generate headlines for new clusters or if missing
-    let headlineQualitySi = null;
-    let headlineQualityTa = null;
-    
-    // ALWAYS call ensureHeadlineTranslations if headlines are missing or quality is low
-    // This ensures 100% translation coverage
-    if (needsHeadlines || !latestCluster?.headline_si || !latestCluster?.headline_ta || 
-        (latestCluster?.headline_translation_quality_si || 0) < 0.7 || 
-        (latestCluster?.headline_translation_quality_ta || 0) < 0.7) {
-      console.log(`[Pipeline] Ensuring headline translations for cluster ${cluster.id} (needsHeadlines: ${needsHeadlines}, has SI: ${!!latestCluster?.headline_si}, has TA: ${!!latestCluster?.headline_ta})...`);
-      try {
-        const headlineResult = await ensureHeadlineTranslations(cluster.id, headlineEn, errors);
-        headlineSi = headlineResult.headlineSi;
-        headlineTa = headlineResult.headlineTa;
-        headlineQualitySi = headlineResult.qualitySi;
-        headlineQualityTa = headlineResult.qualityTa;
-        console.log(`[Pipeline] ✅ Headline translations ensured (SI: ${headlineSi ? headlineSi.substring(0, 50) + '...' : 'NULL'}, TA: ${headlineTa ? headlineTa.substring(0, 50) + '...' : 'NULL'}, SI quality: ${headlineResult.qualitySi}, TA quality: ${headlineResult.qualityTa})`);
-      } catch (err) {
-        console.error(`[Pipeline] ❌ Failed to ensure headline translations:`, err);
-        errors.push({ stage: 'headlines', message: `Failed to ensure headline translations: ${err}` });
-        // Fallback to existing or null
-        headlineSi = latestCluster?.headline_si || null;
-        headlineTa = latestCluster?.headline_ta || null;
-        headlineQualitySi = latestCluster?.headline_translation_quality_si || null;
-        headlineQualityTa = latestCluster?.headline_translation_quality_ta || null;
-      }
-    } else {
-      console.log(`[Pipeline] Using existing headlines for cluster ${cluster.id} (SI quality: ${latestCluster?.headline_translation_quality_si}, TA quality: ${latestCluster?.headline_translation_quality_ta})`);
-      headlineSi = latestCluster?.headline_si || null;
-      headlineTa = latestCluster?.headline_ta || null;
-      // Fetch quality scores if headlines exist
-      headlineQualitySi = latestCluster?.headline_translation_quality_si || null;
-      headlineQualityTa = latestCluster?.headline_translation_quality_ta || null;
-    }
+    let keyFactsEn: string[] = [];
+    let keyFactsSi: string[] = [];
+    let keyFactsTa: string[] = [];
+    let confirmedDiffersEn = '';
+    let confirmedDiffersSi = '';
+    let confirmedDiffersTa = '';
+    let keywords: string[] = [];
     
     // Always generate SEO metadata (even if summary already exists)
     // This ensures meta titles and descriptions are always up-to-date
     try {
-      // Generate comprehensive SEO for English (includes topic, district, entities)
-      // Don't preserve "other" topic - let SEO generation determine the best topic
-      const comprehensiveSEO = await generateComprehensiveSEO(
+      // Use agent orchestrator for SEO generation
+      const seoResult = await orchestrateSEOGeneration(
         summaryEn,
-        cluster.headline,
-        articles || [],
-        'en',
-        undefined // Don't preserve any topic, let it be regenerated
-      );
-
-      seoEn = {
-        title: comprehensiveSEO.seo_title,
-        description: comprehensiveSEO.meta_description
-      };
-
-      // Use the topic from SEO generation (don't preserve "other")
-      topic = comprehensiveSEO.topic || 'politics';
-      
-      // Ensure topics array always has at least 2 topics (geographic + content)
-      let topicsArray = comprehensiveSEO.topics || [];
-      
-      // Validate and ensure 2-topic system
-      if (!Array.isArray(topicsArray) || topicsArray.length === 0) {
-        topicsArray = [comprehensiveSEO.topic || 'politics'];
-      }
-      
-      // Check if we have geographic and content topics
-      const hasGeographic = topicsArray.some(t => t === 'sri-lanka' || t === 'world');
-      const hasContent = topicsArray.some(t => 
-        ['politics', 'economy', 'sports', 'crime', 'education', 'health', 'environment', 'technology', 'culture', 'society', 'other'].includes(t)
+        headlineEn,
+        articles || []
       );
       
-      // Add geographic topic if missing
-      if (!hasGeographic) {
-        topicsArray.unshift('sri-lanka'); // Default to sri-lanka for local news
-      }
+      seoEn = seoResult.seoEn;
+      seoSi = seoResult.seoSi;
+      seoTa = seoResult.seoTa;
+      topic = seoResult.topics.find(t => t !== 'sri-lanka' && t !== 'world') || 'politics';
+      topics = seoResult.topics;
+      district = seoResult.district;
+      primaryEntity = seoResult.entities.primary_entity;
+      eventType = seoResult.entities.event_type;
+      keywords = seoResult.keywords;
+      keyFactsEn = seoResult.keyFacts.en;
+      keyFactsSi = seoResult.keyFacts.si;
+      keyFactsTa = seoResult.keyFacts.ta;
+      confirmedDiffersEn = seoResult.confirmedVsDiffers.en;
+      confirmedDiffersSi = seoResult.confirmedVsDiffers.si;
+      confirmedDiffersTa = seoResult.confirmedVsDiffers.ta;
       
-      // Add content topic if missing (prefer non-"other" topics)
-      if (!hasContent) {
-        const primaryTopic = comprehensiveSEO.topic || 'politics';
-        // Only add if it's not "other" or if we have no other option
-        if (primaryTopic !== 'other' || topicsArray.length === 0) {
-          if (!topicsArray.includes(primaryTopic)) {
-            topicsArray.push(primaryTopic);
-          }
-        } else {
-          // If primary topic is "other" but we have geographic topics, try to find a better content topic
-          const contentTopics = ['politics', 'economy', 'sports', 'crime', 'education', 'health', 'environment', 'technology', 'culture', 'society'];
-          const betterTopic = contentTopics.find(t => !topicsArray.includes(t)) || 'politics';
-          topicsArray.push(betterTopic);
-        }
-      }
-      
-      // Ensure minimum 2 topics (avoid "other" when possible)
-      if (topicsArray.length < 2) {
-        const primaryTopic = comprehensiveSEO.topic || 'politics';
-        // Prefer non-"other" topics
-        if (primaryTopic !== 'other' && !topicsArray.includes(primaryTopic)) {
-          topicsArray.push(primaryTopic);
-        } else if (primaryTopic === 'other') {
-          // If primary is "other", try to find a better content topic
-          const contentTopics = ['politics', 'economy', 'sports', 'crime', 'education', 'health', 'environment', 'technology', 'culture', 'society'];
-          const betterTopic = contentTopics.find(t => !topicsArray.includes(t)) || 'politics';
-          topicsArray.push(betterTopic);
-        }
-        if (!topicsArray.includes('sri-lanka') && !topicsArray.includes('world')) {
-          topicsArray.unshift('sri-lanka');
-        }
-      }
-      
-      // Filter out "other" from topics array if we have at least one non-"other" content topic
-      const hasNonOtherContent = topicsArray.some(t => 
-        t !== 'other' && t !== 'sri-lanka' && t !== 'world' &&
-        ['politics', 'economy', 'sports', 'crime', 'education', 'health', 'environment', 'technology', 'culture', 'society'].includes(t)
-      );
-      if (hasNonOtherContent) {
-        topicsArray = topicsArray.filter(t => t !== 'other');
-        // Ensure we still have at least 2 topics after filtering
-        if (topicsArray.length < 2) {
-          const hasGeographic = topicsArray.some(t => t === 'sri-lanka' || t === 'world');
-          if (!hasGeographic) {
-            topicsArray.unshift('sri-lanka');
-          }
-        }
-      }
-      
-      topics = topicsArray;
-      district = comprehensiveSEO.district;
-      primaryEntity = comprehensiveSEO.primary_entity;
-      eventType = comprehensiveSEO.event_type;
-      
-      // Headlines are already generated above if needed (see needsHeadlines block)
-      // Use existing headlines or fallback to English headline for SEO
-
-      // Collect images from all sources with priority scoring
-      const availableImages: Array<{ url: string; source: string; priority: number }> = [];
-      
-      // 0. Check if cluster already has a good image_url (Priority 1.5 - highest, reuse existing)
-      if (cluster.image_url && typeof cluster.image_url === 'string' && cluster.image_url.startsWith('http')) {
-        // Validate existing image is still valid
-        try {
-          new URL(cluster.image_url);
-          availableImages.push({
-            url: cluster.image_url,
-            source: 'Existing Cluster',
-            priority: 1.5
-          });
-          console.log(`[Pipeline] Found existing image for cluster ${cluster.id}: ${cluster.image_url.substring(0, 60)}...`);
-        } catch {
-          // Invalid URL, ignore
-        }
-      }
-      
-      // 1. Collect images from article image_url fields (Priority 1.0 - high)
-      articles?.forEach(article => {
-        if (article.image_url && typeof article.image_url === 'string' && article.image_url.startsWith('http')) {
-          try {
-            new URL(article.image_url); // Validate URL
-            availableImages.push({
-              url: article.image_url,
-              source: 'RSS Feed',
-              priority: 1.0
-            });
-          } catch {
-            // Invalid URL, skip
-          }
-        }
-      });
-      
-      // 1b. Collect images from image_urls array (Priority 1.0 - high)
-      articles?.forEach(article => {
-        if ((article as any).image_urls && Array.isArray((article as any).image_urls)) {
-          (article as any).image_urls.forEach((imgUrl: string) => {
-            if (imgUrl && typeof imgUrl === 'string' && imgUrl.startsWith('http')) {
-              try {
-                new URL(imgUrl); // Validate URL
-                availableImages.push({
-                  url: imgUrl,
-                  source: 'RSS Feed',
-                  priority: 1.0
-                });
-              } catch {
-                // Invalid URL, skip
-              }
-            }
-          });
-        }
-      });
-      
-      // 2. Extract images from article HTML content (Priority 0.8)
-      articles?.forEach(article => {
-        // Use content_html if available, fallback to content_text/content_excerpt
-        const html = (article as any).content_html || article.content_text || article.content_excerpt || '';
-        const articleUrl = (article as any).url || '';
-        if (html && articleUrl && typeof html === 'string' && html.includes('<img')) {
-          try {
-            const extractedImages = extractAllImagesFromHtml(html, articleUrl);
-            extractedImages.forEach(imgUrl => {
-              if (imgUrl && typeof imgUrl === 'string' && imgUrl.startsWith('http')) {
-                try {
-                  new URL(imgUrl); // Validate URL
-                  availableImages.push({
-                    url: imgUrl,
-                    source: 'Article Content',
-                    priority: 0.8
-                  });
-                } catch {
-                  // Invalid URL, skip
-                }
-              }
-            });
-          } catch (error) {
-            console.warn('[Pipeline] Error extracting images from HTML:', error);
-          }
-        }
-      });
-      
-      // 3. Optionally fetch article pages if we have few images (rate-limited, Priority 0.6)
-      const rssImageCount = availableImages.filter(img => img.source === 'RSS Feed' || img.source === 'Existing Cluster').length;
-      const contentImageCount = availableImages.filter(img => img.source === 'Article Content').length;
-      
-      // Only fetch if we have less than 3 images total (need more options for better selection)
-      if ((rssImageCount + contentImageCount) < 3 && articles && articles.length > 0) {
-        // Only fetch from first article to avoid rate limiting
-        const firstArticle = articles[0];
-        const articleUrl = (firstArticle as any).url;
-        if (articleUrl && typeof articleUrl === 'string' && articleUrl.startsWith('http')) {
-          try {
-            console.log(`[Pipeline] Fetching article page (only ${rssImageCount + contentImageCount} images found): ${articleUrl}`);
-            const pageImages = await fetchArticleImages(articleUrl);
-            pageImages.forEach(imgUrl => {
-              if (imgUrl && typeof imgUrl === 'string' && imgUrl.startsWith('http')) {
-                try {
-                  new URL(imgUrl); // Validate URL
-                  availableImages.push({
-                    url: imgUrl,
-                    source: 'Article Page',
-                    priority: 0.6
-                  });
-                } catch {
-                  // Invalid URL, skip
-                }
-              }
-            });
-            console.log(`[Pipeline] Found ${pageImages.length} additional images from article page`);
-          } catch (error) {
-            console.warn('[Pipeline] Error fetching article page images:', error);
-          }
-        }
-      }
-      
-      // Deduplicate images by URL and sort by priority
-      const uniqueImages = Array.from(
-        new Map(availableImages.map(img => [img.url, img])).values()
-      ).sort((a, b) => b.priority - a.priority); // Sort by priority (highest first)
-      
-      const imageStats = {
-        rss: availableImages.filter(img => img.source === 'RSS Feed').length,
-        content: availableImages.filter(img => img.source === 'Article Content').length,
-        page: availableImages.filter(img => img.source === 'Article Page').length,
-        total: uniqueImages.length
-      };
-      
-      console.log(`[Pipeline] Image collection stats for cluster ${cluster.id}:`, imageStats);
-      
-      // STEP 4: Select best image with quality tracking (uses enhanced function)
-      // Always call selectBestImageWithQuality - it checks RSS feeds even if uniqueImages is empty
+      console.log(`[Pipeline] ✅ SEO generated via orchestrator (topics: ${topics.join(', ')}, district: ${district || 'none'})`);
+    } catch (err) {
+      console.error('[Pipeline] SEO generation via orchestrator failed, using fallback:', err);
+      errors.push({ stage: 'seo', message: `SEO generation failed: ${err instanceof Error ? err.message : 'unknown'}` });
+      // Fallback to simple metadata
+      seoEn = { title: headlineEn.slice(0, 60), description: summaryEn.slice(0, 160) };
+      seoSi = { title: (headlineSi || headlineEn).slice(0, 60), description: summarySi.slice(0, 160) };
+      seoTa = { title: (headlineTa || headlineEn).slice(0, 60), description: summaryTa.slice(0, 160) };
+      topic = 'politics';
+      topics = ['sri-lanka', 'politics'];
+      district = null;
+      primaryEntity = null;
+      eventType = null;
+      keywords = ['Sri Lanka'];
+      keyFactsEn = [];
+      keyFactsSi = [];
+      keyFactsTa = [];
+      confirmedDiffersEn = '';
+      confirmedDiffersSi = '';
+      confirmedDiffersTa = '';
+    }
+    
+    // STEP 4: Select best image using agent orchestrator
+    let imageRelevanceScore = null;
+    let imageQualityScore = null;
+    
+    if (needsImage) {
       try {
-        // Use enhanced function for image selection with quality tracking
-        const imageResult = await selectBestImageWithQuality(
-          cluster.id,
-          cluster.headline || '',
-          summaryEn || '',
+        const imageResult = await orchestrateImageSelection(
+          headlineEn,
+          summaryEn,
           articles.map(a => ({
             image_url: a.image_url,
             image_urls: a.image_urls,
             url: a.url,
             content_html: a.content_html || null
-          }))
+          })),
+          latestCluster?.image_url || null
         );
         
         imageUrl = imageResult.imageUrl;
+        imageRelevanceScore = imageResult.relevanceScore;
+        imageQualityScore = imageResult.qualityScore;
+        
         if (imageUrl) {
-          console.log(`[Pipeline] ✅ Selected image with quality tracking (relevance: ${imageResult.relevanceScore}, quality: ${imageResult.qualityScore})`);
+          console.log(`[Pipeline] ✅ Image selected via orchestrator (relevance: ${imageRelevanceScore}, quality: ${imageQualityScore}, source: ${imageResult.source})`);
         } else {
-          console.warn(`[Pipeline] ⚠️ No images found for cluster ${cluster.id} - checked ${imageStats.rss} RSS, ${imageStats.content} content, ${imageStats.page} page images`);
+          console.warn(`[Pipeline] ⚠️ No images found for cluster ${cluster.id}`);
         }
       } catch (error) {
-        console.error('[Pipeline] ❌ Enhanced image selection failed, using fallback:', error);
-        // Fallback: use first valid image from uniqueImages if available
-        imageUrl = uniqueImages.length > 0 ? uniqueImages.find(img => {
-          try {
-            new URL(img.url);
-            return img.url.startsWith('http');
-          } catch {
-            return false;
-          }
-        })?.url || null : null;
-        
-        if (!imageUrl) {
-          console.warn(`[Pipeline] ⚠️ No images found for cluster ${cluster.id} - checked ${imageStats.rss} RSS, ${imageStats.content} content, ${imageStats.page} page images`);
+        console.error('[Pipeline] ❌ Image selection via orchestrator failed, using fallback:', {
+          errorType: error instanceof Error ? error.constructor.name : typeof error,
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack?.split('\n').slice(0, 5).join('\n') : undefined,
+          clusterId: cluster.id,
+          articlesCount: articles?.length || 0,
+          hasExistingImage: !!latestCluster?.image_url,
+          timestamp: new Date().toISOString(),
+        });
+        // Fallback to enhanced function
+        try {
+          const imageResult = await selectBestImageWithQuality(
+            cluster.id,
+            headlineEn,
+            summaryEn,
+            articles.map(a => ({
+              image_url: a.image_url,
+              image_urls: a.image_urls,
+              url: a.url,
+              content_html: a.content_html || null
+            }))
+          );
+          imageUrl = imageResult.imageUrl;
+          imageRelevanceScore = imageResult.relevanceScore;
+          imageQualityScore = imageResult.qualityScore;
+        } catch (fallbackError) {
+          console.error('[Pipeline] Image selection fallback also failed:', fallbackError);
+          imageUrl = null;
         }
       }
-
-      // Generate SEO for other languages using translated headlines
-      // Use translated headlines if available, otherwise use English headline
-      const headlineForSi = headlineSi || cluster.headline;
-      const headlineForTa = headlineTa || cluster.headline;
-      
-      [seoSi, seoTa] = await Promise.all([
-        generateSEOMetadata(summarySi, headlineForSi, 'si').catch(() => ({
-          title: headlineForSi.slice(0, 60),
-          description: summarySi.slice(0, 160)
-        })),
-        generateSEOMetadata(summaryTa, headlineForTa, 'ta').catch(() => ({
-          title: headlineForTa.slice(0, 60),
-          description: summaryTa.slice(0, 160)
-        }))
-      ]);
-    } catch (err) {
-      errors.push({ stage: 'seo', message: `SEO generation failed: ${err instanceof Error ? err.message : 'unknown'}` });
-      // Fallback to simple metadata
-      seoEn = { title: cluster.headline.slice(0, 60), description: summaryEn.slice(0, 160) };
-      seoSi = { title: cluster.headline.slice(0, 60), description: summarySi.slice(0, 160) };
-      seoTa = { title: cluster.headline.slice(0, 60), description: summaryTa.slice(0, 160) };
-      topic = 'politics';
-      topics = ['sri-lanka', 'politics']; // Always ensure 2 topics (geographic + content)
-      district = null;
-      primaryEntity = null;
-      eventType = null;
-      imageUrl = articles?.find(a => a.image_url)?.image_url || null;
-      
-      // Try to generate headlines even in error case
-      try {
-        const fallbackHeadline = cluster.headline || '';
-        if (fallbackHeadline.trim().length > 0) {
-          headlineSi = await translateHeadline(fallbackHeadline, 'en', 'si').catch(() => fallbackHeadline);
-          headlineTa = await translateHeadline(fallbackHeadline, 'en', 'ta').catch(() => fallbackHeadline);
-        } else {
-          headlineSi = null;
-          headlineTa = null;
-        }
-      } catch {
-        headlineSi = null;
-        headlineTa = null;
-      }
+    } else {
+      // Use existing image
+      imageUrl = latestCluster?.image_url || null;
+      imageRelevanceScore = 0.8;
+      imageQualityScore = 1.0;
     }
 
     // Generate slug from English meta title (stable, don't regenerate if exists)
@@ -1044,49 +886,8 @@ async function summarizeEligible(
     const earliestArticle = articles?.[articles.length - 1];
     const publishedAt = earliestArticle?.published_at || new Date().toISOString();
 
-    // Generate key facts, confirmed vs differs, and keywords
-    let keyFactsEn: string[] = [], keyFactsSi: string[] = [], keyFactsTa: string[] = [];
-    let confirmedDiffersEn = '', confirmedDiffersSi = '', confirmedDiffersTa = '';
-    let keywords: string[] = [];
-
-    try {
-      console.log('[Pipeline] Generating key facts, confirmed vs differs, and keywords...');
-      
-      // Generate key facts for all languages
-      [keyFactsEn, keyFactsSi, keyFactsTa] = await Promise.all([
-        generateKeyFacts(sourcePayload, summaryEn, 'en').catch(() => []),
-        generateKeyFacts(sourcePayload, summarySi, 'si').catch(() => []),
-        generateKeyFacts(sourcePayload, summaryTa, 'ta').catch(() => [])
-      ]);
-
-      // Generate confirmed vs differs for all languages
-      [confirmedDiffersEn, confirmedDiffersSi, confirmedDiffersTa] = await Promise.all([
-        generateConfirmedVsDiffers(sourcePayload, summaryEn, 'en').catch(() => ''),
-        generateConfirmedVsDiffers(sourcePayload, summarySi, 'si').catch(() => ''),
-        generateConfirmedVsDiffers(sourcePayload, summaryTa, 'ta').catch(() => '')
-      ]);
-
-      // Generate keywords (once, language-agnostic)
-      keywords = await generateKeywords(
-        cluster.headline,
-        summaryEn,
-        topic,
-        district,
-        primaryEntity,
-        eventType
-      ).catch(() => {
-        // Fallback keywords
-        const fallback: string[] = ['Sri Lanka'];
-        if (topic) fallback.push(topic);
-        if (district) fallback.push(district);
-        return fallback;
-      });
-
-      console.log(`[Pipeline] Generated ${keyFactsEn.length} key facts, keywords: ${keywords.join(', ')}`);
-    } catch (error) {
-      console.error('[Pipeline] Error generating key facts/confirmed vs differs/keywords:', error);
-      // Continue with empty values - these are optional enhancements
-    }
+    // Key facts, confirmed vs differs, and keywords are already generated by SEO agent orchestrator
+    // If they're empty, they'll be handled in the fallback above
 
     // Save summaries with new SEO content fields, translation status, and quality score
     // Save summaries with quality scores and lengths (enhanced)
@@ -1159,18 +960,7 @@ async function summarizeEligible(
     console.log(`  - Tamil: ${headlineTa ? headlineTa.substring(0, 60) + '...' : 'NULL (not generated)'}`);
     console.log(`  - Topics: ${JSON.stringify(topics)} (should have at least 2: geographic + content)`);
     
-    // Fetch image quality scores that were set by enhanced function (if image was selected)
-    let imageRelevanceScore = null;
-    let imageQualityScore = null;
-    if (imageUrl) {
-      const { data: imageQualityData } = await supabaseAdmin
-        .from('clusters')
-        .select('image_relevance_score, image_quality_score')
-        .eq('id', cluster.id)
-        .single();
-      imageRelevanceScore = imageQualityData?.image_relevance_score || 0.8;
-      imageQualityScore = imageQualityData?.image_quality_score || 1.0;
-    }
+    // Image quality scores are already set by orchestrator above
     
     // Update cluster with comprehensive SEO metadata and publish
     const updateData: any = {

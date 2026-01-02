@@ -20,7 +20,19 @@ const serverEnvSchema = z.object({
   RETRY_MAX_ATTEMPTS: z.coerce.number().default(3),
   // News API keys (optional)
   NEWSAPI_KEY: z.string().optional(),
-  NEWSDATA_API_KEY: z.string().optional()
+  NEWSDATA_API_KEY: z.string().optional(),
+  // Agent configuration (optional)
+  AGENT_ENABLED: z.string().optional(),
+  AGENT_ROLLOUT_PERCENTAGE: z.coerce.number().optional(),
+  AGENT_USE_FOR_COMPLEX: z.string().optional(),
+  AGENT_QUALITY_THRESHOLD: z.coerce.number().optional(),
+  AGENT_MAX_RETRIES: z.coerce.number().optional(),
+  AGENT_TIMEOUT: z.coerce.number().optional(),
+  AGENT_SUMMARY_MODEL: z.string().optional(),
+  AGENT_TRANSLATION_MODEL: z.string().optional(),
+  AGENT_SEO_MODEL: z.string().optional(),
+  AGENT_IMAGE_MODEL: z.string().optional(),
+  AGENT_CATEGORY_MODEL: z.string().optional()
 });
 
 // Client-safe environment variables (only validate these on client)
