@@ -133,37 +133,10 @@ export const fetchArticlePageImagesTool = tool({
 });
 
 /**
- * Tool: Search web for images (placeholder - can be enhanced with actual web search API)
+ * Tool: Search web for images using AI agent web search
+ * Re-exported from webSearchTool for backward compatibility
  */
-export const searchWebForImagesTool = tool({
-  name: 'search_web_for_images',
-  description: 'Search the web for relevant news images when none are found in articles. Returns array of image URLs.',
-  parameters: z.object({
-    query: z.string(),
-    maxResults: z.number().default(5),
-  }),
-  execute: async ({ query, maxResults }) => {
-    try {
-      // TODO: Implement actual web search API integration
-      // For now, return empty array - this can be enhanced with:
-      // - Google Image Search API
-      // - Bing Image Search API
-      // - Unsplash API
-      // - Other image search services
-      
-      console.log(`[ImageTool] Web search requested for: ${query} (max: ${maxResults})`);
-      console.log('[ImageTool] Web search not yet implemented - returning empty results');
-      
-      return {
-        images: [],
-        count: 0,
-        note: 'Web search not yet implemented',
-      };
-    } catch (error) {
-      throw new Error(`Web image search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  },
-});
+export { searchWebForImagesTool } from './webSearchTool';
 
 /**
  * Tool: Validate image URL
