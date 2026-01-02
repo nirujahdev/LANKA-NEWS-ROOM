@@ -92,7 +92,7 @@ export const detectSourceLanguageTool = tool({
       title: z.string(),
       content: z.string(),
     })),
-    sourceHint: z.enum(['en', 'si', 'ta']).optional().nullable(),
+    sourceHint: z.enum(['en', 'si', 'ta']).nullable().optional(),
   }),
   execute: async ({ articles, sourceHint }) => {
     try {

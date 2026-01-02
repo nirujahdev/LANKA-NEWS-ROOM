@@ -42,10 +42,10 @@ export const extractImagesFromArticlesTool = tool({
   description: 'Extract image URLs from RSS feeds and article content. Returns array of image URLs with source information.',
   parameters: z.object({
     articles: z.array(z.object({
-      image_url: z.string().optional().nullable(),
-      image_urls: z.array(z.string()).optional().nullable(),
+      image_url: z.string().nullable().optional(),
+      image_urls: z.array(z.string()).nullable().optional(),
       url: z.string(),
-      content_html: z.string().optional().nullable(),
+      content_html: z.string().nullable().optional(),
     })),
   }),
   execute: async ({ articles }) => {

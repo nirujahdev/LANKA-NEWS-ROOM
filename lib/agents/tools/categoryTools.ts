@@ -16,7 +16,7 @@ export const categorizeClusterTool = tool({
   parameters: z.object({
     articles: z.array(z.object({
       title: z.string(),
-      content_excerpt: z.string().optional().nullable(),
+      content_excerpt: z.string().nullable().optional(),
     })),
   }),
   execute: async ({ articles }) => {
@@ -48,7 +48,7 @@ export const extractTopicsTool = tool({
     headline: z.string(),
     articles: z.array(z.object({
       title: z.string(),
-      content_excerpt: z.string().optional().nullable(),
+      content_excerpt: z.string().nullable().optional(),
     })),
   }),
   execute: async ({ summary, headline, articles }) => {
