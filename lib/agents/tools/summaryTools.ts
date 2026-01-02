@@ -125,8 +125,8 @@ export const weightSourcesTool = tool({
     articles: z.array(z.object({
       title: z.string(),
       content: z.string(),
-      url: z.string().optional(),
-      publishedAt: z.string().optional(),
+      url: z.string().nullable().optional(),
+      publishedAt: z.string().nullable().optional(),
     })),
   }),
   execute: async ({ articles }) => {

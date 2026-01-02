@@ -62,7 +62,7 @@ export const extractTopicsTool = tool({
     headline: z.string(),
     articles: z.array(z.object({
       title: z.string(),
-      content_excerpt: z.string().optional().nullable(),
+      content_excerpt: z.string().nullable().optional(),
     })),
   }),
   execute: async ({ summary, headline, articles }) => {
@@ -93,7 +93,7 @@ export const extractEntitiesTool = tool({
     headline: z.string(),
     articles: z.array(z.object({
       title: z.string(),
-      content_excerpt: z.string().optional().nullable(),
+      content_excerpt: z.string().nullable().optional(),
     })),
   }),
   execute: async ({ summary, headline, articles }) => {
@@ -120,10 +120,10 @@ export const generateKeywordsTool = tool({
   parameters: z.object({
     headline: z.string(),
     summary: z.string(),
-    topic: z.string().optional().nullable(),
-    district: z.string().optional().nullable(),
-    primaryEntity: z.string().optional().nullable(),
-    eventType: z.string().optional().nullable(),
+    topic: z.string().nullable().optional(),
+    district: z.string().nullable().optional(),
+    primaryEntity: z.string().nullable().optional(),
+    eventType: z.string().nullable().optional(),
   }),
   execute: async ({ headline, summary, topic, district, primaryEntity, eventType }) => {
     try {
