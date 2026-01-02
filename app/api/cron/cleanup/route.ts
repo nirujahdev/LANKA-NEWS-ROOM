@@ -14,7 +14,7 @@ type ArticleUpdate = Database['public']['Tables']['articles']['Update'];
  */
 function assertCronAuth(req: Request) {
   const secret = req.headers.get('x-cron-secret');
-  return secret === env.CRON_SECRET;
+  return env.CRON_SECRET && secret === env.CRON_SECRET;
 }
 
 export async function GET(req: Request) {
