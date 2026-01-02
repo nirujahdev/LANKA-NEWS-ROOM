@@ -227,7 +227,6 @@ export async function generateQualityControlledSummary(
     }
 
     // Accept summary if quality is good and word count is reasonable (200-1500 words)
-    const wordCount = summary.trim().split(/\s+/).length;
     if (qualityScore >= 0.7 && wordCount >= 200 && wordCount <= 1500) {
       break; // Quality and length are acceptable
     }
