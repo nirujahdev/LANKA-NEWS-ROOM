@@ -422,7 +422,7 @@ async function categorizeClusters(
 
     try {
       // Use agent orchestrator for categorization
-      const categoryResult = await orchestrateCategorization(articles);
+      const categoryResult = await orchestrateCategorization(articles, { clusterId: cluster.id });
       await supabaseAdmin
         .from('clusters')
         .update({ category: categoryResult.category })
@@ -444,10 +444,10 @@ async function summarizeEligible(
     // Generate summaries for clusters with 1+ articles
     if ((cluster.article_count || 0) < 1) continue;
 
-    // Fetch latest cluster data from database to get headline_si, headline_ta, topics, and SEO fields
+    // Fetch latest cluster data from database to get headline_en, headline_si, headline_ta, topics, and SEO fields
     const { data: latestCluster } = await supabaseAdmin
       .from('clusters')
-      .select('headline_si, headline_ta, topics, meta_title_en, meta_title_si, meta_title_ta, meta_description_en, meta_description_si, meta_description_ta, source_count, image_url, headline_translation_quality_si, headline_translation_quality_ta')
+      .select('headline_en, headline_si, headline_ta, topics, primary_topic, district, meta_title_en, meta_title_si, meta_title_ta, meta_description_en, meta_description_si, meta_description_ta, source_count, image_url, headline_translation_quality_si, headline_translation_quality_ta')
       .eq('id', cluster.id)
       .single();
 
@@ -578,7 +578,8 @@ async function summarizeEligible(
             publishedAt: s.publishedAt,
           })),
           summary?.summary_en || null,
-          sourceLang
+          sourceLang,
+          { clusterId: cluster.id, summaryId: summary?.id || undefined }
         );
         
         summaryEn = summaryResult.summary;
@@ -621,19 +622,19 @@ async function summarizeEligible(
     let headlineQualitySi: number | null = null;
     let headlineQualityTa: number | null = null;
     
-    // Get English headline (may need translation if source is Sinhala/Tamil)
-    let headlineEn = cluster.headline;
+    // Get English headline (use headline_en if available, fallback to headline for backward compatibility)
+    let headlineEn = latestCluster?.headline_en || cluster.headline || '';
     if ((sourceLang === 'si' || sourceLang === 'ta') && articles && articles.length > 0) {
       const firstArticleTitle = articles[0]?.title;
       if (firstArticleTitle && firstArticleTitle.trim().length > 0) {
         try {
           headlineEn = await translateHeadline(firstArticleTitle, sourceLang, 'en');
           if (!headlineEn || headlineEn.trim().length === 0) {
-            headlineEn = cluster.headline; // Fallback
+            headlineEn = latestCluster?.headline_en || cluster.headline || ''; // Fallback
           }
         } catch (err) {
           console.warn(`[Pipeline] Failed to translate headline to English from ${sourceLang}, using original:`, err);
-          headlineEn = cluster.headline;
+          headlineEn = latestCluster?.headline_en || cluster.headline || '';
         }
       }
     }
@@ -744,13 +745,16 @@ async function summarizeEligible(
       const seoResult = await orchestrateSEOGeneration(
         summaryEn,
         headlineEn,
-        articles || []
+        articles || [],
+        { clusterId: cluster.id, summaryId: summary?.id || undefined }
       );
       
       seoEn = seoResult.seoEn;
       seoSi = seoResult.seoSi;
       seoTa = seoResult.seoTa;
-      topic = seoResult.topics.find(t => t !== 'sri-lanka' && t !== 'world') || 'politics';
+      // Use primary_topic for consistency (topic remains for backward compatibility)
+      const primaryTopic = seoResult.topics.find(t => t !== 'sri-lanka' && t !== 'world') || 'politics';
+      topic = primaryTopic; // Keep for backward compatibility
       topics = seoResult.topics;
       district = seoResult.district;
       primaryEntity = seoResult.entities.primary_entity;
@@ -771,7 +775,8 @@ async function summarizeEligible(
       seoEn = { title: headlineEn.slice(0, 60), description: summaryEn.slice(0, 160) };
       seoSi = { title: (headlineSi || headlineEn).slice(0, 60), description: summarySi.slice(0, 160) };
       seoTa = { title: (headlineTa || headlineEn).slice(0, 60), description: summaryTa.slice(0, 160) };
-      topic = 'politics';
+      const primaryTopic = 'politics';
+      topic = primaryTopic; // Keep for backward compatibility
       topics = ['sri-lanka', 'politics'];
       district = null;
       primaryEntity = null;
@@ -800,7 +805,8 @@ async function summarizeEligible(
             url: a.url,
             content_html: a.content_html || null
           })),
-          latestCluster?.image_url || null
+          latestCluster?.image_url || null,
+          { clusterId: cluster.id, summaryId: summary?.id || undefined }
         );
         
         imageUrl = imageResult.imageUrl;
@@ -955,16 +961,24 @@ async function summarizeEligible(
     
     // Log headline status before saving
     console.log(`[Pipeline] Saving headlines for cluster ${cluster.id}:`);
-    console.log(`  - English: ${cluster.headline?.substring(0, 60)}...`);
+    console.log(`  - English: ${headlineEn?.substring(0, 60)}...`);
     console.log(`  - Sinhala: ${headlineSi ? headlineSi.substring(0, 60) + '...' : 'NULL (not generated)'}`);
     console.log(`  - Tamil: ${headlineTa ? headlineTa.substring(0, 60) + '...' : 'NULL (not generated)'}`);
-    console.log(`  - Topics: ${JSON.stringify(topics)} (should have at least 2: geographic + content)`);
+    console.log(`  - Primary Topic: ${topic}, Topics: ${JSON.stringify(topics)} (should have at least 2: geographic + content)`);
+    console.log(`  - District: ${district || 'none'}`);
     
     // Image quality scores are already set by orchestrator above
     
     // Update cluster with comprehensive SEO metadata and publish
     const updateData: any = {
       status: 'published',
+      headline_en: headlineEn, // Save English headline (new field)
+      headline_si: headlineSi && headlineSi.trim().length > 0 ? headlineSi.trim() : null, // Save if valid
+      headline_ta: headlineTa && headlineTa.trim().length > 0 ? headlineTa.trim() : null, // Save if valid
+      // Use quality scores from enhanced function (already set in ensureHeadlineTranslations)
+      headline_translation_quality_en: 1.0, // English is always 1.0 (original)
+      headline_translation_quality_si: headlineQualitySi !== null ? headlineQualitySi : null,
+      headline_translation_quality_ta: headlineQualityTa !== null ? headlineQualityTa : null,
       meta_title_en: seoEn.title,
       meta_description_en: seoEn.description,
       meta_title_si: seoSi.title,
@@ -973,15 +987,11 @@ async function summarizeEligible(
       meta_description_ta: seoTa.description,
       slug: slug,
       published_at: publishedAt,
-      topic: topic,
+      topic: topic, // Keep for backward compatibility
+      primary_topic: topic, // New field for consistency
       topics: topics, // Multi-topic array (always has at least 2: geographic + content)
-      headline_si: headlineSi && headlineSi.trim().length > 0 ? headlineSi.trim() : null, // Save if valid
-      headline_ta: headlineTa && headlineTa.trim().length > 0 ? headlineTa.trim() : null, // Save if valid
-      // Use quality scores from enhanced function (already set in ensureHeadlineTranslations)
-      headline_translation_quality_en: 1.0, // English is always 1.0 (original)
-      headline_translation_quality_si: headlineQualitySi !== null ? headlineQualitySi : null,
-      headline_translation_quality_ta: headlineQualityTa !== null ? headlineQualityTa : null,
-      city: district, // Keep city field for backward compatibility, but use district value
+      district: district, // New field (replaces city)
+      city: district, // Keep city field for backward compatibility
       primary_entity: primaryEntity,
       event_type: eventType,
       language: 'en', // Primary language (can be enhanced later)

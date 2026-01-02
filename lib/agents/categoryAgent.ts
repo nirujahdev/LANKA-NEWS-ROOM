@@ -44,7 +44,8 @@ CRITICAL: Always return exactly one category from the allowed list. Default to '
  */
 export async function runCategoryAgent(
   articles: Array<{ title: string; content_excerpt?: string | null }>,
-  fallbackFn?: () => Promise<CategoryResult>
+  fallbackFn?: () => Promise<CategoryResult>,
+  context?: { clusterId?: string; summaryId?: string }
 ): Promise<CategoryResult> {
   const agent = createCategoryAgent();
   
@@ -94,23 +95,40 @@ export async function runCategoryAgent(
       
       const duration = Date.now() - startTime;
       
-      logAgentMetrics({
+      await logAgentMetrics({
         agentName: 'CategoryAgent',
         success: true,
+        qualityScore: 0.8, // Default quality for category
         duration,
         timestamp: new Date(),
+      }, {
+        clusterId: context?.clusterId,
+        summaryId: context?.summaryId,
+        inputData: {
+          articleCount: articles.length,
+        },
+        outputData: {
+          category: categoryResult.category,
+          topics: categoryResult.topics,
+        },
       });
       
       return categoryResult;
     } catch (error) {
       const duration = Date.now() - startTime;
       
-      logAgentMetrics({
+      await logAgentMetrics({
         agentName: 'CategoryAgent',
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
         duration,
         timestamp: new Date(),
+      }, {
+        clusterId: context?.clusterId,
+        summaryId: context?.summaryId,
+        inputData: {
+          articleCount: articles.length,
+        },
       });
       
       throw error;

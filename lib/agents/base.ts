@@ -5,6 +5,7 @@
 import { Agent, run, RunResult } from '@openai/agents';
 import { AgentConfig, AgentMetrics } from './types';
 import { getAgentConfig, agentTimeouts } from './config';
+import { writeAgentOperation, updateAgentOperation } from './database';
 
 /**
  * Base agent error class
@@ -67,25 +68,20 @@ export async function runAgentWithTimeout<T>(
 }
 
 /**
- * Log agent metrics
+ * Log agent metrics and write to database
  */
-export function logAgentMetrics(metrics: AgentMetrics): void {
+export async function logAgentMetrics(
+  metrics: AgentMetrics,
+  context?: {
+    clusterId?: string;
+    summaryId?: string;
+    inputData?: Record<string, any>;
+    outputData?: Record<string, any>;
+  }
+): Promise<string | null> {
   const config = getAgentConfig();
   
-  if (!config.enabled) {
-    return;
-  }
-  
-  const logData = {
-    agent: metrics.agentName,
-    success: metrics.success,
-    quality: metrics.qualityScore,
-    cost: metrics.cost,
-    duration: metrics.duration,
-    error: metrics.error,
-    timestamp: metrics.timestamp.toISOString(),
-  };
-  
+  // Always log to console
   if (metrics.success) {
     console.log(`[Agent:${metrics.agentName}] ✅ Success`, {
       quality: metrics.qualityScore,
@@ -98,6 +94,41 @@ export function logAgentMetrics(metrics: AgentMetrics): void {
       duration: metrics.duration ? `${metrics.duration}ms` : 'unknown',
     });
   }
+  
+  // Write to database if context provided
+  if (context?.clusterId) {
+    const agentTypeMap: Record<string, 'summary' | 'translation' | 'seo' | 'image' | 'category'> = {
+      'SummaryGenerationAgent': 'summary',
+      'TranslationAgent': 'translation',
+      'SEOGenerationAgent': 'seo',
+      'ImageSelectionAgent': 'image',
+      'CategoryAgent': 'category',
+    };
+    
+    const agentType = agentTypeMap[metrics.agentName] || 'summary';
+    const operationStatus = metrics.success ? 'success' : (metrics.error?.includes('timeout') ? 'timeout' : 'failed');
+    
+    const operationId = await writeAgentOperation({
+      clusterId: context.clusterId,
+      summaryId: context.summaryId || null,
+      agentType,
+      agentVersion: 'v1.0',
+      operationStatus,
+      durationMs: metrics.duration || undefined,
+      tokenCount: metrics.cost ? Math.round(metrics.cost * 1000) : undefined, // Rough estimate
+      costUsd: metrics.cost ? metrics.cost * 0.0001 : undefined, // Rough estimate
+      qualityScore: metrics.qualityScore || undefined,
+      inputData: context.inputData,
+      outputData: context.outputData,
+      errorMessage: metrics.error || null,
+      startedAt: metrics.timestamp,
+      completedAt: new Date(),
+    });
+    
+    return operationId;
+  }
+  
+  return null;
 }
 
 /**

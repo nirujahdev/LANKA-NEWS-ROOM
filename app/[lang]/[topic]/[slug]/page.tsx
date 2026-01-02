@@ -19,11 +19,15 @@ async function getClusterBySlug(slug: string) {
   try {
     // Check if Supabase is configured
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('❌ Supabase credentials not configured');
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Supabase credentials not configured');
+      }
       return null;
     }
 
-    console.log(`🔍 Fetching cluster with slug: "${slug}"`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔍 Fetching cluster with slug: "${slug}"`);
+    }
     const { data: cluster, error } = await supabaseAdmin
       .from('clusters')
       .select(`
@@ -81,16 +85,23 @@ async function getClusterBySlug(slug: string) {
       }>();
 
     if (error) {
-      console.error('❌ Error fetching cluster:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Error fetching cluster:', error);
+      }
       return null;
     }
 
     if (!cluster) {
-      console.warn(`⚠️  No cluster found with slug: "${slug}"`);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`⚠️  No cluster found with slug: "${slug}"`);
+      }
       return null;
     }
 
-    console.log(`✅ Found cluster: ${cluster.id} - "${cluster.headline}"`);
+    if (process.env.NODE_ENV === 'development') {
+      const headlineEn = cluster.headline_en || cluster.headline || '';
+      console.log(`✅ Found cluster: ${cluster.id} - "${headlineEn}"`);
+    }
 
     // Get articles for this cluster
     const { data: articles, error: articlesError } = await supabaseAdmin
@@ -107,7 +118,7 @@ async function getClusterBySlug(slug: string) {
         [key: string]: any;
       }>>();
 
-    if (articlesError) {
+    if (articlesError && process.env.NODE_ENV === 'development') {
       console.error('⚠️  Error fetching articles:', articlesError);
     }
 
@@ -117,7 +128,9 @@ async function getClusterBySlug(slug: string) {
       articles: articles || []
     };
   } catch (error) {
-    console.error('Error in getClusterBySlug:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error in getClusterBySlug:', error);
+    }
     return null;
   }
 }
@@ -143,7 +156,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     // Validate topic matches cluster topic
-    const clusterTopic = normalizeTopicSlug(data.cluster.topic);
+    const clusterTopic = normalizeTopicSlug(data.cluster.primary_topic || data.cluster.topic);
     if (clusterTopic && clusterTopic !== topic) {
       // Topic mismatch - will redirect in component
     }
@@ -153,9 +166,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     // Get language-specific metadata
     const metaTitle = 
-      lang === 'si' ? cluster.meta_title_si || cluster.headline :
-      lang === 'ta' ? cluster.meta_title_ta || cluster.headline :
-      cluster.meta_title_en || cluster.headline;
+      // Use headline_en with fallback to headline for backward compatibility
+      const headlineEn = cluster.headline_en || cluster.headline || '';
+      lang === 'si' ? cluster.meta_title_si || headlineEn :
+      lang === 'ta' ? cluster.meta_title_ta || headlineEn :
+      cluster.meta_title_en || headlineEn;
 
     const metaDescription =
       lang === 'si' ? cluster.meta_description_si || summary?.summary_si :
@@ -226,7 +241,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       }
     };
   } catch (error) {
-    console.error('Error generating metadata:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error generating metadata:', error);
+    }
     return {
       title: 'News | Lanka News Room',
       description: 'An AI system for srilankan news insights'
@@ -235,16 +252,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function StoryPage({ params }: Props) {
-  // #region agent log
-  console.log('[DEBUG] StoryPage entry');
-  // #endregion
   try {
     const resolvedParams = await params;
     const { lang, topic: rawTopic, slug } = resolvedParams;
-    
-    // #region agent log
-    console.log('[DEBUG] Params resolved', {lang, topic: rawTopic, slug});
-    // #endregion
     
     // Normalize and validate topic
     const topic = normalizeTopicSlug(rawTopic);
@@ -253,10 +263,6 @@ export default async function StoryPage({ params }: Props) {
     }
     
     const data = await getClusterBySlug(slug);
-    
-    // #region agent log
-    console.log('[DEBUG] Data fetched', {hasData: !!data, hasCluster: !!data?.cluster, clusterId: data?.cluster?.id});
-    // #endregion
 
     if (!data || !data.cluster) {
       notFound();
@@ -266,7 +272,7 @@ export default async function StoryPage({ params }: Props) {
     const clusterTopics = data.cluster.topics && Array.isArray(data.cluster.topics) 
       ? data.cluster.topics.map((t: string) => normalizeTopicSlug(t)).filter(Boolean)
       : [];
-    const clusterTopic = normalizeTopicSlug(data.cluster.topic);
+    const clusterTopic = normalizeTopicSlug(data.cluster.primary_topic || data.cluster.topic);
     
     // Find first non-"other" topic from topics array, then fallback to single topic
     const primaryTopic = clusterTopics.find(t => t && t !== 'other') 
@@ -275,18 +281,11 @@ export default async function StoryPage({ params }: Props) {
       || clusterTopic 
       || 'other';
     
-    // #region agent log
-    console.log('[DEBUG] PrimaryTopic calculated', {primaryTopic, primaryTopicType: typeof primaryTopic, currentTopic: topic});
-    // #endregion
-    
     // Check if current topic is in cluster's topics (single topic or topics array)
     const allClusterTopics = clusterTopics.length > 0 ? clusterTopics : (clusterTopic ? [clusterTopic] : []);
     const topicMatches = allClusterTopics.includes(topic);
     
     if (!topicMatches && primaryTopic && primaryTopic !== 'other') {
-      // #region agent log
-      console.log('[DEBUG] Redirecting', {lang, primaryTopic, slug, redirectUrl: `/${lang}/${primaryTopic}/${slug}`});
-      // #endregion
       // Redirect to primary topic if current topic doesn't match
       redirect(`/${lang}/${primaryTopic}/${slug}`);
     }
@@ -314,10 +313,6 @@ export default async function StoryPage({ params }: Props) {
       }
       return String(value);
     };
-
-    // #region agent log
-    console.log('[DEBUG] Before serialization', {clusterKeys: Object.keys(cluster || {}), hasSummary: !!summary, articlesCount: articles?.length});
-    // #endregion
     
     // Deep serialize cluster - don't use spread operator as it might copy non-serializable properties
     const serializedCluster: any = {
@@ -329,12 +324,12 @@ export default async function StoryPage({ params }: Props) {
       last_checked_at: toISOString(cluster.last_checked_at),
       // Ensure all string fields are strings
       id: String(cluster.id || ''),
-      headline: String(cluster.headline || ''),
+      headline: String(cluster.headline_en || cluster.headline || ''),
       headline_si: cluster.headline_si ? String(cluster.headline_si) : null,
       headline_ta: cluster.headline_ta ? String(cluster.headline_ta) : null,
       slug: cluster.slug ? String(cluster.slug) : null,
       status: String(cluster.status || 'published'),
-      topic: cluster.topic ? String(cluster.topic) : null,
+      topic: (cluster.primary_topic || cluster.topic) ? String(cluster.primary_topic || cluster.topic) : null,
       category: cluster.category ? String(cluster.category) : null,
       image_url: cluster.image_url ? String(cluster.image_url) : null,
       source_count: typeof cluster.source_count === 'number' ? cluster.source_count : 0,
@@ -355,16 +350,6 @@ export default async function StoryPage({ params }: Props) {
         delete serializedCluster[key];
       }
     });
-    
-    // #region agent log
-    try{
-      JSON.stringify(serializedCluster);
-      console.log('[DEBUG] SerializedCluster JSON test passed');
-    }catch(e){
-      console.error('[DEBUG] SerializedCluster JSON test FAILED:', e);
-      // Don't throw - log the error for debugging but continue
-    }
-    // #endregion
     
     // Serialize articles - ensure ALL properties are serializable
     const serializedArticles = (articles || []).map((article: any) => {
@@ -411,24 +396,8 @@ export default async function StoryPage({ params }: Props) {
         sources: serializedSources
       };
       
-      // #region agent log
-      try{
-        JSON.stringify(serialized);
-      }catch(e){
-        console.error('[DEBUG] Article serialization FAILED:', e, {articleId: article.id});
-      }
-      // #endregion
       return serialized;
     }).filter(Boolean);
-    
-    // #region agent log
-    try{
-      JSON.stringify(serializedArticles);
-      console.log('[DEBUG] SerializedArticles JSON test passed', {count: serializedArticles.length});
-    }catch(e){
-      console.error('[DEBUG] SerializedArticles JSON test FAILED:', e);
-    }
-    // #endregion
     
     // Serialize summary object to ensure all values are JSON-serializable
     const serializedSummary = summary && typeof summary === 'object' ? {
@@ -449,23 +418,15 @@ export default async function StoryPage({ params }: Props) {
       confirmed_vs_differs_ta: summary.confirmed_vs_differs_ta && typeof summary.confirmed_vs_differs_ta === 'string' ? String(summary.confirmed_vs_differs_ta) : null
     } : null;
     
-    // #region agent log
-    try{
-      JSON.stringify(serializedSummary);
-      console.log('[DEBUG] SerializedSummary JSON test passed');
-    }catch(e){
-      console.error('[DEBUG] SerializedSummary JSON test FAILED:', e);
-    }
-    // #endregion
-    
     const baseUrl = String(process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz');
     const canonicalUrl = `${baseUrl}/${String(lang)}/${String(primaryTopic)}/${String(slug)}`;
 
-    // Get language-specific headline - ensure it's a string
+    // Get language-specific headline - use headline_en with fallback to headline for backward compatibility
+    const headlineEn = serializedCluster.headline_en || serializedCluster.headline || '';
     const headlineText = String(
-      lang === 'si' ? (serializedCluster.headline_si || serializedCluster.headline || '') :
-      lang === 'ta' ? (serializedCluster.headline_ta || serializedCluster.headline || '') :
-      (serializedCluster.headline || '')
+      lang === 'si' ? (serializedCluster.headline_si || headlineEn) :
+      lang === 'ta' ? (serializedCluster.headline_ta || headlineEn) :
+      headlineEn
     );
 
     // Get metadata for JSON-LD - ensure it's a string
@@ -523,26 +484,6 @@ export default async function StoryPage({ params }: Props) {
       { name: String(headlineText || ''), url: `/${lang}/${String(primaryTopic || topic)}/${String(slug || '')}` }
     ];
     
-    // #region agent log
-    try{
-      JSON.stringify(breadcrumbItems);
-      console.log('[DEBUG] BreadcrumbItems JSON test passed');
-    }catch(e){
-      console.error('[DEBUG] BreadcrumbItems JSON test FAILED:', e);
-    }
-    // #endregion
-
-    // #region agent log
-    try{
-      const testData = {serializedCluster,serializedSummary,serializedArticles};
-      JSON.stringify(testData);
-      console.log('[DEBUG] Final data JSON test passed');
-    }catch(e){
-      console.error('[DEBUG] Final data JSON test FAILED:', e);
-      console.error('[DEBUG] Error details:', {message: e instanceof Error ? e.message : String(e), stack: e instanceof Error ? e.stack : undefined});
-    }
-    // #endregion
-    
     // Validate all props before passing to StoryDetail
     const storyDetailSources = serializedArticles.map((article: any) => {
       const source = article.sources || { name: 'Unknown', feed_url: '#' };
@@ -576,16 +517,6 @@ export default async function StoryPage({ params }: Props) {
       lastCheckedAt: serializedCluster.last_checked_at ? String(serializedCluster.last_checked_at) : null,
       imageUrl: safeImageUrl
     };
-    
-    // #region agent log
-    try{
-      JSON.stringify(storyDetailProps);
-      console.log('[DEBUG] StoryDetail props JSON test passed');
-    }catch(e){
-      console.error('[DEBUG] StoryDetail props JSON test FAILED:', e);
-      console.error('[DEBUG] Failed props keys:', Object.keys(storyDetailProps));
-    }
-    // #endregion
     
     return (
     <div className="min-h-screen bg-[#F5F5F5]">
@@ -643,15 +574,9 @@ export default async function StoryPage({ params }: Props) {
     </div>
   );
   } catch (error) {
-    // #region agent log
-    console.error('[DEBUG] StoryPage error caught:', error);
-    console.error('[DEBUG] Error details:', {
-      errorName: error instanceof Error ? error.name : 'unknown',
-      errorMessage: error instanceof Error ? error.message : String(error),
-      errorStack: error instanceof Error ? error.stack : undefined
-    });
-    // #endregion
-    console.error('Error rendering StoryPage:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error rendering StoryPage:', error);
+    }
     notFound();
   }
 }

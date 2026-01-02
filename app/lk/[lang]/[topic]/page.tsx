@@ -157,10 +157,10 @@ export default async function TopicPage({ params }: Props) {
       
       // Ensure all string fields are strings
       serializedCluster.id = String(cluster.id || '');
-      serializedCluster.headline = String(cluster.headline || '');
+      serializedCluster.headline = String(cluster.headline_en || cluster.headline || '');
       serializedCluster.slug = cluster.slug ? String(cluster.slug) : null;
       serializedCluster.status = String(cluster.status || 'published');
-      serializedCluster.topic = cluster.topic ? String(cluster.topic) : null;
+      serializedCluster.topic = (cluster.primary_topic || cluster.topic) ? String(cluster.primary_topic || cluster.topic) : null;
       serializedCluster.source_count = typeof cluster.source_count === 'number' ? cluster.source_count : 0;
       
       // Ensure summaries is an array
@@ -351,7 +351,7 @@ export default async function TopicPage({ params }: Props) {
               <NewsCard
                 key={String(cluster.id || '')}
                 id={String(cluster.id || '')}
-                headline={String(cluster.headline || '')}
+                headline={String(cluster.headline_en || cluster.headline || '')}
                 summary={summaryText || null}
                 sourceCount={typeof cluster.source_count === 'number' ? cluster.source_count : 0}
                 updatedAt={updatedAt}

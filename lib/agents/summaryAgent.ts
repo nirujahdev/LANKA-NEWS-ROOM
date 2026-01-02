@@ -52,7 +52,8 @@ CRITICAL: Always ensure quality score >= 0.7 before returning.`,
 export async function runSummaryAgent(
   articles: ArticleSource[],
   previousSummary?: string | null,
-  fallbackFn?: () => Promise<SummaryResult>
+  fallbackFn?: () => Promise<SummaryResult>,
+  context?: { clusterId?: string; summaryId?: string }
 ): Promise<SummaryResult> {
   const agent = createSummaryAgent();
   
@@ -111,12 +112,24 @@ export async function runSummaryAgent(
       
       const duration = Date.now() - startTime;
       
-      logAgentMetrics({
+      await logAgentMetrics({
         agentName: 'SummaryGenerationAgent',
         success: true,
         qualityScore,
         duration,
         timestamp: new Date(),
+      }, {
+        clusterId: context?.clusterId,
+        summaryId: context?.summaryId,
+        inputData: {
+          articleCount: articles.length,
+          previousSummary: previousSummary ? 'exists' : 'none',
+        },
+        outputData: {
+          summaryLength: summary.length,
+          qualityScore,
+          sourceLang,
+        },
       });
       
       return {
@@ -128,12 +141,18 @@ export async function runSummaryAgent(
     } catch (error) {
       const duration = Date.now() - startTime;
       
-      logAgentMetrics({
+      await logAgentMetrics({
         agentName: 'SummaryGenerationAgent',
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
         duration,
         timestamp: new Date(),
+      }, {
+        clusterId: context?.clusterId,
+        summaryId: context?.summaryId,
+        inputData: {
+          articleCount: articles.length,
+        },
       });
       
       throw error;

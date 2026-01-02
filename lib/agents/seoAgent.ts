@@ -58,7 +58,8 @@ export async function runSEOAgent(
   summaryEn: string,
   headlineEn: string,
   articles: Array<{ title: string; content_excerpt?: string | null }>,
-  fallbackFn?: () => Promise<SEOResult>
+  fallbackFn?: () => Promise<SEOResult>,
+  context?: { clusterId?: string; summaryId?: string }
 ): Promise<SEOResult> {
   const agent = createSEOAgent();
   
@@ -109,23 +110,45 @@ export async function runSEOAgent(
       
       const duration = Date.now() - startTime;
       
-      logAgentMetrics({
+      await logAgentMetrics({
         agentName: 'SEOGenerationAgent',
         success: true,
+        qualityScore: 0.8, // Default quality for SEO
         duration,
         timestamp: new Date(),
+      }, {
+        clusterId: context?.clusterId,
+        summaryId: context?.summaryId,
+        inputData: {
+          summaryLength: summaryEn.length,
+          headlineLength: headlineEn.length,
+          articleCount: articles.length,
+        },
+        outputData: {
+          topics: seoResult.topics,
+          district: seoResult.district,
+          primaryEntity: seoResult.entities.primary_entity,
+        },
       });
       
       return seoResult;
     } catch (error) {
       const duration = Date.now() - startTime;
       
-      logAgentMetrics({
+      await logAgentMetrics({
         agentName: 'SEOGenerationAgent',
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
         duration,
         timestamp: new Date(),
+      }, {
+        clusterId: context?.clusterId,
+        summaryId: context?.summaryId,
+        inputData: {
+          summaryLength: summaryEn.length,
+          headlineLength: headlineEn.length,
+          articleCount: articles.length,
+        },
       });
       
       throw error;

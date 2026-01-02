@@ -178,7 +178,7 @@ export default async function CityPage({ params }: Props) {
               <NewsCard
                 key={cluster.id}
                 id={cluster.id}
-                headline={cluster.headline}
+                headline={cluster.headline_en || cluster.headline || ''}
                 summary={summaryText || ''}
                 sourceCount={cluster.source_count || 0}
                 updatedAt={cluster.last_seen_at}

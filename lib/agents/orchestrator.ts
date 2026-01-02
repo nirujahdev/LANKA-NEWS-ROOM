@@ -18,7 +18,8 @@ import { detectLanguage } from '../language';
 export async function orchestrateSummaryGeneration(
   articles: Array<{ title: string; content: string; weight?: number; publishedAt?: string }>,
   previousSummary?: string | null,
-  sourceLang?: 'en' | 'si' | 'ta'
+  sourceLang?: 'en' | 'si' | 'ta',
+  context?: { clusterId?: string; summaryId?: string }
 ): Promise<SummaryResult> {
   // Detect source language if not provided
   let detectedLang = sourceLang;
@@ -47,7 +48,8 @@ export async function orchestrateSummaryGeneration(
           content: a.content,
           weight: a.weight,
           publishedAt: a.publishedAt,
-        })), detectedLang)
+        })), detectedLang),
+        context
       );
     } catch (error) {
       console.error('[Orchestrator] ❌ Summary agent failed, using fallback:', {
@@ -85,7 +87,8 @@ export async function orchestrateTranslation(
   clusterId: string,
   headlineEn: string,
   summaryEn: string,
-  errors: Array<{ sourceId?: string; stage: string; message: string }>
+  errors: Array<{ sourceId?: string; stage: string; message: string }>,
+  context?: { clusterId?: string; summaryId?: string }
 ): Promise<TranslationResult> {
   // Always use agent for translations (complex multi-step process)
   if (shouldUseAgent('complex')) {
@@ -122,13 +125,14 @@ export async function orchestrateTranslation(
 export async function orchestrateSEOGeneration(
   summaryEn: string,
   headlineEn: string,
-  articles: Array<{ title: string; content_excerpt?: string | null }>
+  articles: Array<{ title: string; content_excerpt?: string | null }>,
+  context?: { clusterId?: string; summaryId?: string }
 ): Promise<SEOResult> {
   // Use agent for SEO (complex entity extraction)
   if (shouldUseAgent('complex')) {
     console.log(`[Orchestrator] Using agent for SEO generation (articles: ${articles.length})`);
     try {
-      return await runSEOAgent(summaryEn, headlineEn, articles);
+      return await runSEOAgent(summaryEn, headlineEn, articles, undefined, context);
     } catch (error) {
       console.error('[Orchestrator] ❌ SEO agent failed, using fallback:', {
         errorType: error instanceof Error ? error.constructor.name : typeof error,
@@ -142,7 +146,7 @@ export async function orchestrateSEOGeneration(
   
   console.log(`[Orchestrator] Using direct function for SEO (agents disabled or rollout < 100%)`);
   // Use direct function (fallback is in runSEOAgent)
-  return await runSEOAgent(summaryEn, headlineEn, articles);
+  return await runSEOAgent(summaryEn, headlineEn, articles, undefined, context);
 }
 
 /**
@@ -157,7 +161,8 @@ export async function orchestrateImageSelection(
     url: string;
     content_html?: string | null;
   }>,
-  existingImageUrl?: string | null
+  existingImageUrl?: string | null,
+  context?: { clusterId?: string; summaryId?: string }
 ): Promise<ImageResult> {
   // Determine complexity
   const imageCount = articles.reduce((count, a) => {
@@ -170,7 +175,7 @@ export async function orchestrateImageSelection(
   if (shouldUseAgent(complexity)) {
     console.log(`[Orchestrator] Using agent for image selection (complexity: ${complexity}, imageCount: ${imageCount}, existingImage: ${!!existingImageUrl})`);
     try {
-      return await runImageAgent(headline, summary, articles, existingImageUrl);
+      return await runImageAgent(headline, summary, articles, existingImageUrl, undefined, context);
     } catch (error) {
       console.error('[Orchestrator] ❌ Image agent failed, using fallback:', {
         errorType: error instanceof Error ? error.constructor.name : typeof error,
@@ -186,21 +191,23 @@ export async function orchestrateImageSelection(
   
   console.log(`[Orchestrator] Using direct function for image selection (complexity: ${complexity}, agents disabled or rollout < 100%)`);
   // Use direct function (fallback is in runImageAgent)
-  return await runImageAgent(headline, summary, articles, existingImageUrl);
+  return await runImageAgent(headline, summary, articles, existingImageUrl, undefined, context);
 }
 
 /**
  * Orchestrate categorization
  */
 export async function orchestrateCategorization(
-  articles: Array<{ title: string; content_excerpt?: string | null }>
+  articles: Array<{ title: string; content_excerpt?: string | null }>,
+  context?: { clusterId?: string; summaryId?: string }
 ): Promise<CategoryResult> {
   // Use agent for categorization (simple but can be enhanced)
   if (shouldUseAgent('simple')) {
     try {
       return await runCategoryAgent(
         articles,
-        () => categoryAgentFallback(articles)
+        () => categoryAgentFallback(articles),
+        context
       );
     } catch (error) {
       console.warn('[Orchestrator] Category agent failed, using fallback:', error);

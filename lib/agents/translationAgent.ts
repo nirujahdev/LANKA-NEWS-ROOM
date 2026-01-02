@@ -54,7 +54,8 @@ export async function runTranslationAgent(
   headlineEn: string,
   summaryEn: string,
   errors: Array<{ sourceId?: string; stage: string; message: string }>,
-  fallbackFn?: () => Promise<TranslationResult>
+  fallbackFn?: () => Promise<TranslationResult>,
+  context?: { clusterId?: string; summaryId?: string }
 ): Promise<TranslationResult> {
   const agent = createTranslationAgent();
   
@@ -147,12 +148,36 @@ export async function runTranslationAgent(
         qualityScores.summaryTa
       ) / 4;
       
-      logAgentMetrics({
+      // Get summary ID from cluster
+      const { data: summaryData } = await import('../supabaseAdmin').then(m => 
+        m.supabaseAdmin.from('summaries').select('id').eq('cluster_id', clusterId).maybeSingle()
+      );
+      
+      await logAgentMetrics({
         agentName: 'TranslationAgent',
         success: true,
         qualityScore: avgQuality,
         duration,
         timestamp: new Date(),
+      }, {
+        clusterId,
+        summaryId: summaryData?.id,
+        inputData: {
+          headlineLength: headlineEn.length,
+          summaryLength: summaryEn.length,
+        },
+        outputData: {
+          headlineSi: headlineResult.headlineSi ? 'generated' : 'none',
+          headlineTa: headlineResult.headlineTa ? 'generated' : 'none',
+          summarySi: summaryResult.summarySi ? 'generated' : 'none',
+          summaryTa: summaryResult.summaryTa ? 'generated' : 'none',
+          qualityScores: {
+            headlineSi: headlineResult.qualitySi,
+            headlineTa: headlineResult.qualityTa,
+            summarySi: summaryResult.qualitySi,
+            summaryTa: summaryResult.qualityTa,
+          },
+        },
       });
       
       return {
@@ -165,12 +190,18 @@ export async function runTranslationAgent(
     } catch (error) {
       const duration = Date.now() - startTime;
       
-      logAgentMetrics({
+      await logAgentMetrics({
         agentName: 'TranslationAgent',
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
         duration,
         timestamp: new Date(),
+      }, {
+        clusterId,
+        inputData: {
+          headlineLength: headlineEn.length,
+          summaryLength: summaryEn.length,
+        },
       });
       
       throw error;

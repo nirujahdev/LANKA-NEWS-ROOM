@@ -99,9 +99,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function TopicPage({ params, searchParams }: Props) {
-  // #region agent log
-  console.log('[DEBUG] TopicPage entry');
-  // #endregion
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
   const { lang, topic: rawTopic } = resolvedParams;
@@ -131,7 +128,9 @@ export default async function TopicPage({ params, searchParams }: Props) {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
     if (!supabaseUrl || !supabaseServiceKey || supabaseUrl.includes('placeholder')) {
-      console.error('Supabase admin credentials not configured. Cannot fetch topic data.');
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Supabase admin credentials not configured. Cannot fetch topic data.');
+      }
       clusters = [];
     } else {
       let query = supabaseAdmin
@@ -216,14 +215,18 @@ export default async function TopicPage({ params, searchParams }: Props) {
         const { data, error } = await query.limit(50); // Fetch more to filter by topics array
         
         if (error) {
-          console.error('Error fetching clusters:', error);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error fetching clusters:', error);
+          }
           clusters = [];
         } else {
           // Filter by topics array if single topic didn't match
           // This supports multi-topic categorization
           clusters = (data || []).filter((cluster: any) => {
             // Check if topic matches single topic field
-            if (cluster.topic && cluster.topic.toLowerCase() === topicString.toLowerCase()) {
+            // Check primary_topic first, then topic for backward compatibility
+            const clusterTopic = cluster.primary_topic || cluster.topic;
+            if (clusterTopic && clusterTopic.toLowerCase() === topicString.toLowerCase()) {
               return true;
             }
             // Check if topic exists in topics array
@@ -290,9 +293,10 @@ export default async function TopicPage({ params, searchParams }: Props) {
               }
             }
             
-            // Ensure topics is always an array of strings
+            // Ensure topics is always an array of strings (use primary_topic with fallback to topic)
             if (!Array.isArray(serializedCluster.topics)) {
-              serializedCluster.topics = serializedCluster.topic ? [serializedCluster.topic] : [];
+              const primaryTopic = serializedCluster.primary_topic || serializedCluster.topic;
+              serializedCluster.topics = primaryTopic ? [primaryTopic] : [];
             }
             serializedCluster.topics = serializedCluster.topics.filter((t: any) => typeof t === 'string');
             
@@ -422,7 +426,9 @@ export default async function TopicPage({ params, searchParams }: Props) {
               JSON.stringify(serializedCluster);
               return serializedCluster;
             } catch (error) {
-              console.error(`[TopicPage] Cluster ${serializedCluster.id} is not serializable:`, error);
+              if (process.env.NODE_ENV === 'development') {
+                console.error(`[TopicPage] Cluster ${serializedCluster.id} is not serializable:`, error);
+              }
               // Return a minimal valid cluster to prevent breaking the page
               return {
                 id: String(serializedCluster.id || ''),
@@ -445,7 +451,9 @@ export default async function TopicPage({ params, searchParams }: Props) {
       }
     }
   } catch (error) {
-    console.error('Error in topic page query:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error in topic page query:', error);
+    }
     // Ensure clusters is always an array, never null
     clusters = [];
   }
@@ -469,10 +477,9 @@ export default async function TopicPage({ params, searchParams }: Props) {
         JSON.stringify(cleaned);
         return cleaned;
       } catch (error) {
-        // #region agent log
-        console.error('[DEBUG] Non-serializable cluster detected', {clusterId: cluster?.id, error: String(error)});
-        // #endregion
-        console.error('[TopicPage] Non-serializable cluster detected:', cluster?.id, error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[TopicPage] Non-serializable cluster detected:', cluster?.id, error);
+        }
         // Return minimal valid cluster
         return {
           id: String(cluster?.id || ''),
@@ -499,14 +506,10 @@ export default async function TopicPage({ params, searchParams }: Props) {
     
     // Final validation: ensure the entire array is serializable
     JSON.stringify(validatedClusters);
-    // #region agent log
-    console.log('[DEBUG] ValidatedClusters JSON test passed', {count: validatedClusters.length});
-    // #endregion
   } catch (error) {
-    // #region agent log
-    console.error('[DEBUG] ValidatedClusters JSON test FAILED', {error: String(error)});
-    // #endregion
-    console.error('[TopicPage] Error validating clusters array:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[TopicPage] Error validating clusters array:', error);
+    }
     validatedClusters = [];
   }
 
@@ -520,7 +523,9 @@ export default async function TopicPage({ params, searchParams }: Props) {
     const testSerialization = JSON.stringify(validatedClusters);
     safeClusters = JSON.parse(testSerialization);
   } catch (error) {
-    console.error('[TopicPage] Final serialization check failed, using empty array:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[TopicPage] Final serialization check failed, using empty array:', error);
+    }
     safeClusters = [];
   }
 
@@ -560,9 +565,11 @@ export default async function TopicPage({ params, searchParams }: Props) {
 
                   // Get language-specific headline
                   const headlineText =
-                    lang === 'si' ? (cluster.headline_si || cluster.headline || '') :
-                    lang === 'ta' ? (cluster.headline_ta || cluster.headline || '') :
-                    (cluster.headline || '');
+                    // Use headline_en with fallback to headline for backward compatibility
+                    const headlineEn = cluster.headline_en || cluster.headline || '';
+                    lang === 'si' ? (cluster.headline_si || headlineEn) :
+                    lang === 'ta' ? (cluster.headline_ta || headlineEn) :
+                    headlineEn;
 
                   // Extract unique sources from articles
                   const sourcesMap = new Map<string, { name: string; feed_url: string }>();
@@ -590,7 +597,7 @@ export default async function TopicPage({ params, searchParams }: Props) {
                   // Get topics array (prefer topics array, fallback to single topic)
                   const topicsArray = Array.isArray(cluster.topics) && cluster.topics.length > 0
                     ? cluster.topics.filter((t: any) => typeof t === 'string').map((t: any) => String(t))
-                    : cluster.topic ? [String(cluster.topic)] : [];
+                    : (cluster.primary_topic || cluster.topic) ? [String(cluster.primary_topic || cluster.topic)] : [];
 
                   // Ensure updatedAt is a string or null
                   let updatedAt: string | null = null;
@@ -624,13 +631,15 @@ export default async function TopicPage({ params, searchParams }: Props) {
                       slug={cluster.slug ? String(cluster.slug) : null}
                       language={lang}
                       sources={sources.length > 0 ? sources : [{ name: 'Multiple Sources', feed_url: '#' }]}
-                      category={cluster.topic ? String(cluster.topic) : null}
+                      category={(cluster.primary_topic || cluster.topic) ? String(cluster.primary_topic || cluster.topic) : null}
                       topics={topicsArray}
                       imageUrl={imageUrl}
                     />
                   );
                 } catch (error) {
-                  console.error('Error rendering cluster card:', error, cluster);
+                  if (process.env.NODE_ENV === 'development') {
+                    console.error('Error rendering cluster card:', error, cluster);
+                  }
                   // Return null to skip this cluster
                   return null;
                 }

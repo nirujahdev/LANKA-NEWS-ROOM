@@ -63,7 +63,8 @@ export async function runImageAgent(
     content_html?: string | null;
   }>,
   existingImageUrl?: string | null,
-  fallbackFn?: () => Promise<ImageResult>
+  fallbackFn?: () => Promise<ImageResult>,
+  context?: { clusterId?: string; summaryId?: string }
 ): Promise<ImageResult> {
   const agent = createImageAgent();
   
@@ -87,12 +88,22 @@ export async function runImageAgent(
           new URL(existingImageUrl);
           const duration = Date.now() - startTime;
           
-          logAgentMetrics({
+          await logAgentMetrics({
             agentName: 'ImageSelectionAgent',
             success: true,
             qualityScore: 0.8,
             duration,
             timestamp: new Date(),
+          }, {
+            clusterId: context?.clusterId,
+            summaryId: context?.summaryId,
+            inputData: {
+              hasExistingImage: true,
+            },
+            outputData: {
+              imageUrl: existingImageUrl,
+              source: 'Existing Cluster',
+            },
           });
           
           return {
@@ -144,24 +155,46 @@ export async function runImageAgent(
       
       const duration = Date.now() - startTime;
       
-      logAgentMetrics({
+      await logAgentMetrics({
         agentName: 'ImageSelectionAgent',
         success: true,
         qualityScore: imageResult.relevanceScore,
         duration,
         timestamp: new Date(),
+      }, {
+        clusterId: context?.clusterId,
+        summaryId: context?.summaryId,
+        inputData: {
+          headlineLength: headline.length,
+          summaryLength: summary.length,
+          articleCount: articles.length,
+        },
+        outputData: {
+          imageUrl: imageResult.imageUrl,
+          relevanceScore: imageResult.relevanceScore,
+          qualityScore: imageResult.qualityScore,
+          source: imageResult.source,
+        },
       });
       
       return imageResult;
     } catch (error) {
       const duration = Date.now() - startTime;
       
-      logAgentMetrics({
+      await logAgentMetrics({
         agentName: 'ImageSelectionAgent',
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
         duration,
         timestamp: new Date(),
+      }, {
+        clusterId: context?.clusterId,
+        summaryId: context?.summaryId,
+        inputData: {
+          headlineLength: headline.length,
+          summaryLength: summary.length,
+          articleCount: articles.length,
+        },
       });
       
       throw error;

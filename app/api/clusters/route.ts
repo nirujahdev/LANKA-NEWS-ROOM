@@ -157,17 +157,19 @@ export async function GET(req: Request) {
             ? (summary?.summary_ta || summary?.summary_en || '')
             : (summary?.summary_en || '');
         
-        // Get language-specific headline
+        // Get language-specific headline (use headline_en with fallback to headline for backward compatibility)
+        const headlineEn = cluster.headline_en || cluster.headline || '';
         const headlineText =
-          lang === 'si' ? cluster.headline_si || cluster.headline :
-          lang === 'ta' ? cluster.headline_ta || cluster.headline :
-          cluster.headline;
+          lang === 'si' ? cluster.headline_si || headlineEn :
+          lang === 'ta' ? cluster.headline_ta || headlineEn :
+          headlineEn;
         
-        // Get topics array (prefer topics array, fallback to single topic)
+        // Get topics array (prefer topics array, fallback to primary_topic or topic for backward compatibility)
         // Ensure we always have at least 2 topics (geographic + content)
+        const primaryTopic = cluster.primary_topic || cluster.topic || null;
         let topicsArray = cluster.topics && Array.isArray(cluster.topics) && cluster.topics.length > 0
           ? cluster.topics
-          : cluster.topic ? [cluster.topic] : [];
+          : primaryTopic ? [primaryTopic] : [];
         
         // Ensure 2-topic system: always have geographic + content
         if (topicsArray.length < 2) {
@@ -179,12 +181,12 @@ export async function GET(req: Request) {
           if (!hasGeographic) {
             topicsArray = ['sri-lanka', ...topicsArray];
           }
-          if (!hasContent && cluster.topic) {
-            topicsArray = [...topicsArray, cluster.topic];
+          if (!hasContent && primaryTopic) {
+            topicsArray = [...topicsArray, primaryTopic];
           }
           // Final fallback
           if (topicsArray.length < 2) {
-            topicsArray = ['sri-lanka', cluster.topic || 'politics'];
+            topicsArray = ['sri-lanka', primaryTopic || 'politics'];
           }
         }
         
@@ -239,8 +241,8 @@ export async function GET(req: Request) {
           headline: String(headlineText || ''),
           status: (cluster.status === 'draft' || cluster.status === 'published') ? cluster.status : 'published',
           category: cluster.category && typeof cluster.category === 'string' ? cluster.category : null,
-          topic: (cluster.topic || cluster.category) && typeof (cluster.topic || cluster.category) === 'string' 
-            ? (cluster.topic || cluster.category) 
+          topic: (cluster.primary_topic || cluster.topic || cluster.category) && typeof (cluster.primary_topic || cluster.topic || cluster.category) === 'string' 
+            ? (cluster.primary_topic || cluster.topic || cluster.category) 
             : null,
           topics: Array.isArray(topicsArray) ? topicsArray.filter(t => typeof t === 'string') : [],
           first_seen: firstSeen,

@@ -84,7 +84,8 @@ async function getClusterBySlug(slug: string) {
       return null;
     }
 
-    console.log(`✅ Found cluster: ${cluster.id} - "${cluster.headline}"`);
+    const headlineEn = cluster.headline_en || cluster.headline || '';
+    console.log(`✅ Found cluster: ${cluster.id} - "${headlineEn}"`);
 
     // Get articles for this cluster
     const { data: articles, error: articlesError } = await supabaseAdmin
@@ -138,9 +139,11 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 
     // Get language-specific metadata
     const metaTitle = 
-      lang === 'si' ? cluster.meta_title_si || cluster.headline :
-      lang === 'ta' ? cluster.meta_title_ta || cluster.headline :
-      cluster.meta_title_en || cluster.headline;
+      // Use headline_en with fallback to headline for backward compatibility
+      const headlineEn = cluster.headline_en || cluster.headline || '';
+      lang === 'si' ? cluster.meta_title_si || headlineEn :
+      lang === 'ta' ? cluster.meta_title_ta || headlineEn :
+      cluster.meta_title_en || headlineEn;
 
     const metaDescription =
       lang === 'si' ? cluster.meta_description_si || summary?.summary_si :
@@ -260,12 +263,12 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
       last_checked_at: toISOString(cluster.last_checked_at),
       // Ensure all string fields are strings
       id: String(cluster.id || ''),
-      headline: String(cluster.headline || ''),
+      headline: String(cluster.headline_en || cluster.headline || ''),
       headline_si: cluster.headline_si ? String(cluster.headline_si) : null,
       headline_ta: cluster.headline_ta ? String(cluster.headline_ta) : null,
       slug: cluster.slug ? String(cluster.slug) : null,
       status: String(cluster.status || 'published'),
-      topic: cluster.topic ? String(cluster.topic) : null,
+      topic: (cluster.primary_topic || cluster.topic) ? String(cluster.primary_topic || cluster.topic) : null,
       category: cluster.category ? String(cluster.category) : null,
       image_url: cluster.image_url ? String(cluster.image_url) : null,
       source_count: typeof cluster.source_count === 'number' ? cluster.source_count : 0,
@@ -324,11 +327,12 @@ export default async function NewsDetailPage({ params, searchParams }: Props) {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lankanewsroom.xyz';
     const canonicalUrl = `${baseUrl}/news/${resolvedParams.slug}`;
     
-    // Get language-specific headline
+    // Get language-specific headline (use headline_en with fallback to headline for backward compatibility)
+    const headlineEn = serializedCluster.headline_en || serializedCluster.headline || '';
     const headlineText =
-      lang === 'si' ? serializedCluster.headline_si || serializedCluster.headline :
-      lang === 'ta' ? serializedCluster.headline_ta || serializedCluster.headline :
-      serializedCluster.headline;
+      lang === 'si' ? serializedCluster.headline_si || headlineEn :
+      lang === 'ta' ? serializedCluster.headline_ta || headlineEn :
+      headlineEn;
     
     // Get metadata for JSON-LD
     const metaDescription =
