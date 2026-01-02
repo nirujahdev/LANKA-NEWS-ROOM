@@ -18,10 +18,10 @@ export const generateSEOTool = tool({
     headline: z.string(),
     articles: z.array(z.object({
       title: z.string(),
-      content_excerpt: z.string().optional().nullable(),
+      content_excerpt: z.string().nullable().optional(),
     })),
     language: z.enum(['en', 'si', 'ta']),
-    preserveTopic: z.string().optional(),
+    preserveTopic: z.string().nullable().optional(),
   }),
   execute: async ({ summary, headline, articles, language, preserveTopic }) => {
     try {

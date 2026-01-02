@@ -18,11 +18,11 @@ export const generateSummaryTool = tool({
     articles: z.array(z.object({
       title: z.string(),
       content: z.string(),
-      weight: z.number().optional(),
-      publishedAt: z.string().optional(),
+      weight: z.number().nullable().optional(),
+      publishedAt: z.string().nullable().optional(),
     })),
     sourceLang: z.enum(['en', 'si', 'ta']),
-    previousSummary: z.string().optional().nullable(),
+    previousSummary: z.string().nullable().optional(),
   }),
   execute: async ({ articles, sourceLang, previousSummary }) => {
     try {
