@@ -215,11 +215,14 @@ export async function runAIAgentPipeline(): Promise<AIAgentPipelineStats> {
         // STEP 2: Generate Translations (if needed)
         if (needsTranslations && summaryEn) {
           try {
+            const summaryId = updatedSummary?.id || summary?.id;
+            
             const translationResult = await orchestrateTranslation(
               cluster.id,
               headlineEn,
               summaryEn,
-              errors
+              errors,
+              { clusterId: cluster.id, summaryId }
             );
 
             // Update cluster with translations
