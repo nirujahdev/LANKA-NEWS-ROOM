@@ -65,12 +65,13 @@ export const agentModels = {
 
 /**
  * Agent timeout configurations (in milliseconds)
+ * Increased timeouts to allow agents to complete complex multi-step operations
  */
 export const agentTimeouts = {
-  summary: 30000, // 30 seconds
-  translation: 45000, // 45 seconds
-  seo: 30000, // 30 seconds
-  image: 60000, // 60 seconds (includes web search)
-  category: 15000, // 15 seconds
+  summary: 120000, // 120 seconds (2 minutes) - agents need time for multiple tool calls
+  translation: 120000, // 120 seconds (2 minutes) - translating to multiple languages
+  seo: 90000, // 90 seconds - comprehensive SEO generation
+  image: 90000, // 90 seconds - image analysis and selection
+  category: 30000, // 30 seconds - simple categorization
 };
 

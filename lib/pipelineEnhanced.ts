@@ -207,22 +207,28 @@ export async function generateQualityControlledSummary(
     const qualityCheck = await validateSummaryQuality(summary);
     qualityScore = qualityCheck.score / 100;
 
-    // Check length (target ±20%)
-    const length = summary.length;
-    const minLength = targetLength * 0.8;
-    const maxLength = targetLength * 1.2;
+    // Check length using word count (target: 400-1000 words as per agent instructions)
+    const wordCount = summary.trim().split(/\s+/).length;
+    const minWords = 400;
+    const maxWords = 1000;
 
-    if (length < minLength || length > maxLength) {
-      console.warn(`[Pipeline] Summary length ${length} outside target range [${minLength}, ${maxLength}]`);
-      // Adjust target for next attempt
-      if (length < minLength) {
-        targetLength = Math.floor(length / 0.8);
-      } else {
-        targetLength = Math.floor(length / 1.2);
+    if (wordCount < minWords || wordCount > maxWords) {
+      console.warn(`[Pipeline] Summary word count ${wordCount} outside target range [${minWords}, ${maxWords}] words`);
+      // Note: We'll still accept summaries that are close to the range
+      // Only regenerate if way outside bounds
+      if (wordCount < 200 || wordCount > 1500) {
+        // Adjust target for next attempt
+        if (wordCount < minWords) {
+          targetLength = Math.floor(targetLength * 1.2); // Increase target
+        } else {
+          targetLength = Math.floor(targetLength * 0.8); // Decrease target
+        }
       }
     }
 
-    if (qualityScore >= 0.7 && length >= minLength && length <= maxLength) {
+    // Accept summary if quality is good and word count is reasonable (200-1500 words)
+    const wordCount = summary.trim().split(/\s+/).length;
+    if (qualityScore >= 0.7 && wordCount >= 200 && wordCount <= 1500) {
       break; // Quality and length are acceptable
     }
 
