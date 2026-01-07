@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Montserrat } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 import SignInPromptManager from '@/components/SignInPromptManager';
 import GoogleCMP from '@/components/GoogleCMP';
@@ -168,6 +169,9 @@ export default function RootLayout({
             <Footer />
           </SignInPromptManager>
         </ErrorBoundary>
+        
+        {/* Vercel Web Analytics */}
+        <Analytics />
       </body>
     </html>
   );
